@@ -1,0 +1,1161 @@
+﻿<!DOCTYPE html>
+<html>
+
+<!-- DESCRIPTION
+
+This is a generic file that builds a startpage like page from links supplied
+with the Links JavaScript variable.
+
+See below for the syntax of the Links definition.
+See function resolveLinks() for how to set the Links variable.
+
+This page will also be hosted on GitHub at:
+https://github.com/anne-gert/favorite-links
+
+This page' URL can be accessed directly via the URL
+https://raw.githubusercontent.com/anne-gert/anne-gert/favorite-links/favorites.html
+
+The contents can be supplied with the links=url:http://... query string.
+Alternatively the contents can be kept in the browser's LocalStorage.
+
+-->
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text, especially in the Links definition. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<title>Favorites</title>
+
+<script>
+var Links = 'Use links=url:http://domain/path/links.js in the URL.';
+
+// Link Syntax {{{
+
+// The list of Links to display are specified in the Links variable as a single
+// string that consists of lines. The Links form an hierarchical structure,
+// indicated by the line's indentation. Each Link can be a hyperlink and/or
+// contain sub-Items.
+// The Link-levels are called: Sections -> Blocks -> Items -> SubItems -> ...
+//
+// Each line should be one of the following:
+// - Empty lines: These are skipped.
+// - Lines that start with '//', ';' or '#' are comments and skipped too.
+// - If a line ends with {{{ or }}}, remove that. These tags are used to
+//     facilitate folding in vim.
+// - Link specification: See below.
+// - Separator: This is a line containing a name of 3 or more dashes ('---').
+//     It is rendered as an <hr class="separator"> and it closes all
+//     indentation levels higher than its own, except when its indentation
+//     level is lower than block, in which case, it assumes the level of the
+//     item above it.
+// - !icondef name replacement: This is a special line that defines an icon
+//     definition. If a link uses 'icon=name', it will be replaced. This also
+//     works with the special words 'none', 'empty', 'html:x', etc.
+//     It is also allowed to write this with an '=' between name and
+//     replacement.
+// - !title name: This specifies the page title to be displayed.
+//
+// Each Link is specified on a single line as follows:
+//   - Indentation: The amount of indentation determines the nesting depth:
+//       - Tabs are replace by 8 spaces.
+//       - If the number of spaces is bigger than that of the previous line,
+//         increase nesting depth by 1.
+//       - If the number of spaces is less than that of the previous line,
+//         decrease the nesting depth to that of the most recent line that
+//         has an indentation that is strictly less than this line.
+//   - & continuation: If the item starts with '&', this item is regarded as
+//       a continuation of a group of items that are displayed on a single
+//       line.
+//   - Name: Arbitrary string of characters.
+//       If no name is given, the URL is used.
+//       If the name is '_' and an icon is provided, an empty label is used.
+//   - URL: A string of non-whitespace characters, beginning with 'scheme:'.
+//       If no URL is given, no hyperlink is created.
+//   - icon=URL: URL of the icon to use.
+//       If the value 'default' is used or no icon is given, the URL
+//         domain + 'favicon.ico' is used.
+//       If the value 'none' is used, no image is rendered.
+//       If the value 'empty' is used, an empty image is rendered.
+//       If the value 'alt:<method>?<url>' is used, don't use the website's
+//         icon (which may be inaccessible due to referer restrictions), but
+//         use the specified alternative method. Current methods are:
+//           - 'google': Use Google's database.
+//           - '*', 'any': Use any of the known methods. This is the default
+//               if ':<method>' is not specified.
+//         If '?<url>' is specified, that URL is used, otherwise the target
+//         URL is used as a base for the alternative method.
+//       If the value 'char:<x>' is used, the (short) text after the colon is
+//         used to create an icon.
+//       If the value 'html:<x>' is used, the (short) text after the colon is
+//         used to create a <div>. The contents is scaled to a square.
+//   - url=URL: Target of this link. If this exists, no URL is attempted to be
+//       recognized in the rest of the line. So this is also a way to override
+//       the URL (possibly to empty) if a URL occurs in the Name too.
+//   - target=target: Open the URL in the defined target. Typical values are:
+//       - absent: Use same window (default)
+//       - _blank: Use a new window or tab.
+//       - manual: Display text to instruct the user to paste the user to
+//           manually paste the URL in the address bar.
+// If both Name and URL are not defined, the word 'LINK' is used.
+// The elements may be specified in any order on the line.
+//
+// Examples:
+//   Example                              : Just a string 'Example' without link
+//   http://example.com                   : Link with name http://example.com and icon http://example.com/favicon.ico
+//   Example http://example.com           : Same link with name 'Example'
+//   Example icon=none http://example.com : Same link, but no Icon
+//   Example:3 url=                       : Show 'Example:3' without link (although Name matches a URL)
+//   Submenu http://example.com           : Item 'Submenu' that is a link and has sub-Items.
+//     ...
+//   Submenu                              : Submenu without link
+//     ...
+//   http://example.com                   : Submenu with link that is used as name too
+//     ...
+
+//}}}
+</script>
+
+<style>
+/* CSS styles {{{ */
+
+:root, body, input, button {
+	font-family:  'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
+	font-size: 12pt;
+}
+/*
+https://www.w3schools.com/css/css_rwd_mediaqueries.asp advices the following sizes:
+- max-width=600px: Extra small devices (phones)
+- min-width=600px: Small devices (portrait tablets and large phones)
+- min-width=768px: Medium devices (landscape tablets)
+- min-width=992px: Large devices (laptops/desktops)
+- min-width=1200px: Extra large devices (large laptops and desktops)
+
+https://www.w3schools.com/cssref/css_units.php makes the following recommendations:
+- Use relative lengths (em, %, rem, vw, vh) for screen display.
+- Use absolute lengths (cm, px, pt) for print display.
+- Pixels (px) are only literal pixels for low-dpi devices. For high-dpi
+  devices, 1px is multiple physical pixels.
+  The ratio of physical to logical pixels can be retrieved in JavaScript with
+  window.devicePixelRatio;
+- Here it defines: 1in = 2.54cm = 25.4mm = 72pt = 6pc = 96px
+
+https://stackoverflow.com/questions/8785643/what-exactly-is-device-pixel-ratio describes the direct use of device-pixel-ratio in CSS:
+@media only screen and (-webkit-min-device-pixel-ratio: 1.5),
+	only screen and (min--moz-device-pixel-ratio: 1.5),
+	only screen and (-o-device-pixel-ratio: 3/2), 
+	only screen and (min-device-pixel-ratio: 1.5) {
+	... high-resolution screens ...
+}
+
+Also, disable automatic text-sizing, because that determines the font-size
+for each block independently.
+*/
+@media only screen and (-webkit-min-device-pixel-ratio: 1.5),
+	only screen and (min--moz-device-pixel-ratio: 1.5),
+	only screen and (-o-device-pixel-ratio: 3/2), 
+	only screen and (min-device-pixel-ratio: 1.5) {
+	/* high-resolution screens */
+	:root, body, input, button {
+		/* Make text bigger, because otherwise it gets too small on
+		   phones. (I'm not sure why, because 12pt should be the same
+		   absolute size on every screen. */
+		font-size: 18pt;
+	}
+	html {
+		text-size-adjust: none;
+		-moz-text-size-adjust: none;
+		-webkit-text-size-adjust: none;
+	}
+}
+:root, body {
+	color: #50a0ee; background: #2E323B;
+}
+::selection {
+	color: #000000; background: #ddddff;
+}
+.section {
+	display: block;
+}
+.block {
+	display: inline-block;
+	vertical-align: top;
+	border: .15em solid #eeeeee;
+	border-radius: .5em;
+	padding: 1em;
+	margin: .5em;
+	color: #000000; background: #C9CDD0;
+}
+.block .expand-icon, .block .collapse-icon {
+	float: right;
+	position: relative;
+	top: -0.9em; right: -0.6em;
+	cursor: pointer;
+}
+.block .collapse-icon {
+	color: #888888;
+}
+.block>.items {  /* first level of children in a block */
+	margin-left: 0.5em;
+}
+.items {
+	margin-left: 2em;
+}
+.item {
+	display: block;
+	padding: 0.1em;
+}
+.group .item {
+	display: inline;
+	margin-left: 0.4em;
+}
+.group .item:first-child {
+	margin-left: unset;
+}
+.item .icon {
+	width: 1.0em; height: 1.0em;
+	margin-right: 0.2em;
+	vertical-align: -10%;
+}
+.item.link .icon {
+	vertical-align: -20%;
+}
+.item .separator {
+	margin: 0em -1em 0em -1em;
+}
+
+.text-icon {
+	display: inline-block;
+	padding: 0em;
+	text-decoration: none;
+}
+.text-icon div {
+	position: absolute;
+	margin: 0em; padding: 0em;
+	transform-origin: 0 0;
+}
+
+.search-form .box {
+	font-size: 110%;
+}
+.search-form .button {
+	margin: 0.3em;
+}
+.search-form .button .icon {
+	width: 1.5em; height: 1.5em;
+	vertical-align: -25%;
+}
+.search-form .button .label {
+	margin: 0em 0.3em;
+}
+.blink {
+	animation: blinker 0.5s 4;
+	color: rgb(0, 0, 0, 0);  /* transparent (also placeholder) */
+}
+.blink::placeholder {
+	opacity: 1;  /* in case browser has this lower by default */
+}
+@keyframes blinker {
+	30% {
+		border: .15em solid red;
+		background: #FFCCCC;
+		color: rgb(0, 0, 0, 1);  /* fully visible (also placeholder) */
+	}
+}
+
+/* }}} */
+</style>
+
+<script>
+// Parsing Links {{{
+
+var IconDefs = null;  //specified icondef declarations
+var PageTitle = null;  //specified title
+
+// Parse the string in links.
+// Returns array of Link objects that have no parents (i.e. roots).
+// Also sets the IconDefs and PageTitle global variables.
+function parseLinks(links) {
+	// Parse the input lines
+	var allLinks = [];  //specified Link objects
+	IconDefs = {};
+	var rootLinks = [];  //Link objects that are the roots
+	var openParents = [];  //currently open parents: 0 is root, 1 its child, etc
+	var openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
+	var lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
+	for (var i = 0; i < lines.length; ++i) {
+		var line = lines[i];
+		//console.log('Line=\'' + line + '\'');
+
+		// Remove vim folding markers at the end of lines
+		line = line.replace(/\s*(?:{{{|}}})\s*$/, '');
+
+		// Skip empty lines
+		if (line.match(/^\s*(?:\/\/|#|;|$)/))
+			continue;
+
+		// Check if it is a title definition
+		var m = line.match(/^\s*!title\s+(.+?)\s*$/i);
+		if (m) {
+			// This is an title
+			PageTitle = m[1];  //save string
+			continue;
+		}
+
+		// Check if it is an icon definition
+		var m = line.match(/^\s*!icondef\s+(\S+)(?:\s+|\s*=\s*)(\S+)\s*$/i);
+		if (m) {
+			// This is an icondef
+			IconDefs[m[1]] = m[2];  //save mapping
+			continue;
+		}
+
+		// Take out indentation
+		var indent = 0;
+		var m = line.match(/^(\s+)(.*)$/);
+		if (m) {
+			indent = m[1].replaceAll('\t', '        ').length;
+			line = m[2];  //the rest
+		}
+		// Take out continucation: & ...
+		var cont = false;
+		var m = line.match(/^&\s*(.*)$/);
+		if (m) {
+			cont = true;
+			line = m[1];  //the rest
+		}
+		// Take out Icon: /icon=non-whitespace/
+		var icon = null;
+		var m = line.match(/^(.*)(?:\s|^)icon=(\S*)(.*)$/i);
+		if (m) {
+			icon = m[2];
+			line = m[1] + m[3];  //the rest
+		}
+		// Take out Target: /target=non-whitespace/
+		var target = null;
+		var m = line.match(/^(.*)(?:\s|^)target=(\S*)(.*)$/i);
+		if (m) {
+			target = m[2];
+			line = m[1] + m[3];  //the rest
+		}
+		// Take out URL: /url=non-whitespace/ or last /schema:non-whitespace/
+		var url = null;
+		var m = line.match(/^(.*)(?:\s|^)url=(\S*)(.*)$/i);
+		if (!m)
+			m = line.match(/^(.*)(?:\s|^)([-+a-zA-Z]{2,}:\S+)(.*)$/);
+		if (m) {
+			url = m[2];
+			line = m[1] + m[3];  //the rest
+		}
+		// Take out Name: what remains without leading&trailing whitespae
+		var name = line.trim();
+
+		// Handle special items
+		if (name.match(/^---+$/)) {  //name with 3 or more '-'
+			// This is a separator
+			name = '---';  //standardize to 3 '-'
+			var minLevel = 2;  //item level
+			if (openParentIndentSpaces.length <= minLevel) {
+				continue;  //no open parent at this level yet, skip this item
+			} else {
+				if (indent < openParentIndentSpaces[minLevel]) {
+					// Separator has lower indent than level 2, pretend it's
+					// at the same level as the line before
+					indent = openParentIndentSpaces[openParentIndentSpaces.length - 1];
+				}
+			}
+		}
+
+		// Create the Link object
+		var link = {
+			'name' : name,
+			'url' : url,
+			'icon' : icon,
+			'target' : target,
+			'cont' : [],
+			'subs' : [],
+			'toString' : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', #SubItems=' + this.subs.length + ' }' },
+		};
+		//console.log('Indentation=' + indent + ', Link=' + link);
+
+		if (cont) {
+			// This link is a continuation of the previous link
+			// Ignore the indentation and add it to the last parent
+			var level = openParents.length - 1;
+			openParents[level].cont.push(link);
+			// Do not add this link as a possible parent itself
+		} else {
+			// Find parent level with indentation strictly less
+			for (var level = openParentIndentSpaces.length - 1; level >= 0 && openParentIndentSpaces[level] >= indent; --level) {}
+			// Remove all open parents after that
+			openParentIndentSpaces.length = level + 1;
+			openParents.length = level + 1;
+			// Add this link to the parent's children
+			if (level >= 0) {
+				// It has a parent
+				openParents[level].subs.push(link);
+			} else {
+				// It has no parent
+				rootLinks.push(link);
+			}
+			// Add this link as open parent
+			openParentIndentSpaces.push(indent);
+			openParents.push(link);
+		}
+
+		// Add this Link
+		allLinks.push(link);
+	}
+
+	// Log all links
+	//for (var i = 0; i < allLinks.length; ++i) console.log('Link=' + allLinks[i]);
+	// Log all roots
+	//for (var i = 0; i < rootLinks.length; ++i) console.log('RootLink=' + rootLinks[i]);
+
+	return rootLinks;
+}
+
+// }}}
+
+// Rendering Links {{{
+
+// Output Link {{{
+
+// Render Link object, including its children to the container at specified level.
+// Level 1 is called Section and is rendered with a heading.
+// Level 2 is called Block and is rendered as a rectangular block.
+// Level 3 is called Item and is rendered as a line in a Block.
+// Level 4 and higher are called sub-Items and are rendered as indented Items.
+function outputItem(link, level, container, parentPath) {
+	// Copy input data
+	var name = link.name;
+	var url = link.url;
+	var icon = link.icon;
+	var target = link.target;
+	var tooltip = null;
+	var contItems = link.cont;
+	if (contItems != null && contItems.length == 0) contItems = null;
+	var subItems = link.subs;
+	if (subItems != null && subItems.length == 0) subItems = null;
+	if (name == '') name = null;
+	if (url == '') url = null;
+	if (icon == '') icon = null;
+	if (target == '') target = null;
+	var myPath = parentPath + '->' + name;
+	// Fill in defaults for missing elements
+	if (name == null) {
+		if (url != null) {
+			name = url;  //name defaults to url
+		} else {
+			name = 'LINK';  //default name
+		}
+	}
+	// Change URL if target=manual
+	if (target == 'manual') {
+		var msg = 'Due to security reasons, this URL cannot be opened automatically.\nCopied URL \'' + url + '\' to clipboard.\n\nManually paste this to the address bar.';
+		msg = msg.replaceAll('\'', '\\\'').replaceAll('\n', '\\n');
+		tooltip = url;  //preserve original URL
+		url = 'javascript:navigator.clipboard.writeText(\'' + url + '\');alert(\'' + encodeURI(msg) + '\');void(0)';
+		target = null;
+	}
+	// Render the item
+	// State variables for this item; will be used in closures
+	var addItemContainer;  //function to add a container to put the Item into
+	var addSubContainer;  //function to add a container to put the subItems into
+	var addClosingElements = null;  //function to add closing elements to the container
+	// Create element container
+	if (level == 1) (function(){  //define function to have a separate variable scope
+		// Render Item as Section
+		//console.log('Render Section ' + name);
+		var _itemContainer;
+		var _subContainer;
+		addItemContainer = function() {
+			_itemContainer = document.createElement('h2');
+			container.appendChild(_itemContainer);
+			return _itemContainer;
+		}
+		addSubContainer = function() {
+			_subContainer = document.createElement('div');
+			_subContainer.className = 'section';
+			container.appendChild(_subContainer);
+			return _subContainer;
+		};
+		addClosingElements = function() {
+			var closingElements = document.createElement('hr');
+			container.appendChild(closingElements);
+		}
+	})();
+	else if (level == 2) (function(){  //define function to have a separate variable scope
+		// Render Item as Block
+		//console.log('Render Block ' + name);
+		var _itemContainer;
+		var _subContainer;
+		addItemContainer = function() {
+			_itemContainer = document.createElement('div');
+			_itemContainer.className = 'block';
+			container.appendChild(_itemContainer);
+			if (subItems != null) {
+				var expandIcon = document.createElement('span');  //container to display '-' or '+'
+				expandIcon.className = 'collapse-icon';
+				_itemContainer.appendChild(expandIcon);
+				var isExpanded = true;  //true if block is expanded
+				var storageKey = 'expanded ' + myPath;
+				if (localStorage) {
+					// LocalStorage is available, use persistent value
+					var v = localStorage.getItem(storageKey);
+					console.log('Preset isExpanded for \'' + myPath + '\' to ' + v);
+					if (v == 'false')
+						isExpanded = false;
+				}
+				var displayExpandState = function() {
+					console.log('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
+					var vars = {
+						'true': {  //expanded
+							'icon': '\u25bc',  //'click to collapse' icon (U=25BC is black down-pointing triangle)
+							'display': 'block',  //show children
+							'className': 'collapse-icon'
+						},
+						'false': {  //collapsed
+							'icon': '\u25b6',  //'click to expand' icon (U+25B6 is black right-pointing triangle)
+							'display': 'none',  //hide children
+							'className': 'expand-icon'
+						}
+					}[isExpanded];
+					expandIcon.textContent = vars.icon;
+					expandIcon.className = vars.className;
+					if (_subContainer)
+						_subContainer.style.display = vars.display;
+				};
+				expandIcon.onclick = function() {
+					isExpanded = !isExpanded;
+					console.log('Set isExpanded for \'' + name + '\' to ' + isExpanded);
+					if (localStorage) {
+						// LocalStorage is available, persist it
+						localStorage.setItem(storageKey, isExpanded);
+					}
+					displayExpandState();
+				};
+				addClosingElements = function() {
+					displayExpandState();  //display initial state
+				}
+			}
+			return _itemContainer;
+		}
+		addSubContainer = function() {
+			_subContainer = document.createElement('div');
+			_subContainer.className = 'items';
+			_itemContainer.appendChild(_subContainer);
+			return _subContainer;
+		}
+	})();
+	else (function(){  //define function to have a separate variable scope
+		// Render Item is (sub-)Item
+		//console.log('Render Item ' + name);
+		var _itemContainer;
+		var _subContainer;
+		addItemContainer = function() {
+			if (contItems != null) {
+				_itemContainer = document.createElement('div');  //make a div for the continuation group
+				_itemContainer.className = 'group';
+				container.appendChild(_itemContainer);
+			} else {
+				_itemContainer = container;  //add item to the same container
+			}
+			return _itemContainer;
+		}
+		addSubContainer = function() {
+			_subContainer = document.createElement('div');
+			_subContainer.className = 'items';
+			container.appendChild(_subContainer);
+			return _subContainer;
+		}
+	})();
+	// Create element itself
+	if (name == '---') {
+		// Special separator item
+		var item = document.createElement('hr');
+		item.className = 'separator';
+		container.appendChild(item);
+	} else {
+		var itemContainer = addItemContainer();
+		// Create hyperlink in Item container
+		var innerContainer;
+		if (url != null) {
+			innerContainer = document.createElement('a');
+			innerContainer.href = url;
+			innerContainer.className = 'item link';
+			if (target != null)
+				innerContainer.target = target;
+			if (tooltip != null)
+				innerContainer.title = tooltip;
+		} else {
+			innerContainer = document.createElement('div');
+			innerContainer.className = 'item';
+		}
+		itemContainer.appendChild(innerContainer);
+		// Create icon in Item container
+		var icon_present = outputIcon(innerContainer, null, icon, url);
+		// Create text in Item container
+		if (name != null) {
+			if (icon_present && name == '_') {
+				// Do not display the text
+			} else {
+				var text = document.createTextNode(name);
+				innerContainer.appendChild(text);
+			}
+		}
+		// If there is continuation, output those items in this container too
+		if (contItems != null) {
+			outputItems(contItems, level, itemContainer, myPath);
+		}
+	}
+	// Create sub-Items in container
+	if (subItems != null) {
+		if (addSubContainer) {
+			var subContainer = addSubContainer();
+			outputItems(subItems, level+1, subContainer, myPath);
+		}
+	}
+	// Add closing elements
+	if (addClosingElements) {
+		addClosingElements();
+	}
+}
+
+// Render array of Links to the container at specified level.
+function outputItems(links, level, container, parentPath = '') {
+	for (var i = 0; i < links.length; ++i) {
+		outputItem(links[i], level, container, parentPath);
+	}
+}
+
+// }}}
+
+// Output Icon {{{
+
+// Create <img> item in the container.
+// If alt_text is defined, use that.
+// icon_url is what is specified in the icon=URL argument, see explanation at
+// the top of this file.
+// Returns true if a non-empty icon is generated.
+//
+// To retrieve the icon, first try the primary URL. If that fails and skip_alternatives==false,
+// try these alternatives:
+// - http://www.google.com/s2/favicons?domain=<target_url domain>
+// - http://www.google.com/s2/favicons?domain=<icon_url domain>
+function outputIcon(container, alt_text, icon_url, target_url, skip_alternatives = false) {
+	// By default, construct icon_url from target_url
+	if ((icon_url == null || icon_url == 'default') && target_url != null) {
+		icon_url = getDefaultIconUrl(target_url);
+	}
+
+	// Resolve the IconDefs
+	if (icon_url != null) {
+		icon_url = resolveIconDefs(icon_url);
+	}
+
+	var icon_present = false;
+
+	// Render icon_url
+	var m;  //for regex matches
+	if (icon_url == null) {
+		console.log('Loading icon for target \'' + target_url + '\': null');
+	} else if (icon_url == 'none') {
+		console.log('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
+	} else if (m = icon_url.match(/^html:(.+)/i)) {
+		var html = m[1];
+		// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
+		var iconDiv = document.createElement('div');
+		iconDiv.className = 'icon text-icon';
+		var htmlDiv = document.createElement('div');
+		htmlDiv.innerHTML = html;  //also takes care of HTML rendering
+		FillScaler.observe(htmlDiv);
+		iconDiv.appendChild(htmlDiv);
+		container.appendChild(iconDiv);
+		icon_present = true;
+	} else {
+		console.log('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
+		var img = document.createElement('img');
+		icon_present = true;
+		if (icon_url == 'empty') {
+			img.style.visibility = 'hidden';
+			icon_present = false;  //there is an image, but still empty
+		} else if (m = icon_url.match(/^char:(.+)/i)) {
+			var text = m[1];
+			// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
+			icon_url = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">' + text + '</text></svg>';
+			img.src = icon_url;
+		} else {
+			var alternatives = [], methods = [], urls = [];  //prepare options to use for the icon
+			if (m = icon_url.match(/^alt(?::([^?]+))?(?:\?(.+))?/i)) {
+				// icon_url contains an alt specification
+				var method = m[1];
+				var url = m[2];
+				if (method == null || method == '' || method == 'any' || method == '*') {
+					// Add all known methods
+					methods.push('google');
+				} else {
+					// Add only the specified method
+					methods.push(method);
+				}
+				if (url != null && url != '') {
+					// Add the specified URL only
+					urls.push(url);
+				} else {
+					// Add the icon_url (but that doesn't contain a URL) and target_url
+					if (target_url != null && target_url != '') {
+						urls.push(target_url);
+					}
+				}
+			} else {
+				// icon_url contains a URL of the icon
+				alternatives.push(icon_url);
+				if (!skip_alternatives) {
+					// Try the alternatives in order of 'likely correct'.
+					// Note that the google-favicons always returns an image, even a generic one, so it
+					// will always prevent further alternatives to be attempted.
+					methods.push('google');
+					if (icon_url != null) {
+						urls.push(icon_url);
+					}
+					if (target_url != null) {
+						urls.push(target_url);
+					}
+				}
+			}
+			//console.log('All methods for ' + icon_url); console.log(methods);
+			//console.log('All urls for ' + icon_url); console.log(urls);
+			// Go through methods and urls and add alternatives
+			for (var m = 0; m < methods.length; ++m) {
+				var method = methods[m];
+				for (var u = 0; u < urls.length; ++u) {
+					if (method == 'google') {
+						alternatives.push(getGoogleAltIconUrl(urls[u]));
+					} else {
+						console.error('Unknown alt icon method: ' + method);
+					}
+				}
+			}
+			//console.log('All alternatives for ' + icon_url); console.log(alternatives);
+			// Remove duplicates
+			var seen = {};
+			var alt_list = alternatives;  //may have duplicates
+			alternatives = [];  //get the unique ones
+			for (var a = 0; a < alt_list.length; ++a) {
+				if (!seen[alt_list[a]]) {
+					seen[alt_list[a]] = true;
+					alternatives.push(alt_list[a]);
+				}
+			}
+			//console.log('All unique alternatives for ' + icon_url); console.log(alternatives);
+			// Set the icon urls until we find one that works
+			var try_next = function() {
+				if (alternatives.length > 0) {
+					// Try next alternative
+					//console.log('alternatives.length=' + alternatives.length);
+					//console.log('alternatives[0]=' + alternatives[0]);
+					var alt = alternatives.shift();
+					//console.log('alternatives.length=' + alternatives.length);
+					if (img.src != null && img.src != '') {
+						console.warn('Cannot load icon \'' + img.src + '\', try \'' + alt + '\'');
+					}
+					img.src = alt;
+				} else {
+					// Stop trying
+					console.error('Cannot load icon: ' + img.src);
+					if (alt_text != null) {
+						// prepare to show the alt text
+						img.src = '';
+					} else {
+						// hide entire image
+						img.style.visibility = 'hidden';
+					}
+					img.onerror = null;  //stop handling errors
+				}
+			}
+			img.onerror = try_next;
+			try_next();  //set first alternative
+		}
+		if (alt_text != null) {
+			img.alt = alt_text;
+		}
+		img.className = 'icon';
+		container.appendChild(img);
+	}
+
+	return icon_present;
+}
+
+// Take icon_url and perform the icondef replacements.
+// Returns the resolved value or the original value if no icondefs matched.
+function resolveIconDefs(icon_url) {
+	var retval = icon_url;
+	var seen = {};  //to break cycles
+	seen[icon_url] = 1;
+	var override = IconDefs[icon_url];
+	while (override !== undefined && !seen[override]) {
+		console.log('Replace icon=' + icon_url + ' by IconDefs ' + override);
+		retval = override;
+		seen[override] = 1;
+		override = IconDefs[override];
+	}
+	//console.log('Returning ' + retval);
+	return retval;
+};
+
+// Define a ResizeObserver that is used to resize entries to 100% of their
+// parent's size. This is used for icons that are defined with html:<x>.
+var FillScaler = new ResizeObserver(function(entries) {
+	for (var entry of entries) {
+		var element = entry.target;
+		// Get entries current size
+		var w, h;
+		if (entry.borderBoxSize) {
+			var rect = entry.borderBoxSize[0];  //area of 1st (and only) fragment
+			var writingMode = element.style.writingMode;
+			//console.log('FillScaler: Writing mode ' + writingMode);
+			if (writingMode.match(/^vertical/i)) {
+				// Vertical writing-mode, so inline direction is vertical
+				h = rect.inlineSize;
+				w = rect.blockSize;
+			} else {
+				// Assume horizontal writing-mode, so inline direction is horizontal
+				w = rect.inlineSize;
+				h = rect.blockSize;
+			}
+		} else {
+			var rect = entry.contentRect;
+			w = entry.contentRect.width;
+			h = entry.contentRect.height;
+		}
+		console.log('FillScaler: Element size ' + w + ' x ' + h);
+		// Get parent's current size
+		var parent = element.parentElement;
+		var pw = parent.offsetWidth;
+		var ph = parent.offsetHeight;
+		//console.log('FillScaler: Parent size ' + pw + ' x ' + ph);
+		// Calculate new scaling factor
+		var scaleX = pw / w;
+		var scaleY = ph / h;
+		//console.log('FillScaler: Scale with ' + scaleX + ' x ' + scaleY);
+		// Check if the change is big enough
+		var changeX = element._scaleX / scaleX;
+		var changeY = element._scaleY / scaleY;
+		//console.log('FillScaler: Scale change ' + changeX + ' x ' + changeY);
+		if (isNaN(changeX) || changeX < 0.98 || changeX > 1.02 || isNaN(changeY) || changeY < 0.98 || changeY > 1.02) {
+			// More than 2% change
+			console.log('FillScaler: Set scale ' + scaleX + ' x ' + scaleY);
+			element._scaleX = scaleX;
+			element._scaleY = scaleY;
+			entry.target.style.scale = scaleX + ' ' + scaleY;
+		} else {
+			console.log('FillScaler: Scale change too small ' + changeX + ' x ' + changeY);
+		}
+	}
+});
+
+// Return the URL where the default icon should be.
+function getDefaultIconUrl(site_url) {
+	return site_url.replace(/(?:(?:(?<!\/)\/(?!\/)|\?|#).*)?$/, '/favicon.ico');  //replace first single '/', '?' or '#' and onwards
+}
+
+// Return the URL for an icon of the site_url's domain.
+// This method uses the Google database.
+function getGoogleAltIconUrl(site_url) {
+	var domain = site_url
+		.replace(/^[^\/]*\/\//, '')  //remove scheme
+		.replace(/\/.*/, '');  //remove path
+	return 'http://www.google.com/s2/favicons?domain=' + domain;
+}
+
+// }}}
+
+// }}}
+
+// SearchBox related functions {{{
+
+// Return a URL to handle the address (ie beautify it to go to it).
+function getWithSchemaUrl(address) {
+	var url = address;
+	if (!url.match(/^[\w+-]+:/)) {
+		url = 'http://' + url;  //add default scheme
+	}
+	return url;
+}
+
+// Returns a URL to perform a search for input with DuckDuckGo.
+function getDuckUrl(input) {
+	return 'https://duckduckgo.com?q=' + encodeURIComponent(input).replace(' ', '+');
+};
+
+// Returns a URL to perform a search for input with Google.
+function getGoogleUrl(input) {
+	return 'https://www.google.com/search?q=' + encodeURIComponent(input).replace(' ', '+');
+};
+
+// Returns a URL to perform a search for input with Wikipedia.
+function getWikipediaUrl(input) {
+	return 'https://www.wikipedia.org/wiki/Special:Search?go=Go&search=' + encodeURIComponent(input).replace(' ', '+');
+};
+
+// Returns a URL to perform a search for input with YouTube.
+function getYouTubeUrl(input) {
+	return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(input).replace(' ', '+');
+};
+
+// Returns a URL to perform a lookup for the domain with Wayback Machine.
+function getWaybackDomainUrl(domain) {
+	var ts = getWaybackTimestamp();
+	return 'https://web.archive.org/web/' + ts + '/' + domain;
+};
+
+// Returns a URL to perform a search for input with Wayback Machine.
+function getWaybackSearchUrl(input) {
+	var ts = getWaybackTimestamp();
+	return 'https://web.archive.org/web/' + ts + '/' + encodeURIComponent(input).replace(' ', '+');
+};
+
+// Returns a URL to perform a search for input on Google Maps
+function getGoogleMapsUrl(input) {
+	return 'https://maps.google.com/?q=' + encodeURIComponent(input).replace(' ', '+');
+}
+
+// Create a Wayback Machine timestamp that can be used in queries.
+function getWaybackTimestamp(date = new Date()) {
+	var pad = function(number, positions) {
+		var neg = false;
+		if (number < 0) {
+			neg = true;
+			positions--;  //space for '-'
+			number = -number;
+		}
+		var s = '';
+		for (var i = 2, limit = 10; i <= positions; ++i, limit *= 10) {
+			if (number < limit) s += '0';
+		}
+		s += number;
+		if (neg) s = '-' + s;
+		return s;
+	};
+	// I assume the format is 'yyyymmddhhmmss*' with yyyy the year
+	// to query and the rest '0'.
+	var timestamp = pad(date.getFullYear(), 4) +
+		pad(0, 2) +
+		pad(0, 2) +
+		pad(0, 2) +
+		pad(0, 2) +
+		pad(0, 2) +
+		'*';
+	return timestamp;
+}
+
+var UNICODE_ANGRY_FACE = '\u{1F620}';  //angry face
+var UNICODE_POUTING_FACE = '\u{1F621}';  //red angry face
+var UNICODE_FACE_WITH_LOOK_OF_TRIUMPH = '\u{1F624}';  //steamy nose angry face
+var UNICODE_SERIOUS_FACE_WITH_SYMBOLS_COVERING_MOUTH = '\u{1F92C}';  //red swearing face
+
+var EmptySearchCounter = 0;
+
+// Process search input.
+// Redirects to search.
+// May return if search input is not clear.
+function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWithSchemaUrl) {
+	var input = searchBox.value;
+	if (input.match(/^\s*$/)) {
+		console.log('Empty search string');
+		// Set the blink anymated style
+		searchBox.classList.add('blink');
+		//console.log('searchBox.className=' + searchBox.className);
+		// Set the funny feedback text with angry faces
+		++EmptySearchCounter;
+		var funny_feedback;
+		if (EmptySearchCounter <= 2)
+			funny_feedback = '';
+		else if (EmptySearchCounter <= 3)
+			funny_feedback = UNICODE_ANGRY_FACE;
+		else if (EmptySearchCounter <= 6)
+			funny_feedback = UNICODE_POUTING_FACE.repeat(EmptySearchCounter - 3);
+		else
+			funny_feedback = UNICODE_FACE_WITH_LOOK_OF_TRIUMPH.repeat(EmptySearchCounter - 3);
+		searchBox.placeholder = funny_feedback;
+		// Set the event to clean up
+		searchBox.onanimationend = function() {
+			//console.log('animation end');
+			searchBox.classList.remove('blink');
+			//console.log('searchBox.className=' + searchBox.className);
+			searchBox.placeholder = '';  //remove funny feedback
+		};
+	} else {
+		EmptySearchCounter = 0;
+		var m = input.match(/^\s*(\S+\.\S+)\s*$/);
+		var url = null;
+		if (m && getDomainSearchUrl) {
+			//console.log('Looks like URL');
+			url = getDomainSearchUrl(m[1]);
+			console.log('Go to URL \'' + url + '\'');
+		} else {
+			url = getSearchUrl(input);
+			console.log('Search \'' + url + '\'');
+		}
+		window.location.href = url;
+	}
+}
+
+// }}}
+
+// Initialization {{{
+
+// This function should be called at the top of the body.
+// It is responsible for ultimately setting the Links variable as described at
+// the top of this file.
+//
+// The contents of Links can be obtained in the following way:
+// 1) If the links= query string is set on the URL, that contents is used.
+//    This can also be a url:xxx value.
+// 2) Otherwise if there is a 'links' key in LocalStorage, that value is used.
+// 3) If Links matches 'url:http://host/path/links.js', the contents of that
+//    file is downloaded and evaluated as script. It should set the Links
+//    variable.
+// 4) Links should now have a value that can be parsed as specified below.
+function resolveLinks() {
+	// Step 1) Check if Links is defined in the query string
+	var params = new URLSearchParams(location.search);
+	var v = params.get('links');
+	if (v) {
+		console.log('Use links= from the query string');
+		Links = v;
+
+	} else {
+		// Step 2) Check if Links is defined in LocalStorage
+		if (localStorage) {
+			// LocalStorage is available, use persistent value
+			var v = localStorage.getItem('links');
+			if (v) {
+				console.log('Use links from the LocalStorage');
+				Links = v;
+			}
+		}
+	}
+
+	// Step 3) If Links is a URL, resolve it
+	var m = Links.match(/^\s*url\s*:\s*(\S+)\s*$/i);
+	if (m) {
+		// It specifies a URL, output code to download and evaluate it
+		var url = m[1];
+		Links = '';
+		console.log('Links defined by URL \'' + url + '\'');
+		document.write('<script src="' + url + '"><\/script>');  //this URL should set Links
+	}
+
+	// Step 4) Now Links can be parsed when init() is called.
+}
+
+// Function to set the title to the specified string.
+function setPageTitle(title) {
+	var titleCtl = document.getElementById('title');
+	if (titleCtl)
+		titleCtl.innerText = title;
+}
+
+// Add events to buttons
+// This also adds icons to the buttons. Do that here instead of with
+// static HTML, because I saw that the browser tries to render static
+// images before the JavaScript generated ones and I'd like to render
+// the links as soon as possible.
+// The displayed icon is specified by icon_url. If this is 'alt', the
+// target domain is derived from getSearchUrl().
+function initSearchButton(button_id, text, tooltip, search_box, icon_url, getSearchUrl, getDomainSearchUrl = getWithSchemaUrl) {
+	var btn = document.getElementById(button_id);
+	if (btn) {
+		// Update button
+		btn.onclick = function() {
+			processSearchInput(search_box, getSearchUrl, getDomainSearchUrl);
+			return false;  //skip default handling
+		}
+		btn.title = tooltip;
+
+		// Add icon
+		var target_domain = getSearchUrl('dummy');
+		//console.log('target_domain=' + target_domain);
+		//console.log('favicon=' + getDefaultIconUrl(target_domain));
+		// When determining the icon, don't consider alternatives,
+		// except when icon_url == 'alt...'
+		outputIcon(btn, tooltip, icon_url, target_domain, true);
+
+		// Add link text
+		var label = document.createElement('span');
+		label.className = 'label';
+		var textNode = document.createTextNode(text);
+		label.appendChild(textNode);
+		btn.appendChild(label);
+	}
+}
+
+function initSearchButtons(searchBox) {
+	initSearchButton('SearchButtonDuck', 'Search', 'Duck Duck Go', searchBox, 'default', getDuckUrl);
+	initSearchButton('SearchButtonGoogle', 'Search', 'Google', searchBox, 'default', getGoogleUrl);
+	initSearchButton('SearchButtonWikipedia', 'Wikipedia', 'Wikipedia', searchBox, 'default', getWikipediaUrl);
+	initSearchButton('SearchButtonYouTube', 'YouTube', 'YouTube', searchBox, 'default', getYouTubeUrl);
+	initSearchButton('SearchButtonWayback', 'Archive', 'Wayback Machine (Internet Archive)', searchBox, 'alt', getWaybackSearchUrl, getWaybackDomainUrl);
+	initSearchButton('SearchButtonGoogleMaps', 'Maps', 'Google Maps', searchBox, 'alt', getGoogleMapsUrl);
+}
+
+// Initialize the JavaScript on the page
+function init() {
+	// Parse Links
+	var rootLinks = parseLinks(Links);
+
+	// Set page title
+	if (PageTitle) {
+		setPageTitle(PageTitle);
+	}
+
+	// Render Links
+	var container = document.getElementById('LinksBox');
+	outputItems(rootLinks, 1, container);
+
+	// Focus SearchBox
+	var searchBox = document.getElementById('SearchBox');
+	if (searchBox) {
+		searchBox.focus();
+		searchBox.select();
+	}
+
+	// Initialize the search buttons
+	initSearchButtons(searchBox);
+}
+window.onload = init;
+
+// }}}
+</script>
+
+</head>
+
+<body>
+
+<script>
+resolveLinks();
+</script>
+
+<h1 id="title">Favorites</h1>
+
+<form id="SearchForm" class="search-form">
+Search:
+<input id="SearchBox" name="q" type="text" size="40" class="box"/>
+<button id="SearchButtonDuck" class="button"></button>
+<button id="SearchButtonGoogle" class="button"></button>
+<button id="SearchButtonWikipedia" class="button"></button>
+<button id="SearchButtonYouTube" class="button"></button>
+<button id="SearchButtonWayback" class="button"></button>
+<button id="SearchButtonGoogleMaps" class="button"></button>
+</form>
+
+<div id="LinksBox"></div>
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker: -->
+
