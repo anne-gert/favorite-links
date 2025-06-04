@@ -1,0 +1,6 @@
+# Exclude most files
+*.js
+*.zip
+*.pl
+.svn
+
