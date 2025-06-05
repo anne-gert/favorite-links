@@ -50,12 +50,46 @@ var Links = null;
 //     indentation levels higher than its own, except when its indentation
 //     level is lower than block, in which case, it assumes the level of the
 //     item above it.
+// - !title name: This specifies the page title to be displayed.
+// - !search fields: Define a search button to be displayed next to the search
+//     box. The fields are separated by '|', with whitespace allowed. These
+//     are the fields to be specified:
+//       - Label (default 'Search'): This is the text to be displayed next to
+//         the icon on the button.
+//       - Tooltip (default 'Search'): This is the text to be displayd if the
+//         mouse is hovered over the button.
+//       - Icon (default 'html:&#x1F50D;'): This is the specification of the
+//         icon to display. See the icon=URL for Links for the syntax.
+//       - Search URL Function (default 'getSelfUrl'): Name of the function
+//         to call to retrieve the URL to go to for the results if the search
+//         query does not look like a domain.
+//         Input of this function is the contents of the SearchBox.
+//         Defaults to 'getSelfUrl' which returns '#'.
+//       - Domain Search URL Function (default 'getWithSchemaUrl'): Name of the
+//         function to call to retrieve the URL to go to for the results if
+//         the search query does look like a domain.
+//         Input of this function is the contents of the SearchBox.
+//         Defaults to 'getWithSchemaUrl' which returns '#'.
+//       Pre-defined functions are:
+//         - 'getSelfUrl': Returns '#' to not go to a different URL.
+//         - 'getWithSchemaUrl': Returns http://search-query to bypass results
+//             page.
+//         - 'getDuckUrl': Returns DuckDucGo search URL for the query.
+//         - 'getGoogleUrl': Returns Google search URL for the query.
+//         - 'getWikipediaUrl': Returns Wikipedia search URL for the query.
+//         - 'getYouTubeUrl': Returns YouTube search URL for the query.
+//         - 'getWaybackSearchUrl': Returns Wayback Machine Internet Archive
+//             search URL for the query.
+//         - 'getWaybackDomainUrl': Returns Wayback Machine Internet Archive
+//             search URL for the domain query.
+//         - 'getGoogleMapsUrl': Returns Google Maps search URL for the query.
+//         In JavaScript, additional functions can be defined in global scope
+//         (window object) and their names can be used here.
 // - !icondef name replacement: This is a special line that defines an icon
 //     definition. If a link uses 'icon=name', it will be replaced. This also
 //     works with the special words 'none', 'empty', 'html:x', etc.
 //     It is also allowed to write this with an '=' between name and
 //     replacement.
-// - !title name: This specifies the page title to be displayed.
 //
 // Each Link is specified on a single line as follows:
 //   - Indentation: The amount of indentation determines the nesting depth:
@@ -90,6 +124,8 @@ var Links = null;
 //         used to create an icon.
 //       If the value 'html:<x>' is used, the (short) text after the colon is
 //         used to create a <div>. The contents is scaled to a square.
+//         Specifically, this can be used to display unicode as in
+//         'html:&#x2661;' (white heart).
 //   - url=URL: Target of this link. If this exists, no URL is attempted to be
 //       recognized in the rest of the line. So this is also a way to override
 //       the URL (possibly to empty) if a URL occurs in the Name too.
@@ -272,6 +308,8 @@ for each block independently.
 
 var IconDefs = null;  //specified icondef declarations
 var PageTitle = null;  //specified title
+var SearchButtonDefs = null;  //specified search buttons
+
 
 // Parse the string in links.
 // Returns array of Link objects that have no parents (i.e. roots).
@@ -280,6 +318,7 @@ function parseLinks(links) {
 	// Parse the input lines
 	var allLinks = [];  //specified Link objects
 	IconDefs = {};
+	SearchButtonDefs = [];
 	var rootLinks = [];  //Link objects that are the roots
 	var openParents = [];  //currently open parents: 0 is root, 1 its child, etc
 	var openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
@@ -308,6 +347,15 @@ function parseLinks(links) {
 		if (m) {
 			// This is an icondef
 			IconDefs[m[1]] = m[2];  //save mapping
+			continue;
+		}
+
+		// Check if it is a search button definition
+		var m = line.match(/^\s*!search\s+(.+?)\s*$/i);
+		if (m) {
+			// This is a search button definition
+			var def = m[1].split(/\s*\|\s*/);  //split fields on '|', allowing whitespace
+			SearchButtonDefs.push(def);  //save button def
 			continue;
 		}
 
@@ -884,6 +932,11 @@ function getWithSchemaUrl(address) {
 	return url;
 }
 
+// This is a dummy search function, that can be used as a default.
+function getSelfUrl(intput) {
+	return '#';
+}
+
 // Returns a URL to perform a search for input with DuckDuckGo.
 function getDuckUrl(input) {
 	return 'https://duckduckgo.com?q=' + encodeURIComponent(input).replace(' ', '+');
@@ -1058,35 +1111,44 @@ function resolveLinks() {
 		console.log('Use standard example Links');
 		Links = `
 // See also example-links.js
+
 !title Example Favorites
 General
-	Search
-		DuckDuckGo https://duckduckgo.com
-		Google Maps icon=alt https://maps.google.com
-		Wikipedia https://www.wikipedia.org
-		YouTube https://www.youtube.com
-		Google Translate https://translate.google.com/?sl=auto&tl=en&op=translate
-		ChatGPT https://chatgpt.com
-		Wayback Machine https://web.archive.org/
-	Source
-		GitHub favorite-links https://github.com/anne-gert/favorite-links
-		& Direct icon=none https://html-preview.gihub.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
+    Search
+        DuckDuckGo https://duckduckgo.com
+        Google Maps icon=alt https://maps.google.com
+        Wikipedia https://www.wikipedia.org
+        YouTube https://www.youtube.com
+        Google Translate https://translate.google.com/?sl=auto&tl=en&op=translate
+        ChatGPT https://chatgpt.com
+        Wayback Machine https://web.archive.org/
+    Source
+        GitHub favorite-links https://github.com/anne-gert/favorite-links
+        & Direct icon=none https://html-preview.gihub.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
 Other
-	News
-		nu.nl https://nu.nl
-	Socials
-		Facebook https://www.facebook.com
-			Instagram https://www.instagram.com/
-			WhatsApp Web icon=alt:google https://web.whatsapp.com/
-		---
-		LinkedIn https://www.linkedin.com/
-	Firefox
-		Settings icon=firefox about:preferences target=manual
-			All Configuration icon=firefox about:config target=manual
-		All about:* icon=firefox about:about target=manual
+    News
+        nu.nl https://nu.nl
+    Socials
+        Facebook https://www.facebook.com
+            Instagram https://www.instagram.com/
+            WhatsApp Web https://web.whatsapp.com/
+        ---
+        LinkedIn https://www.linkedin.com/
+    Firefox
+        Settings icon=firefox about:preferences target=manual
+            All Configuration icon=firefox about:config target=manual
+        All about:* icon=firefox about:about target=manual
 
 // Icon definitions
 !icondef firefox    https://support.mozilla.org
+
+// Search button definitions
+//      Label     | Tooltip                            | Icon    | Search URL Function | DomainSearch URL Function
+!search           | Duck Duck Go                       | default | getDuckUrl
+!search           | Google                             | default | getGoogleUrl
+!search Wikipedia | Wikipedia                          | default | getWikipediaUrl
+!search YouTube   | YouTube                            | default | getYouTubeUrl
+!search Maps      | Google Maps                        | alt     | getGoogleMapsUrl
 		`;
 	}
 
@@ -1100,17 +1162,18 @@ function setPageTitle(title) {
 		titleCtl.innerText = title;
 }
 
-// Add events to buttons
+// Create search button to container and set up the event callback.
 // This also adds icons to the buttons. Do that here instead of with
 // static HTML, because I saw that the browser tries to render static
 // images before the JavaScript generated ones and I'd like to render
 // the links as soon as possible.
 // The displayed icon is specified by icon_url. If this is 'alt', the
 // target domain is derived from getSearchUrl().
-function initSearchButton(button_id, text, tooltip, search_box, icon_url, getSearchUrl, getDomainSearchUrl = getWithSchemaUrl) {
-	var btn = document.getElementById(button_id);
+function addSearchButton(container, search_box, label_text, tooltip, icon_url, getSearchUrl, getDomainSearchUrl) {
+	var btn = document.createElement('button');
 	if (btn) {
-		// Update button
+		// Configure the button
+		btn.className = 'button';
 		btn.onclick = function() {
 			processSearchInput(search_box, getSearchUrl, getDomainSearchUrl);
 			return false;  //skip default handling
@@ -1128,19 +1191,44 @@ function initSearchButton(button_id, text, tooltip, search_box, icon_url, getSea
 		// Add link text
 		var label = document.createElement('span');
 		label.className = 'label';
-		var textNode = document.createTextNode(text);
+		var textNode = document.createTextNode(label_text);
 		label.appendChild(textNode);
 		btn.appendChild(label);
+
+		// Add the button to the container
+		container.appendChild(btn);
 	}
 }
 
-function initSearchButtons(searchBox) {
-	initSearchButton('SearchButtonDuck', 'Search', 'Duck Duck Go', searchBox, 'default', getDuckUrl);
-	initSearchButton('SearchButtonGoogle', 'Search', 'Google', searchBox, 'default', getGoogleUrl);
-	initSearchButton('SearchButtonWikipedia', 'Wikipedia', 'Wikipedia', searchBox, 'default', getWikipediaUrl);
-	initSearchButton('SearchButtonYouTube', 'YouTube', 'YouTube', searchBox, 'default', getYouTubeUrl);
-	initSearchButton('SearchButtonWayback', 'Archive', 'Wayback Machine (Internet Archive)', searchBox, 'alt', getWaybackSearchUrl, getWaybackDomainUrl);
-	initSearchButton('SearchButtonGoogleMaps', 'Maps', 'Google Maps', searchBox, 'alt', getGoogleMapsUrl);
+function addSearchButtons(searchBox, container) {
+	if (SearchButtonDefs == null || SearchButtonDefs.length <= 0) {
+		// There are no search button definitions, create a default one.
+		SearchButtonDefs = [
+			[ 'Search', 'Google', 'default', 'getGoogleUrl' ],
+			[ ],
+		];
+	}
+
+	for (var i = 0; i < SearchButtonDefs.length; ++i) {
+		// Get the fields from the definition
+		var def = SearchButtonDefs[i];
+		var f = 0;
+		var label = def[f++] || 'Search';
+		var tooltip = def[f++] || 'Search';
+		var icon = def[f++] || 'html:&#x1F50D;';  //defaults to 'magnifying glass'
+		var getSearchUrl = window[def[f++] || 'getSelfUrl'];  //find object (=function) with this name
+		var getDomainSearchUrl = window[def[f++] || 'getWithSchemaUrl'];  //find object (=function) with this name
+
+		// Log the fields
+		console.log('addSearchButtons: label=\'' + label + '\'');
+		console.log('addSearchButtons: tooltip=\'' + tooltip + '\'');
+		console.log('addSearchButtons: icon=\'' + icon + '\'');
+		console.log('addSearchButtons: getSearchUrl=\'' + getSearchUrl + '\'');
+		console.log('addSearchButtons: getDomainSearchUrl=\'' + getDomainSearchUrl + '\'');
+
+		// Create the button
+		addSearchButton(container, searchBox, label, tooltip, icon, getSearchUrl, getDomainSearchUrl);
+	}
 }
 
 // Initialize the JavaScript on the page
@@ -1165,7 +1253,8 @@ function init() {
 	}
 
 	// Initialize the search buttons
-	initSearchButtons(searchBox);
+	var buttonBox = document.getElementById('SearchButtons');
+	addSearchButtons(searchBox, buttonBox);
 }
 window.onload = init;
 
@@ -1185,12 +1274,7 @@ resolveLinks();
 <form id="SearchForm" class="search-form">
 Search:
 <input id="SearchBox" name="q" type="text" size="40" class="box"/>
-<button id="SearchButtonDuck" class="button"></button>
-<button id="SearchButtonGoogle" class="button"></button>
-<button id="SearchButtonWikipedia" class="button"></button>
-<button id="SearchButtonYouTube" class="button"></button>
-<button id="SearchButtonWayback" class="button"></button>
-<button id="SearchButtonGoogleMaps" class="button"></button>
+<span id="SearchButtons"></span>
 </form>
 
 <div id="LinksBox"></div>
