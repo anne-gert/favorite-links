@@ -3,4 +3,5 @@
 *.zip
 *.pl
 .svn
+!example*
 
