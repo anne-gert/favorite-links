@@ -1045,7 +1045,10 @@ function resolveLinks() {
 		var url = m[1];
 		Links = '';
 		console.log('Links defined by URL \'' + url + '\'');
-		document.write('<script src="' + url + '"><\/script>');  //this URL should set Links
+		// To use document.write(), we must be inside the <body>.
+		// It should be loaded in blocking mode, because we need the
+		// value of the Links.
+		document.write('<script src="' + url + '" type="text/javascript"><\/script>');  //this URL should set Links
 	}
 
 	// Step 4) Now Links can be parsed when init() is called.
