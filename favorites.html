@@ -29,7 +29,7 @@ Alternatively the contents can be kept in the browser's LocalStorage.
 <title>Favorites</title>
 
 <script>
-var Links = 'Use links=url:http://domain/path/links.js in the URL.';
+var Links = null;
 
 // Link Syntax {{{
 
@@ -1014,10 +1014,10 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 // 1) If the links= query string is set on the URL, that contents is used.
 //    This can also be a url:xxx value.
 // 2) Otherwise if there is a 'links' key in LocalStorage, that value is used.
-// 3) If Links matches 'url:http://host/path/links.js', the contents of that
-//    file is downloaded and evaluated as script. It should set the Links
-//    variable.
-// 4) Links should now have a value that can be parsed as specified below.
+// 3) If Links matches 'url:url', the contents of that URL is downloaded and
+//    evaluated as script. It should set the Links variable.
+// 4) If Links is empty at this point, use a default contents.
+// 5) Links should now have a value that can be parsed as specified below.
 function resolveLinks() {
 	// Step 1) Check if Links is defined in the query string
 	var params = new URLSearchParams(location.search);
@@ -1039,19 +1039,58 @@ function resolveLinks() {
 	}
 
 	// Step 3) If Links is a URL, resolve it
-	var m = Links.match(/^\s*url\s*:\s*(\S+)\s*$/i);
-	if (m) {
-		// It specifies a URL, output code to download and evaluate it
-		var url = m[1];
-		Links = '';
-		console.log('Links defined by URL \'' + url + '\'');
-		// To use document.write(), we must be inside the <body>.
-		// It should be loaded in blocking mode, because we need the
-		// value of the Links.
-		document.write('<script src="' + url + '" type="text/javascript"><\/script>');  //this URL should set Links
+	if (Links != null) {
+		var m = Links.match(/^\s*url\s*:\s*(\S+)\s*$/i);
+		if (m) {
+			// It specifies a URL, output code to download and evaluate it
+			var url = m[1];
+			Links = '';
+			console.log('Links defined by URL \'' + url + '\'');
+			// To use document.write(), we must be inside the <body>.
+			// It should be loaded in blocking mode, because we need the
+			// value of the Links.
+			document.write('<script src="' + url + '" type="text/javascript"><\/script>');  //this URL should set Links
+		}
 	}
 
-	// Step 4) Now Links can be parsed when init() is called.
+	// Step 4) If Links is still empty, use a default contents.
+	if (Links == null || Links == "") {
+		console.log('Use standard example Links');
+		Links = `
+// See also example-links.js
+!title Example Favorites
+General
+	Search
+		DuckDuckGo https://duckduckgo.com
+		Google Maps icon=alt https://maps.google.com
+		Wikipedia https://www.wikipedia.org
+		YouTube https://www.youtube.com
+		Google Translate https://translate.google.com/?sl=auto&tl=en&op=translate
+		ChatGPT https://chatgpt.com
+		Wayback Machine https://web.archive.org/
+	Source
+		GitHub favorite-links https://github.com/anne-gert/favorite-links
+		& Direct icon=none https://html-preview.gihub.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
+Other
+	News
+		nu.nl https://nu.nl
+	Socials
+		Facebook https://www.facebook.com
+			Instagram https://www.instagram.com/
+			WhatsApp Web icon=alt:google https://web.whatsapp.com/
+		---
+		LinkedIn https://www.linkedin.com/
+	Firefox
+		Settings icon=firefox about:preferences target=manual
+			All Configuration icon=firefox about:config target=manual
+		All about:* icon=firefox about:about target=manual
+
+// Icon definitions
+!icondef firefox    https://support.mozilla.org
+		`;
+	}
+
+	// Step 5) Now Links can be parsed when init() is called.
 }
 
 // Function to set the title to the specified string.
