@@ -52,39 +52,44 @@ var Links = null;
 //     item above it.
 // - !title name: This specifies the page title to be displayed.
 // - !search fields: Define a search button to be displayed next to the search
-//     box. The fields are separated by '|', with whitespace allowed. These
+//     box. The fields are separated by '|' with whitespace allowed. These
 //     are the fields to be specified:
-//       - Label (default 'Search'): This is the text to be displayed next to
-//         the icon on the button.
-//       - Tooltip (default 'Search'): This is the text to be displayd if the
-//         mouse is hovered over the button.
-//       - Icon (default 'html:&#x1F50D;'): This is the specification of the
-//         icon to display. See the icon=URL for Links for the syntax.
-//       - Search URL Function (default 'getSelfUrl'): Name of the function
-//         to call to retrieve the URL to go to for the results if the search
-//         query does not look like a domain.
+//       - Identifier (mandatory): Unique name for this button definition.
+//       - Label (default: Identifier): This is the text to be displayed next
+//         to the icon on the button.
+//       - Tooltip (default: Identifier): This is the text to be displayd if
+//         the mouse is hovered over the button.
+//       - Icon (default: 'default' if SearchFunction exists, 'html:&#x1F50D;'
+//         (magnifying glass) if not): This is the specification of the icon to
+//         display. See the icon=URL for Links for the syntax.
+//     The following properties are derived:
+//       - Search URL Function: Function to call to retrieve the URL to go to
+//         for the results if the search query does not look like a domain.
 //         Input of this function is the contents of the SearchBox.
-//         Defaults to 'getSelfUrl' which returns '#'.
-//       - Domain Search URL Function (default 'getWithSchemaUrl'): Name of the
-//         function to call to retrieve the URL to go to for the results if
+//         This function is found by looking up the Identifier in
+//         SearchFunctions and then the 'text' sub-function.
+//         If no SearchFunction can be found, use the one with
+//         Identifier='default'.
+//       - Domain Search URL Function:
+//         Function to call to retrieve the URL to go to for the results if
 //         the search query does look like a domain.
 //         Input of this function is the contents of the SearchBox.
-//         Defaults to 'getWithSchemaUrl' which returns '#'.
-//       Pre-defined functions are:
-//         - 'getSelfUrl': Returns '#' to not go to a different URL.
-//         - 'getWithSchemaUrl': Returns http://search-query to bypass results
-//             page.
-//         - 'getDuckUrl': Returns DuckDucGo search URL for the query.
-//         - 'getGoogleUrl': Returns Google search URL for the query.
-//         - 'getWikipediaUrl': Returns Wikipedia search URL for the query.
-//         - 'getYouTubeUrl': Returns YouTube search URL for the query.
-//         - 'getWaybackSearchUrl': Returns Wayback Machine Internet Archive
-//             search URL for the query.
-//         - 'getWaybackDomainUrl': Returns Wayback Machine Internet Archive
-//             search URL for the domain query.
-//         - 'getGoogleMapsUrl': Returns Google Maps search URL for the query.
-//         In JavaScript, additional functions can be defined in global scope
-//         (window object) and their names can be used here.
+//         This function is found by looking up the Identifier in
+//         SearchFunctions and then the 'domain' sub-function.
+//         If no SearchFunction can be found, use the one with
+//         Identifier='default'.
+//       Pre-defined Identifiers (case-insensitive) are:
+//         - 'Duck': Use Duck Duck Go for text
+//         - 'Google': Use Google Search for text
+//         - 'Wikipedia': Use Wikipedia for text
+//         - 'YouTube': Use YouTube for text
+//         - 'Wayback': Use Wayback Machine Internet Arcive for both text and
+//           domains.
+//         - 'GoogleMaps': Use Google Maps for text
+//         - 'default': Text search returns null to ignore the search.
+//           Domain search returns the input as URL to bypass a results page.
+//         In JavaScript, SearchFunctions can be extended with additional
+//         functions and the new Identifiers can be used.
 // - !icondef name replacement: This is a special line that defines an icon
 //     definition. If a link uses 'icon=name', it will be replaced. This also
 //     works with the special words 'none', 'empty', 'html:x', etc.
@@ -180,7 +185,7 @@ https://www.w3schools.com/cssref/css_units.php makes the following recommendatio
 https://stackoverflow.com/questions/8785643/what-exactly-is-device-pixel-ratio describes the direct use of device-pixel-ratio in CSS:
 @media only screen and (-webkit-min-device-pixel-ratio: 1.5),
 	only screen and (min--moz-device-pixel-ratio: 1.5),
-	only screen and (-o-device-pixel-ratio: 3/2), 
+	only screen and (-o-device-pixel-ratio: 3/2),
 	only screen and (min-device-pixel-ratio: 1.5) {
 	... high-resolution screens ...
 }
@@ -190,7 +195,7 @@ for each block independently.
 */
 @media only screen and (-webkit-min-device-pixel-ratio: 1.5),
 	only screen and (min--moz-device-pixel-ratio: 1.5),
-	only screen and (-o-device-pixel-ratio: 3/2), 
+	only screen and (-o-device-pixel-ratio: 3/2),
 	only screen and (min-device-pixel-ratio: 1.5) {
 	/* high-resolution screens */
 	:root, body, input, button {
@@ -923,6 +928,37 @@ function getGoogleAltIconUrl(site_url) {
 
 // SearchBox related functions {{{
 
+// The search functions will be accessed by name (lower case identifier).
+// Every identifier has sub-keys for different functions.
+// A search function has the search query as input and should return a URL to
+// go to for the results.
+
+var SearchFunction = {
+	'duck' : {
+		'text'   : getTemplateUrl('https://duckduckgo.com?q=%urlinput'),
+	},
+	'google' : {
+		'text'   : getTemplateUrl('https://www.google.com/search?q=%urlinput'),
+	},
+	'wikipedia' : {
+		'text'   : getTemplateUrl('https://www.wikipedia.org/wiki/Special:Search?go=Go&search=%urlinput'),
+	},
+	'youtube' : {
+		'text'   : getTemplateUrl('https://www.youtube.com/results?search_query=%urlinput'),
+	},
+	'wayback' : {
+		'text'   : getWaybackSearchUrl,
+		'domain' : getWaybackDomainUrl,
+	},
+	'googlemaps' : {
+		'text'   : getTemplateUrl('https://maps.google.com/?q=%urlinput'),
+	},
+	'default' : {
+		'text'   : getNoUrl,
+		'domain' : getWithSchemaUrl,
+	},
+};
+
 // Return a URL to handle the address (ie beautify it to go to it).
 function getWithSchemaUrl(address) {
 	var url = address;
@@ -933,29 +969,22 @@ function getWithSchemaUrl(address) {
 }
 
 // This is a dummy search function, that can be used as a default.
-function getSelfUrl(intput) {
-	return '#';
+function getNoUrl(intput) {
+	return null;
 }
 
-// Returns a URL to perform a search for input with DuckDuckGo.
-function getDuckUrl(input) {
-	return 'https://duckduckgo.com?q=' + encodeURIComponent(input).replace(' ', '+');
-};
-
-// Returns a URL to perform a search for input with Google.
-function getGoogleUrl(input) {
-	return 'https://www.google.com/search?q=' + encodeURIComponent(input).replace(' ', '+');
-};
-
-// Returns a URL to perform a search for input with Wikipedia.
-function getWikipediaUrl(input) {
-	return 'https://www.wikipedia.org/wiki/Special:Search?go=Go&search=' + encodeURIComponent(input).replace(' ', '+');
-};
-
-// Returns a URL to perform a search for input with YouTube.
-function getYouTubeUrl(input) {
-	return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(input).replace(' ', '+');
-};
+// This function returns a functions that uses the template to construct a URL.
+// The template is a URL with the following placeholders:
+// - %input: Replaced with the supplied input value.
+// - %urlinput: Replaced with the URL-encoded input value.
+function getTemplateUrl(template) {
+	return function(input) {
+		var encoded_input = encodeURIComponent(input).replace(' ', '+');
+		return template
+			.replace('%input', input)
+			.replace('%urlinput', encoded_input);
+	};
+}
 
 // Returns a URL to perform a lookup for the domain with Wayback Machine.
 function getWaybackDomainUrl(domain) {
@@ -966,13 +995,9 @@ function getWaybackDomainUrl(domain) {
 // Returns a URL to perform a search for input with Wayback Machine.
 function getWaybackSearchUrl(input) {
 	var ts = getWaybackTimestamp();
-	return 'https://web.archive.org/web/' + ts + '/' + encodeURIComponent(input).replace(' ', '+');
+	var encoded_input = encodeURIComponent(input).replace(' ', '+');
+	return 'https://web.archive.org/web/' + ts + '/' + encoded_input;
 };
-
-// Returns a URL to perform a search for input on Google Maps
-function getGoogleMapsUrl(input) {
-	return 'https://maps.google.com/?q=' + encodeURIComponent(input).replace(' ', '+');
-}
 
 // Create a Wayback Machine timestamp that can be used in queries.
 function getWaybackTimestamp(date = new Date()) {
@@ -1051,7 +1076,11 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 			url = getSearchUrl(input);
 			console.log('Search \'' + url + '\'');
 		}
-		window.location.href = url;
+		if (url) {
+			window.location.href = url;
+		} else {
+			console.log('No URL to go to');
+		}
 	}
 }
 
@@ -1143,12 +1172,12 @@ Other
 !icondef firefox    https://support.mozilla.org
 
 // Search button definitions
-//      Label     | Tooltip                            | Icon    | Search URL Function | DomainSearch URL Function
-!search           | Duck Duck Go                       | default | getDuckUrl
-!search           | Google                             | default | getGoogleUrl
-!search Wikipedia | Wikipedia                          | default | getWikipediaUrl
-!search YouTube   | YouTube                            | default | getYouTubeUrl
-!search Maps      | Google Maps                        | alt     | getGoogleMapsUrl
+//      Identifier | Label  | Tooltip      | Icon
+!search Duck       | Search | Duck Duck Go |
+!search Google     | Search |              |
+!search Wikipedia  |        |              |
+!search YouTube    |        |              |
+!search GoogleMaps | Maps   | Google Maps  | alt
 		`;
 	}
 
@@ -1169,10 +1198,11 @@ function setPageTitle(title) {
 // the links as soon as possible.
 // The displayed icon is specified by icon_url. If this is 'alt', the
 // target domain is derived from getSearchUrl().
-function addSearchButton(container, search_box, label_text, tooltip, icon_url, getSearchUrl, getDomainSearchUrl) {
+function addSearchButton(container, search_box, button_id, label_text, tooltip, icon_url, getSearchUrl, getDomainSearchUrl) {
 	var btn = document.createElement('button');
 	if (btn) {
 		// Configure the button
+		btn.id = 'BtnSearch' + button_id;
 		btn.className = 'button';
 		btn.onclick = function() {
 			processSearchInput(search_box, getSearchUrl, getDomainSearchUrl);
@@ -1201,33 +1231,65 @@ function addSearchButton(container, search_box, label_text, tooltip, icon_url, g
 }
 
 function addSearchButtons(searchBox, container) {
-	if (SearchButtonDefs == null || SearchButtonDefs.length <= 0) {
-		// There are no search button definitions, create a default one.
-		SearchButtonDefs = [
-			[ 'Search', 'Google', 'default', 'getGoogleUrl' ],
-			[ ],
-		];
-	}
-
 	for (var i = 0; i < SearchButtonDefs.length; ++i) {
 		// Get the fields from the definition
 		var def = SearchButtonDefs[i];
 		var f = 0;
-		var label = def[f++] || 'Search';
-		var tooltip = def[f++] || 'Search';
-		var icon = def[f++] || 'html:&#x1F50D;';  //defaults to 'magnifying glass'
-		var getSearchUrl = window[def[f++] || 'getSelfUrl'];  //find object (=function) with this name
-		var getDomainSearchUrl = window[def[f++] || 'getWithSchemaUrl'];  //find object (=function) with this name
+
+		// Determine Identifier
+		var id = def[f++];
+		if (!id) continue;  //id is mandatory, ignore this entry if absent
+		var key = id.toLowerCase();  //lower case version
+
+		// Determine referenced Search URL Function
+		var getSearchUrl = SearchFunction[key]['text'];
+
+		// Determine referenced Domain Search URL Function
+		var getDomainSearchUrl = SearchFunction[key]['domain'];
+
+		// Determine Label
+		var label = def[f++] || id;
+
+		// Determine Tooltip
+		var tooltip = def[f++] || id;
+
+		// Determine Icon
+		var icon = def[f++];
+		if (!icon) {
+			if (getSearchUrl) {
+				// Search URL function is defined. This is
+				// needed to retrieve the 'default' icon.
+				icon = 'default';
+			} else {
+				// There is no Search URL function, use a
+				// standard magnifying glass icon.
+				icon = 'html:&#x1F50D;';
+			}
+		}
+
+		// Determine final Search URL Function
+		if (!getSearchUrl) {
+			// No Search Function, use default (assume it exists)
+			getSearchUrl = SearchFunction['default']['text'];
+		}
+
+		// Determine final Domain Search URL Function
+		if (!getDomainSearchUrl) {
+			// No Search Function, use default (assume it exists)
+			getDomainSearchUrl = SearchFunction['default']['domain'];
+		}
 
 		// Log the fields
-		console.log('addSearchButtons: label=\'' + label + '\'');
-		console.log('addSearchButtons: tooltip=\'' + tooltip + '\'');
-		console.log('addSearchButtons: icon=\'' + icon + '\'');
+		console.log('addSearchButtons: Identifier=\'' + id + '\'');
+		console.log('addSearchButtons: Label=\'' + label + '\'');
+		console.log('addSearchButtons: Tooltip=\'' + tooltip + '\'');
+		console.log('addSearchButtons: Icon=\'' + icon + '\'');
 		console.log('addSearchButtons: getSearchUrl=\'' + getSearchUrl + '\'');
 		console.log('addSearchButtons: getDomainSearchUrl=\'' + getDomainSearchUrl + '\'');
+		console.log(SearchFunction);
 
 		// Create the button
-		addSearchButton(container, searchBox, label, tooltip, icon, getSearchUrl, getDomainSearchUrl);
+		addSearchButton(container, searchBox, id, label, tooltip, icon, getSearchUrl, getDomainSearchUrl);
 	}
 }
 
@@ -1245,16 +1307,30 @@ function init() {
 	var container = document.getElementById('LinksBox');
 	outputItems(rootLinks, 1, container);
 
-	// Focus SearchBox
-	var searchBox = document.getElementById('SearchBox');
-	if (searchBox) {
-		searchBox.focus();
-		searchBox.select();
+	// Fill SearchForm
+	// Use a static input field, so that the browser retains its contents
+	// after going back to this page.
+	if (SearchButtonDefs != null && SearchButtonDefs.length > 0) {
+		// There are SearchButtens, fill SearchForm
+		console.log('There are ' + SearchButtonDefs.length + ' SearchButtonDefs');
+		// Focus SearchBox
+		var searchBox = document.getElementById('SearchBox');
+		if (searchBox) {
+			searchBox.focus();
+			searchBox.select();
+		}
+		// Initialize the search buttons
+		var buttonBox = document.getElementById('SearchButtons');
+		addSearchButtons(searchBox, buttonBox);
+	} else {
+		// No SearchButtons defined, hide SearchForm
+		console.log('There are no SearchButtonDefs');
+		var searchForm = document.getElementById('SearchForm');
+		if (searchForm) {
+			console.log('Hide SearchForm');
+			searchForm.style.display = 'none';
+		}
 	}
-
-	// Initialize the search buttons
-	var buttonBox = document.getElementById('SearchButtons');
-	addSearchButtons(searchBox, buttonBox);
 }
 window.onload = init;
 
