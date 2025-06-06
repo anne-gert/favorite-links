@@ -13,7 +13,7 @@ General
         Wayback Machine https://web.archive.org/
     Source
         GitHub favorite-links https://github.com/anne-gert/favorite-links
-        & Direct icon=none https://html-preview.gihub.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
+        & Direct icon=none https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
 Other
     News
         nu.nl https://nu.nl
