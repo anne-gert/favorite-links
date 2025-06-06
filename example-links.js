@@ -32,12 +32,12 @@ Other
 !icondef firefox    https://support.mozilla.org
 
 // Search button definitions
-//      Label     | Tooltip                            | Icon    | Search URL Function | DomainSearch URL Function
-!search           | Duck Duck Go                       | default | getDuckUrl
-!search           | Google                             | default | getGoogleUrl
-!search Wikipedia | Wikipedia                          | default | getWikipediaUrl
-!search YouTube   | YouTube                            | default | getYouTubeUrl
-!search Maps      | Google Maps                        | alt     | getGoogleMapsUrl
+//      Identifier | Label  | Tooltip      | Icon
+!search Duck       | Search | Duck Duck Go |
+!search Google     | Search |              |
+!search Wikipedia  |        |              |
+!search YouTube    |        |              |
+!search GoogleMaps | Maps   | Google Maps  | alt
 `;
 
 // vim: foldmethod=marker nowrap tabstop=4 expandtab
