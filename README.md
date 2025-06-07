@@ -13,3 +13,5 @@ https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/
 The contents can be supplied with the links=url:http://... query string.
 Alternatively the contents can be kept in the browser's LocalStorage.
 
+See [syntax.html](syntax.html) for a definition of the syntax for links.
+
