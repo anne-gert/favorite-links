@@ -1,23 +1,9 @@
 ﻿<!DOCTYPE html>
 <html>
 
-<!-- DESCRIPTION
-
-This is a generic file that builds a startpage like page from links supplied
-with the Links JavaScript variable.
-
-See below for the syntax of the Links definition.
-See function resolveLinks() for how to set the Links variable.
-
-This page will also be hosted on GitHub at:
-https://github.com/anne-gert/favorite-links
-
-This page' URL can be accessed directly via the URL
-https://raw.githubusercontent.com/anne-gert/anne-gert/favorite-links/favorites.html
-
-The contents can be supplied with the links=url:http://... query string.
-Alternatively the contents can be kept in the browser's LocalStorage.
-
+<!--
+For description of this file, see README.md
+For syntax description of Links, see syntax.html
 -->
 
 <head>
@@ -31,131 +17,6 @@ Alternatively the contents can be kept in the browser's LocalStorage.
 <script>
 var Links = null;
 
-// Link Syntax {{{
-
-// The list of Links to display are specified in the Links variable as a single
-// string that consists of lines. The Links form an hierarchical structure,
-// indicated by the line's indentation. Each Link can be a hyperlink and/or
-// contain sub-Items.
-// The Link-levels are called: Sections -> Blocks -> Items -> SubItems -> ...
-//
-// Each line should be one of the following:
-// - Empty lines: These are skipped.
-// - Lines that start with '//', ';' or '#' are comments and skipped too.
-// - If a line ends with {{{ or }}}, remove that. These tags are used to
-//     facilitate folding in vim.
-// - Link specification: See below.
-// - Separator: This is a line containing a name of 3 or more dashes ('---').
-//     It is rendered as an <hr class="separator"> and it closes all
-//     indentation levels higher than its own, except when its indentation
-//     level is lower than block, in which case, it assumes the level of the
-//     item above it.
-// - !title name: This specifies the page title to be displayed.
-// - !search fields: Define a search button to be displayed next to the search
-//     box. The fields are separated by '|' with whitespace allowed. These
-//     are the fields to be specified:
-//       - Identifier (mandatory): Unique name for this button definition.
-//       - Label (default: Identifier): This is the text to be displayed next
-//         to the icon on the button.
-//       - Tooltip (default: Identifier): This is the text to be displayd if
-//         the mouse is hovered over the button.
-//       - Icon (default: 'default' if SearchFunction exists, 'html:&#x1F50D;'
-//         (magnifying glass) if not): This is the specification of the icon to
-//         display. See the icon=URL for Links for the syntax.
-//     The following properties are derived:
-//       - Search URL Function: Function to call to retrieve the URL to go to
-//         for the results if the search query does not look like a domain.
-//         Input of this function is the contents of the SearchBox.
-//         This function is found by looking up the Identifier in
-//         SearchFunctions and then the 'text' sub-function.
-//         If no SearchFunction can be found, use the one with
-//         Identifier='default'.
-//       - Domain Search URL Function:
-//         Function to call to retrieve the URL to go to for the results if
-//         the search query does look like a domain.
-//         Input of this function is the contents of the SearchBox.
-//         This function is found by looking up the Identifier in
-//         SearchFunctions and then the 'domain' sub-function.
-//         If no SearchFunction can be found, use the one with
-//         Identifier='default'.
-//       Pre-defined Identifiers (case-insensitive) are:
-//         - 'Duck': Use Duck Duck Go for text
-//         - 'Google': Use Google Search for text
-//         - 'Wikipedia': Use Wikipedia for text
-//         - 'YouTube': Use YouTube for text
-//         - 'Wayback': Use Wayback Machine Internet Arcive for both text and
-//           domains.
-//         - 'GoogleMaps': Use Google Maps for text
-//         - 'default': Text search returns null to ignore the search.
-//           Domain search returns the input as URL to bypass a results page.
-//         In JavaScript, SearchFunctions can be extended with additional
-//         functions and the new Identifiers can be used.
-// - !icondef name replacement: This is a special line that defines an icon
-//     definition. If a link uses 'icon=name', it will be replaced. This also
-//     works with the special words 'none', 'empty', 'html:x', etc.
-//     It is also allowed to write this with an '=' between name and
-//     replacement.
-//
-// Each Link is specified on a single line as follows:
-//   - Indentation: The amount of indentation determines the nesting depth:
-//       - Tabs are replace by 8 spaces.
-//       - If the number of spaces is bigger than that of the previous line,
-//         increase nesting depth by 1.
-//       - If the number of spaces is less than that of the previous line,
-//         decrease the nesting depth to that of the most recent line that
-//         has an indentation that is strictly less than this line.
-//   - & continuation: If the item starts with '&', this item is regarded as
-//       a continuation of a group of items that are displayed on a single
-//       line.
-//   - Name: Arbitrary string of characters.
-//       If no name is given, the URL is used.
-//       If the name is '_' and an icon is provided, an empty label is used.
-//   - URL: A string of non-whitespace characters, beginning with 'scheme:'.
-//       If no URL is given, no hyperlink is created.
-//   - icon=URL: URL of the icon to use.
-//       If the value 'default' is used or no icon is given, the URL
-//         domain + 'favicon.ico' is used.
-//       If the value 'none' is used, no image is rendered.
-//       If the value 'empty' is used, an empty image is rendered.
-//       If the value 'alt:<method>?<url>' is used, don't use the website's
-//         icon (which may be inaccessible due to referer restrictions), but
-//         use the specified alternative method. Current methods are:
-//           - 'google': Use Google's database.
-//           - '*', 'any': Use any of the known methods. This is the default
-//               if ':<method>' is not specified.
-//         If '?<url>' is specified, that URL is used, otherwise the target
-//         URL is used as a base for the alternative method.
-//       If the value 'char:<x>' is used, the (short) text after the colon is
-//         used to create an icon.
-//       If the value 'html:<x>' is used, the (short) text after the colon is
-//         used to create a <div>. The contents is scaled to a square.
-//         Specifically, this can be used to display unicode as in
-//         'html:&#x2661;' (white heart).
-//   - url=URL: Target of this link. If this exists, no URL is attempted to be
-//       recognized in the rest of the line. So this is also a way to override
-//       the URL (possibly to empty) if a URL occurs in the Name too.
-//   - target=target: Open the URL in the defined target. Typical values are:
-//       - absent: Use same window (default)
-//       - _blank: Use a new window or tab.
-//       - manual: Display text to instruct the user to paste the user to
-//           manually paste the URL in the address bar.
-// If both Name and URL are not defined, the word 'LINK' is used.
-// The elements may be specified in any order on the line.
-//
-// Examples:
-//   Example                              : Just a string 'Example' without link
-//   http://example.com                   : Link with name http://example.com and icon http://example.com/favicon.ico
-//   Example http://example.com           : Same link with name 'Example'
-//   Example icon=none http://example.com : Same link, but no Icon
-//   Example:3 url=                       : Show 'Example:3' without link (although Name matches a URL)
-//   Submenu http://example.com           : Item 'Submenu' that is a link and has sub-Items.
-//     ...
-//   Submenu                              : Submenu without link
-//     ...
-//   http://example.com                   : Submenu with link that is used as name too
-//     ...
-
-//}}}
 </script>
 
 <style>

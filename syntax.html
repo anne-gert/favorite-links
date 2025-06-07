@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<title>Links Syntax</title>
+
+<style>
+:root, body {
+	font-family:  'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
+	font-size: 12pt;
+	color: #50a0ee; background: #2E323B;
+}
+code, pre {
+	background: #282828;
+	padding: 0.1em 0.4em;
+}
+dt {
+	color: #3060ff;
+	display: inline;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>Links Syntax</h1>
+
+<p>
+The list of Links to display are specified in the Links variable as a single
+string that consists of lines. The Links form an hierarchical structure,
+indicated by the line's indentation. Each Link can be a hyperlink and/or
+contain sub-Items.<br>
+The Link-levels are called: Sections -&gt; Blocks -&gt; Items -&gt; SubItems
+-&gt; ...
+</p>
+
+<p>
+Each line should be one of the following:
+<ul>
+  <li><dt>Empty lines</dt>: These are skipped.
+  <li>Lines that start with <code>//</code>, <code>;</code> or <code>#</code>
+      are comments and skipped too.
+  <li>If a line ends with <code>{{{</code> or <code>}}}</code>, remove that.
+      These tags are used to facilitate folding in vim.
+  <li>Link specification: See below.
+  <li><dt>Separator</dt>: This is a line containing a name of 3 or more dashes
+      (<code>---</code>).  It is rendered as an <code>&lt;hr
+      class="separator"&gt;</code> and it closes all indentation levels higher
+      than its own, except when its indentation level is lower than block, in
+      which case, it assumes the level of the item above it.
+  <li><code>!title name</code>: This specifies the page title to be displayed.
+  <li><code>!search fields</code>: Define a search button to be displayed next
+      to the search box. The fields are separated by <code>|</code> with
+      whitespace allowed.  These are the fields to be specified:
+      <ul>
+	<li><dt>Identifier</dt> (mandatory): Unique name for this button
+	    definition.
+	<li><dt>Label</dt> (default: Identifier): This is the text to be
+	    displayed next to the icon on the button.
+	<li><dt>Tooltip</dt> (default: Identifier): This is the text to be
+	    displayd if the mouse is hovered over the button.
+	<li><dt>Icon</dt> (default: <code>default</code> if SearchFunction
+	    exists, <code>html:&amp;#x1F50D;</code> (magnifying glass,
+	    &#x1F50D;) if not): This is the specification of the icon to
+	    display. See the icon=URL for Links for the syntax.
+      </ul>
+      The following properties are derived:
+      <ul>
+        <li><dt>Search URL Function</dt>:
+	    Function to call to retrieve the URL to go to for the results if
+	    the search query does not look like a domain.
+            Input of this function is the contents of the SearchBox.
+            This function is found by looking up the Identifier in
+            SearchFunctions and then the 'text' sub-function.
+            If no SearchFunction can be found, use the one with
+            Identifier='default'.
+        <li><dt>Domain Search URL Function</dt>:
+            Function to call to retrieve the URL to go to for the results if
+            the search query does look like a domain.
+            Input of this function is the contents of the SearchBox.
+            This function is found by looking up the Identifier in
+            SearchFunctions and then the 'domain' sub-function.
+            If no SearchFunction can be found, use the one with
+            Identifier='default'.
+      </ul>
+      Pre-defined Identifiers (case-insensitive) are:
+      <ul>
+        <li><code>Duck</code>: Use Duck Duck Go for text
+        <li><code>Google</code>: Use Google Search for text
+        <li><code>Wikipedia</code>: Use Wikipedia for text
+        <li><code>YouTube</code>: Use YouTube for text
+	<li><code>Wayback</code>: Use Wayback Machine Internet Arcive for both
+	    text and domains.
+        <li><code>GoogleMaps</code>: Use Google Maps for text
+	<li><code>default</code>: Text search returns null to ignore the
+	    search.  Domain search returns the input as URL to bypass a results
+	    page.
+      </ul>
+      In JavaScript, SearchFunctions can be extended with additional
+      functions and the new Identifiers can be used.
+  <li><code>!icondef name replacement</code>: This is a special line that
+      defines an icon definition. If a link uses <code>icon=name</code>, it
+      will be replaced.  This also works with the special words
+      <code>none</code>, <code>empty</code>, <code>html:x</code>, etc.  It is
+      also allowed to write this with an <code>=</code> between name and
+      replacement.
+</ul>
+</p>
+
+<p>
+Each Link is specified on a single line as follows:
+<ul>
+  <li><dt>Indentation</dt>: The amount of indentation determines the nesting
+      depth:
+      <ul>
+        <li>Tabs are replace by 8 spaces.
+	<li>If the number of spaces is bigger than that of the previous line,
+	    increase nesting depth by 1.
+	<li>If the number of spaces is less than that of the previous line,
+	    decrease the nesting depth to that of the most recent line that has
+	    an indentation that is strictly less than this line.
+      </ul>
+  <li><dt>&amp;</dt> continuation: If the item starts with <code>&amp;</code>,
+      this item is regarded as a continuation of a group of items that are
+      displayed on a single line.
+  <li><dt>Name</dt>: Arbitrary string of characters.
+      <ul>
+        <li>If no name is given, the URL is used.
+	<li>If the name is <code>_</code> and an icon is provided, an empty
+	    label is used.
+      </ul>
+  <li><dt>URL</dt>: A string of non-whitespace characters, beginning with
+      <code>scheme:</code>.
+      <ul>
+        <li>If no URL is given, no hyperlink is created.
+      </ul>
+  <li><dt>icon=URL</dt>: URL of the icon to use.
+      <ul>
+	<li>If the value <code>default</code> is used or no icon is given, the
+	    URL domain + <code>favicon.ico</code> is used.
+	<li>If the value <code>none</code> is used, no image is rendered.
+	<li>If the value <code>empty</code> is used, an empty image is
+	    rendered.
+	<li>If the value <code>alt:&lt;method&gt;?&lt;url&gt;</code> is used,
+	    don't use the website's icon (which may be inaccessible due to
+	    referer restrictions), but use the specified alternative method.
+	    Current methods are:
+	    <ul>
+              <li><code>google</code>: Use Google's database.
+	      <li><code>*</code>, <code>any</code>: Use any of the known
+		  methods. This is the default if <code>:&lt;method&gt;</code>
+		  is not specified.
+	    </ul>
+	    If <code>?&lt;url&gt;</code> is specified, that URL is used,
+	    otherwise the target URL is used as a base for the alternative
+	    method.
+	<li>If the value <code>char:&lt;x&gt;</code> is used, the (short) text
+	    after the colon is used to create an icon.
+	<li>If the value <code>html:&lt;x&gt;</code> is used, the (short) text
+	    after the colon is used to create a &lt;div&gt;. The contents is
+	    scaled to a square.  Specifically, this can be used to display
+	    unicode as in <code>html:&amp;#x2661;</code> (white heart,
+	    &#x2661;).
+      </ul>	
+  <li><dt>url=URL</dt>: Target of this link. If this exists, no URL is
+      attempted to be recognized in the rest of the line. So this is also a way
+      to override the URL (possibly to empty) if a URL occurs in the Name too.
+  <li><dt>target=target</dt>: Open the URL in the defined target. Typical values are:
+      <ul>
+        <li><code>absent</code>: Use same window (default)
+        <li><code>_blank</code>: Use a new window or tab.
+	<li><code>manual</code>: Display text to instruct the user to paste the
+	    user to manually paste the URL in the address bar.
+      </ul>	
+</ul>
+If both Name and URL are not defined, the word <code>LINK</code> is used.
+The elements may be specified in any order on the line.
+</p>
+
+<P>
+Examples:
+<pre>
+  Example                              : Just a string 'Example' without link
+  http://example.com                   : Link with name http://example.com and icon http://example.com/favicon.ico
+  Example http://example.com           : Same link with name 'Example'
+  Example icon=none http://example.com : Same link, but no Icon
+  Example:3 url=                       : Show 'Example:3' without link (although Name matches a URL)
+  Submenu http://example.com           : Item 'Submenu' that is a link and has sub-Items.
+    ...
+  Submenu                              : Submenu without link
+    ...
+  http://example.com                   : Submenu with link that is used as name too
+    ...
+</pre>
+</p>
+
+</body>
+
+</html>
+
