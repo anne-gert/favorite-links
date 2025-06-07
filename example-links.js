@@ -37,5 +37,5 @@ Other
 !search GoogleMaps | Maps   | Google Maps  | alt
 `;
 
-// vim: foldmethod=marker nowrap tabstop=4 expandtab
+// vim: foldmethod=marker nowrap shiftwidth=4 expandtab smartindent
 
