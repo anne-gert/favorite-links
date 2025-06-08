@@ -171,6 +171,10 @@ var DefaultLinks = `
 // See also example-links.txt
 
 !title Example Favorites
+
+!search Google
+!search Wikipedia
+
 General
     Search
         DuckDuckGo https://duckduckgo.com
@@ -180,6 +184,7 @@ General
     Source
         GitHub favorite-links https://github.com/anne-gert/favorite-links
         & Direct icon=none https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
+        Example Links https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=url:example-links.txt
 Other
     News
         nu.nl https://nu.nl
@@ -196,14 +201,6 @@ Other
 
 // Icon definitions
 !icondef firefox    https://support.mozilla.org
-
-// Search button definitions
-//      Identifier | Label  | Tooltip      | Icon
-!search Duck       | Search | Duck Duck Go |
-!search Google     | Search |              |
-!search Wikipedia  |        |              |
-!search YouTube    |        |              |
-!search GoogleMaps | Maps   | Google Maps  | alt
 `;
 
 // This function returns a Promise to set the Links content. It is intended to
@@ -224,10 +221,58 @@ function resolveLinks() {
 
 	// Step 1) Check if links is defined in the query string
 	var params = new URLSearchParams(location.search);
+	//console.log(params);
 	var v = params.get('links');
 	if (v) {
-		console.log('Use links= from the query string');
+		// By default, use this value for links
 		links = v;
+
+		// Check if we should adjust it
+		var matchThisUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
+		//console.log(matchThisUrl);
+		// Captured:
+		// 1: protocol
+		// 2: host ('html-preview.github.io')
+		// 3: path without query string or fragment
+		if (matchThisUrl) {  //the current URL is html-preview.github.io (or similar)
+			// This should have a url= parameter that contains the real location
+			var referredUrl = params.get('url');
+			//console.log(referredUrl);
+			var matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
+			//console.log(matchReferredUrl);
+			// Captured:
+			// 1: protocol
+			// 2: host ('github.com')
+			// 3: path without query string or fragment
+			if (matchReferredUrl) {  //the referred URL is on github.com
+				var matchTargetUrl = v.match(/^\s*url:(https?:\/\/)?(.*)/);
+				//console.log(matchTargetUrl);
+				// Captured:
+				// 1: protocol
+				// 2: rest
+				if (matchTargetUrl && !matchTargetUrl[1]) {  //links is a URL and is relative
+					// We are now in a situation where this page is hosted
+					// on GitHub and links tries to point to a .js file on
+					// there as well.
+					// If you have a normal link to github.com, you get the
+					// file inside the environment. If you use
+					// raw.githubusercontent.com, you get the content of the
+					// file, but with Content-Type=text/plain. When
+					// html-preview.github.io is used, it uses
+					// raw-githubcontent.com and serves it with
+					// Content-Type=text/html.
+					console.log('Fix links= relative URL for GitHub');
+					// To make this relative link work, it should be grafted
+					// onto githubusercontent.
+					var matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
+					//console.log(matchReferredPath);
+					// Captured:
+					// 1: directory
+					// 2: filename (everything after last '/')
+					links = 'url:' + matchReferredUrl[1] + 'raw.githubusercontent.com' + matchReferredPath[1] + matchTargetUrl[2];
+				}
+			}
+		}
 
 	} else {
 		// Step 2) Check if links is defined in LocalStorage
