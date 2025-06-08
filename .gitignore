@@ -1,5 +1,5 @@
 # Exclude most files
-*.js
+*.txt
 *.zip
 *.pl
 .svn

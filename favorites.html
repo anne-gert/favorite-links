@@ -14,11 +14,6 @@ For syntax description of Links, see syntax.html
 
 <title>Favorites</title>
 
-<script>
-var Links = null;
-
-</script>
-
 <style>
 /* CSS styles {{{ */
 
@@ -170,6 +165,129 @@ for each block independently.
 </style>
 
 <script>
+// Loading Links {{{
+
+var DefaultLinks = `
+// See also example-links.txt
+
+!title Example Favorites
+General
+    Search
+        DuckDuckGo https://duckduckgo.com
+        Google Maps icon=alt https://maps.google.com
+        Wikipedia https://www.wikipedia.org
+        YouTube https://www.youtube.com
+    Source
+        GitHub favorite-links https://github.com/anne-gert/favorite-links
+        & Direct icon=none https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
+Other
+    News
+        nu.nl https://nu.nl
+    Socials
+        Facebook https://www.facebook.com
+            Instagram https://www.instagram.com/
+            WhatsApp Web https://web.whatsapp.com/
+        ---
+        LinkedIn https://www.linkedin.com/
+    Firefox
+        Settings icon=firefox about:preferences target=manual
+            All Configuration icon=firefox about:config target=manual
+        All about:* icon=firefox about:about target=manual
+
+// Icon definitions
+!icondef firefox    https://support.mozilla.org
+
+// Search button definitions
+//      Identifier | Label  | Tooltip      | Icon
+!search Duck       | Search | Duck Duck Go |
+!search Google     | Search |              |
+!search Wikipedia  |        |              |
+!search YouTube    |        |              |
+!search GoogleMaps | Maps   | Google Maps  | alt
+`;
+
+// This function returns a Promise to set the Links content. It is intended to
+// be called as soon as possible, so that a download may start.
+// When the page is ready to use the result, it can wait for the Promise and
+// use it.
+//
+// The contents of Links can be obtained in the following way:
+// 1) If the links= query string is set on the URL, that contents is used.
+//    This can also be a url:xxx value.
+// 2) Otherwise if there is a 'links' key in LocalStorage, that value is used.
+// 3) If Links matches 'url:url', the contents of that URL is downloaded and
+//    evaluated as script. It should set the Links variable.
+// 4) If Links is empty at this point, use a default contents.
+// 5) Links should now have a value that can be parsed as specified below.
+function resolveLinks() {
+	var links = null;
+
+	// Step 1) Check if links is defined in the query string
+	var params = new URLSearchParams(location.search);
+	var v = params.get('links');
+	if (v) {
+		console.log('Use links= from the query string');
+		links = v;
+
+	} else {
+		// Step 2) Check if links is defined in LocalStorage
+		if (localStorage) {
+			// LocalStorage is available, use persistent value
+			var v = localStorage.getItem('links');
+			if (v) {
+				console.log('Use links from the LocalStorage');
+				links = v;
+			}
+		}
+	}
+
+	// Step 3) If links is a URL, resolve it
+	if (links != null) {
+		var m = links.match(/^\s*url\s*:\s*(\S+)\s*$/i);
+		if (m) {
+			// It specifies a URL, retrieve it
+			var url = m[1];
+			console.log('Links defined by URL \'' + url + '\'');
+			links = new Promise((resolveFunc, rejectFunc) => {
+				var xhr = new XMLHttpRequest();
+				xhr.open('GET', url);
+				xhr.onreadystatechange = function() {
+					if (this.readyState == 4) {
+						// Request has been handled
+						if (this.status == 200) {
+							// Success
+							console.log('Loaded links successfully');
+							resolveFunc(xhr.responseText);
+						} else {
+							// Failed
+							console.log('Failed to load links, use standard example links');
+							resolveFunc(DefaultLinks);
+						}
+					}
+				};
+				xhr.send();  //send the request
+			});
+		} else {
+			// It is not a URL
+			links = Promise.resolve(links);  //make it into a Promise
+		}
+	}
+
+	// Step 4) If links is still empty, use a default contents.
+	if (links == null) {
+		console.log('Use standard example links');
+		links = Promise.resolve(DefaultLinks);
+	}
+
+	// Step 5) Now links can be parsed when init() is called.
+	return links;  //return the Promise for later consumption
+}
+
+// Start resolving the links here.
+var LinksPromise = resolveLinks();
+
+// }}}
+
 // Parsing Links {{{
 
 var IconDefs = null;  //specified icondef declarations
@@ -188,7 +306,7 @@ function parseLinks(links) {
 	var rootLinks = [];  //Link objects that are the roots
 	var openParents = [];  //currently open parents: 0 is root, 1 its child, etc
 	var openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
-	var lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
+	var lines = links.split(/\r?\n\r?/);  //lines with Link specifications
 	for (var i = 0; i < lines.length; ++i) {
 		var line = lines[i];
 		//console.log('Line=\'' + line + '\'');
@@ -949,99 +1067,6 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 
 // Initialization {{{
 
-// This function should be called at the top of the body.
-// It is responsible for ultimately setting the Links variable as described at
-// the top of this file.
-//
-// The contents of Links can be obtained in the following way:
-// 1) If the links= query string is set on the URL, that contents is used.
-//    This can also be a url:xxx value.
-// 2) Otherwise if there is a 'links' key in LocalStorage, that value is used.
-// 3) If Links matches 'url:url', the contents of that URL is downloaded and
-//    evaluated as script. It should set the Links variable.
-// 4) If Links is empty at this point, use a default contents.
-// 5) Links should now have a value that can be parsed as specified below.
-function resolveLinks() {
-	// Step 1) Check if Links is defined in the query string
-	var params = new URLSearchParams(location.search);
-	var v = params.get('links');
-	if (v) {
-		console.log('Use links= from the query string');
-		Links = v;
-
-	} else {
-		// Step 2) Check if Links is defined in LocalStorage
-		if (localStorage) {
-			// LocalStorage is available, use persistent value
-			var v = localStorage.getItem('links');
-			if (v) {
-				console.log('Use links from the LocalStorage');
-				Links = v;
-			}
-		}
-	}
-
-	// Step 3) If Links is a URL, resolve it
-	if (Links != null) {
-		var m = Links.match(/^\s*url\s*:\s*(\S+)\s*$/i);
-		if (m) {
-			// It specifies a URL, output code to download and evaluate it
-			var url = m[1];
-			Links = '';
-			console.log('Links defined by URL \'' + url + '\'');
-			// To use document.write(), we must be inside the <body>.
-			// It should be loaded in blocking mode, because we need the
-			// value of the Links.
-			document.write('<script src="' + url + '" type="text/javascript"><\/script>');  //this URL should set Links
-		}
-	}
-
-	// Step 4) If Links is still empty, use a default contents.
-	if (Links == null || Links == "") {
-		console.log('Use standard example Links');
-		Links = `
-// See also example-links.js
-
-!title Example Favorites
-General
-    Search
-        DuckDuckGo https://duckduckgo.com
-        Google Maps icon=alt https://maps.google.com
-        Wikipedia https://www.wikipedia.org
-        YouTube https://www.youtube.com
-    Source
-        GitHub favorite-links https://github.com/anne-gert/favorite-links
-        & Direct icon=none https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
-Other
-    News
-        nu.nl https://nu.nl
-    Socials
-        Facebook https://www.facebook.com
-            Instagram https://www.instagram.com/
-            WhatsApp Web https://web.whatsapp.com/
-        ---
-        LinkedIn https://www.linkedin.com/
-    Firefox
-        Settings icon=firefox about:preferences target=manual
-            All Configuration icon=firefox about:config target=manual
-        All about:* icon=firefox about:about target=manual
-
-// Icon definitions
-!icondef firefox    https://support.mozilla.org
-
-// Search button definitions
-//      Identifier | Label  | Tooltip      | Icon
-!search Duck       | Search | Duck Duck Go |
-!search Google     | Search |              |
-!search Wikipedia  |        |              |
-!search YouTube    |        |              |
-!search GoogleMaps | Maps   | Google Maps  | alt
-		`;
-	}
-
-	// Step 5) Now Links can be parsed when init() is called.
-}
-
 // Function to set the title to the specified string.
 function setPageTitle(title) {
 	var titleCtl = document.getElementById('title');
@@ -1153,42 +1178,47 @@ function addSearchButtons(searchBox, container) {
 
 // Initialize the JavaScript on the page
 function init() {
-	// Parse Links
-	var rootLinks = parseLinks(Links);
+	LinksPromise.then((links) => {
+		// Links have been resolved
+		//console.log(links);
 
-	// Set page title
-	if (PageTitle) {
-		setPageTitle(PageTitle);
-	}
+		// Parse Links
+		var rootLinks = parseLinks(links);
 
-	// Render Links
-	var container = document.getElementById('LinksBox');
-	outputItems(rootLinks, 1, container);
-
-	// Fill SearchForm
-	// Use a static input field, so that the browser retains its contents
-	// after going back to this page.
-	if (SearchButtonDefs != null && SearchButtonDefs.length > 0) {
-		// There are SearchButtens, fill SearchForm
-		console.log('There are ' + SearchButtonDefs.length + ' SearchButtonDefs');
-		// Focus SearchBox
-		var searchBox = document.getElementById('SearchBox');
-		if (searchBox) {
-			searchBox.focus();
-			searchBox.select();
+		// Set page title
+		if (PageTitle) {
+			setPageTitle(PageTitle);
 		}
-		// Initialize the search buttons
-		var buttonBox = document.getElementById('SearchButtons');
-		addSearchButtons(searchBox, buttonBox);
-	} else {
-		// No SearchButtons defined, hide SearchForm
-		console.log('There are no SearchButtonDefs');
-		var searchForm = document.getElementById('SearchForm');
-		if (searchForm) {
-			console.log('Hide SearchForm');
-			searchForm.style.display = 'none';
+
+		// Render links
+		var container = document.getElementById('LinksBox');
+		outputItems(rootLinks, 1, container);
+
+		// Fill SearchForm
+		// Use a static input field, so that the browser retains its contents
+		// after going back to this page.
+		if (SearchButtonDefs != null && SearchButtonDefs.length > 0) {
+			// There are SearchButtens, fill SearchForm
+			console.log('There are ' + SearchButtonDefs.length + ' SearchButtonDefs');
+			// Focus SearchBox
+			var searchBox = document.getElementById('SearchBox');
+			if (searchBox) {
+				searchBox.focus();
+				searchBox.select();
+			}
+			// Initialize the search buttons
+			var buttonBox = document.getElementById('SearchButtons');
+			addSearchButtons(searchBox, buttonBox);
+		} else {
+			// No SearchButtons defined, hide SearchForm
+			console.log('There are no SearchButtonDefs');
+			var searchForm = document.getElementById('SearchForm');
+			if (searchForm) {
+				console.log('Hide SearchForm');
+				searchForm.style.display = 'none';
+			}
 		}
-	}
+	});
 }
 window.onload = init;
 
@@ -1198,10 +1228,6 @@ window.onload = init;
 </head>
 
 <body>
-
-<script>
-resolveLinks();
-</script>
 
 <h1 id="title">Favorites</h1>
 
