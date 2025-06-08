@@ -172,9 +172,6 @@ var DefaultLinks = `
 
 !title Example Favorites
 
-!search Google
-!search Wikipedia
-
 General
     Search
         DuckDuckGo https://duckduckgo.com
@@ -184,7 +181,7 @@ General
     Source
         GitHub favorite-links https://github.com/anne-gert/favorite-links
         & Direct icon=none https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
-        Example Links https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=url:example-links.txt
+        Example Links icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=url:example-links.txt
 Other
     News
         nu.nl https://nu.nl
@@ -201,6 +198,15 @@ Other
 
 // Icon definitions
 !icondef firefox    https://support.mozilla.org
+!icondef github     https://github.com
+
+// Search button definitions
+//      Identifier   | Label  | Tooltip | Icon
+!search Duck Duck Go | Search |
+!search Google       | Search |
+!search Wikipedia
+!search YouTube
+!search Google Maps  | Maps   |         | alt
 `;
 
 // This function returns a Promise to set the Links content. It is intended to
@@ -958,7 +964,7 @@ function getGoogleAltIconUrl(site_url) {
 // go to for the results.
 
 var SearchFunction = {
-	'duck' : {
+	'duck duck go' : {
 		'text'   : getTemplateUrl('https://duckduckgo.com?q=%urlinput'),
 	},
 	'google' : {
@@ -970,11 +976,11 @@ var SearchFunction = {
 	'youtube' : {
 		'text'   : getTemplateUrl('https://www.youtube.com/results?search_query=%urlinput'),
 	},
-	'wayback' : {
+	'wayback machine' : {
 		'text'   : getWaybackSearchUrl,
 		'domain' : getWaybackDomainUrl,
 	},
-	'googlemaps' : {
+	'google maps' : {
 		'text'   : getTemplateUrl('https://maps.google.com/?q=%urlinput'),
 	},
 	'default' : {
