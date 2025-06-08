@@ -1,6 +1,7 @@
 // For the syntax description, see syntax.html.
 
 !title Example Favorites
+
 General
     Search
         DuckDuckGo https://duckduckgo.com
@@ -10,6 +11,7 @@ General
     Source
         GitHub favorite-links https://github.com/anne-gert/favorite-links
         & Direct icon=none https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
+        Example Links icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=url:example-links.txt
 Other
     News
         nu.nl https://nu.nl
@@ -26,15 +28,15 @@ Other
 
 // Icon definitions
 !icondef firefox    https://support.mozilla.org
+!icondef github     https://github.com
 
 // Search button definitions
-//      Identifier | Label  | Tooltip      | Icon
-!search Duck       | Search | Duck Duck Go |
-!search Google     | Search |              |
-!search Wikipedia  |        |              |
-!search YouTube    |        |              |
-!search GoogleMaps | Maps   | Google Maps  | alt
-
+//      Identifier   | Label  | Tooltip | Icon
+!search Duck Duck Go | Search |
+!search Google       | Search |
+!search Wikipedia
+!search YouTube
+!search Google Maps  | Maps   |         | alt
 
 // vim: foldmethod=marker nowrap shiftwidth=4 expandtab smartindent
 
