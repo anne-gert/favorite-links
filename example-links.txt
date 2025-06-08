@@ -1,6 +1,5 @@
-// For the syntax description, see favorites.html.
+// For the syntax description, see syntax.html.
 
-var Links = `
 !title Example Favorites
 General
     Search
@@ -35,7 +34,7 @@ Other
 !search Wikipedia  |        |              |
 !search YouTube    |        |              |
 !search GoogleMaps | Maps   | Google Maps  | alt
-`;
+
 
 // vim: foldmethod=marker nowrap shiftwidth=4 expandtab smartindent
 
