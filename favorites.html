@@ -341,20 +341,21 @@ var LinksPromise = resolveLinks();
 
 // Parsing Links {{{
 
-var IconDefs = null;  //specified icondef declarations
+// Global variables in which parseLinks() puts its output.
 var PageTitle = null;  //specified title
-var SearchButtonDefs = null;  //specified search buttons
+var SearchButtonDefs = null;  //specified search button declarations
+var RootLinks = null;  //array of Link objects that have no parents (i.e. are roots)
+var IconDefs = null;  //specified icondef declarations
 
 
-// Parse the string in links.
-// Returns array of Link objects that have no parents (i.e. roots).
-// Also sets the IconDefs and PageTitle global variables.
+// Parse the string in links and fills the global variables above.
 function parseLinks(links) {
 	// Parse the input lines
 	var allLinks = [];  //specified Link objects
-	IconDefs = {};
+	PageTitle = null;
 	SearchButtonDefs = [];
-	var rootLinks = [];  //Link objects that are the roots
+	RootLinks = [];
+	IconDefs = {};
 	var openParents = [];  //currently open parents: 0 is root, 1 its child, etc
 	var openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
 	var lines = links.split(/\r?\n\r?/);  //lines with Link specifications
@@ -480,7 +481,7 @@ function parseLinks(links) {
 				openParents[level].subs.push(link);
 			} else {
 				// It has no parent
-				rootLinks.push(link);
+				RootLinks.push(link);
 			}
 			// Add this link as open parent
 			openParentIndentSpaces.push(indent);
@@ -494,9 +495,7 @@ function parseLinks(links) {
 	// Log all links
 	//for (var i = 0; i < allLinks.length; ++i) console.log('Link=' + allLinks[i]);
 	// Log all roots
-	//for (var i = 0; i < rootLinks.length; ++i) console.log('RootLink=' + rootLinks[i]);
-
-	return rootLinks;
+	//for (var i = 0; i < RootLinks.length; ++i) console.log('RootLink=' + RootLinks[i]);
 }
 
 // }}}
@@ -1229,12 +1228,12 @@ function addSearchButtons(searchBox, container) {
 
 // Initialize the JavaScript on the page
 function init() {
-	LinksPromise.then((links) => {
+	LinksPromise.then((value) => {
 		// Links have been resolved
-		//console.log(links);
+		//console.log(value);
 
 		// Parse Links
-		var rootLinks = parseLinks(links);
+		parseLinks(value);
 
 		// Set page title
 		if (PageTitle) {
@@ -1243,7 +1242,7 @@ function init() {
 
 		// Render links
 		var container = document.getElementById('LinksBox');
-		outputItems(rootLinks, 1, container);
+		outputItems(RootLinks, 1, container);
 
 		// Fill SearchForm
 		// Use a static input field, so that the browser retains its contents
