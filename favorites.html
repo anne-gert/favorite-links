@@ -17,8 +17,8 @@ For syntax description of Links, see syntax.html
 <style>
 /* CSS styles {{{ */
 
-:root, body, input, button {
-	font-family:  'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
+:root, body, input, textarea, button {
+	font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
 	font-size: 12pt;
 }
 /*
@@ -161,13 +161,67 @@ for each block independently.
 	}
 }
 
+#SettingsIcon {
+	position: absolute;
+	top: 10px; right: 10px;
+	font-size: 200%;
+	cursor: pointer;
+}
+#SettingsContainer {
+	width: 95%;
+}
+#SettingsText {
+	width: 100%;
+	height: 47em;
+	resize: both;
+	overflow: scroll;
+	color: #dddddd; background: #2E323B;
+	font-family: monospace;
+}
+.button-bar {
+	text-align: right;
+}
+#SettingsPanel {
+	display: none;
+	height: 50em;
+}
+#SettingsPanel.show {
+	display: block;
+}
+#SettingsPanel.to-show {
+	animation: settings-panel-slider 0.7s ease;
+	display: block;
+}
+#SettingsPanel.to-hide {
+	animation: settings-panel-slider 0.7s ease reverse;
+	display: block;
+}
+@keyframes settings-panel-slider {
+	0% {
+		transform: scaleY(0);
+		transform-origin: top;
+		height: 0em;
+	}
+	100% {
+		transform: scaleY(1);
+		transform-origin: top;
+		height: 50em;
+	}
+}
+
 /* }}} */
 </style>
 
 <script>
-// Loading Links {{{
+// Some constants {{{
 
-var DefaultLinks = `
+const UNICODE_ANGRY_FACE = '\u{1F620}';  //angry face
+const UNICODE_POUTING_FACE = '\u{1F621}';  //red angry face
+const UNICODE_FACE_WITH_LOOK_OF_TRIUMPH = '\u{1F624}';  //steamy nose angry face
+const UNICODE_SERIOUS_FACE_WITH_SYMBOLS_COVERING_MOUTH = '\u{1F92C}';  //red swearing face
+const UNICODE_GEARS = '\u{2699}';  //gearsh wheel
+
+const DefaultLinks = `
 // See also example-links.txt
 
 !title Example Favorites
@@ -208,6 +262,10 @@ Other
 !search YouTube
 !search Google Maps  | Maps   |         | alt
 `;
+
+// }}}
+
+// Loading Links {{{
 
 // This function returns a Promise to set the Links content. It is intended to
 // be called as soon as possible, so that a download may start.
@@ -1057,11 +1115,6 @@ function getWaybackTimestamp(date = new Date()) {
 	return timestamp;
 }
 
-var UNICODE_ANGRY_FACE = '\u{1F620}';  //angry face
-var UNICODE_POUTING_FACE = '\u{1F621}';  //red angry face
-var UNICODE_FACE_WITH_LOOK_OF_TRIUMPH = '\u{1F624}';  //steamy nose angry face
-var UNICODE_SERIOUS_FACE_WITH_SYMBOLS_COVERING_MOUTH = '\u{1F92C}';  //red swearing face
-
 var EmptySearchCounter = 0;
 
 // Process search input.
@@ -1119,7 +1172,7 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 
 // Function to set the title to the specified string.
 function setPageTitle(title) {
-	var titleCtl = document.getElementById('title');
+	var titleCtl = document.getElementById('Title');
 	if (titleCtl)
 		titleCtl.innerText = title;
 }
@@ -1226,14 +1279,74 @@ function addSearchButtons(searchBox, container) {
 	}
 }
 
-// Initialize the JavaScript on the page
-function init() {
-	LinksPromise.then((value) => {
-		// Links have been resolved
-		//console.log(value);
+// Set up the events for the settings panel.
+function initSettingsPanel() {
+	var iconSettings = document.getElementById('SettingsIcon');
+	var pnlSettings = document.getElementById('SettingsPanel');
+	var txtSettings = document.getElementById('SettingsText');
+	var btnSave = document.getElementById('BtnSaveSettings');
+	var btnCancel = document.getElementById('BtnCancelSettings');
+	var visible = false;
+	var showSettings = function() {
+		var text = 'UNKNOWN';
+		if (localStorage) {
+			text = localStorage.getItem('links');
+		}
+		txtSettings.value = text;
+		// Slide to visible
+		pnlSettings.classList.add('to-show');
+		pnlSettings.onanimationend = function() {
+			pnlSettings.classList.add('show');
+			pnlSettings.classList.remove('to-show');
+		};
+		visible = true;
+	};
+	var hideSettings = function(save) {
+		var text;
+		if (save) {
+			console.log('Save settings');
+			text = txtSettings.value;
+			if (text.match(/^\s*$/)) {
+				localStorage.removeItem('links');
+			} else {
+				localStorage.setItem('links', text);
+			}
+		}
+		// slide to hidden
+		pnlSettings.classList.add('to-hide');
+		pnlSettings.onanimationend = function() {
+			pnlSettings.classList.remove('show');
+			pnlSettings.classList.remove('to-hide');
+			if (save) {
+				console.log('Reload page');
+				processLinks(text);
+			}
+		};
+		visible = false;
+	};
+	if (iconSettings && pnlSettings) {
+		iconSettings.onclick = function() {
+			if (visible) hideSettings(false); else showSettings();
+		};
+	}
+	if (btnSave) {
+		btnSave.onclick = function() {
+			if (visible) hideSettings(true);
+			return false;  //stop default button action
+		};
+	}
+	if (btnCancel) {
+		btnCancel.onclick = function() {
+			if (visible) hideSettings(false);
+			return false;  //stop default button action
+		};
+	}
+}
 
-		// Parse Links
-		parseLinks(value);
+// From the links configuration, parse its content and display it.
+function processLinks(links) {
+		// Parse links
+		parseLinks(links);
 
 		// Set page title
 		if (PageTitle) {
@@ -1242,6 +1355,7 @@ function init() {
 
 		// Render links
 		var container = document.getElementById('LinksBox');
+		container.textContent = '';
 		outputItems(RootLinks, 1, container);
 
 		// Fill SearchForm
@@ -1258,6 +1372,7 @@ function init() {
 			}
 			// Initialize the search buttons
 			var buttonBox = document.getElementById('SearchButtons');
+			buttonBox.textContent = '';
 			addSearchButtons(searchBox, buttonBox);
 		} else {
 			// No SearchButtons defined, hide SearchForm
@@ -1268,6 +1383,22 @@ function init() {
 				searchForm.style.display = 'none';
 			}
 		}
+}
+
+// Initialize the JavaScript on the page
+function init() {
+	initSettingsPanel();
+
+	LinksPromise.then((value) => {
+		// Links have been resolved
+		//console.log(value);
+		if (localStorage) {
+			// LocalStorage is available, use persistent value
+			localStorage.setItem('links', value);
+		}
+
+		// Process the links
+		processLinks(value);
 	});
 }
 window.onload = init;
@@ -1279,7 +1410,22 @@ window.onload = init;
 
 <body>
 
-<h1 id="title">Favorites</h1>
+<h1 id="Title">Favorites</h1>
+
+<span id="SettingsIcon">&#x2699;</span>
+
+<div id="SettingsPanel">
+<form id="SettingsForm">
+<div id="SettingsContainer">
+<textarea id="SettingsText" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Settings"></textarea>
+<div class="button-bar">
+<button id="BtnSaveSettings" class="button">Save</button>
+<button id="BtnCancelSettings" class="button">Cancel</button>
+</div>
+</div>
+</form>
+<hr>
+</div>
 
 <form id="SearchForm" class="search-form">
 Search:
