@@ -219,7 +219,9 @@ const UNICODE_ANGRY_FACE = '\u{1F620}';  //angry face
 const UNICODE_POUTING_FACE = '\u{1F621}';  //red angry face
 const UNICODE_FACE_WITH_LOOK_OF_TRIUMPH = '\u{1F624}';  //steamy nose angry face
 const UNICODE_SERIOUS_FACE_WITH_SYMBOLS_COVERING_MOUTH = '\u{1F92C}';  //red swearing face
-const UNICODE_GEARS = '\u{2699}';  //gearsh wheel
+const UNICODE_BLACK_DOWN_POINTING_TRIANGLE = '\u{25BC}';
+const UNICODE_BLACK_RIGHT_POINTING_TRIANGLE = '\u{25B6}';
+const UNICODE_GEARS = '\u{2699}';  //gears wheel
 
 const DefaultLinks = `
 // See also example-links.txt
@@ -652,12 +654,12 @@ function outputItem(link, level, container, parentPath) {
 					console.log('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
 					var vars = {
 						'true': {  //expanded
-							'icon': '\u25bc',  //'click to collapse' icon (U=25BC is black down-pointing triangle)
+							'icon': UNICODE_BLACK_DOWN_POINTING_TRIANGLE,  //'click to collapse' icon
 							'display': 'block',  //show children
 							'className': 'collapse-icon'
 						},
 						'false': {  //collapsed
-							'icon': '\u25b6',  //'click to expand' icon (U+25B6 is black right-pointing triangle)
+							'icon': UNICODE_BLACK_RIGHT_POINTING_TRIANGLE,  //'click to collapse' icon
 							'display': 'none',  //hide children
 							'className': 'expand-icon'
 						}
