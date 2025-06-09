@@ -13,14 +13,16 @@
 :root, body {
 	font-family:  'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
 	font-size: 12pt;
-	color: #50a0ee; background: #2E323B;
+	color: #dddddd; background: #2E323B;
+}
+h1, h2, h3, dt {
+	color: #50a0ee;
 }
 code, pre {
 	background: #282828;
 	padding: 0.1em 0.4em;
 }
 dt {
-	color: #3060ff;
 	display: inline;
 }
 </style>
@@ -40,24 +42,29 @@ The Link-levels are called: Sections -&gt; Blocks -&gt; Items -&gt; SubItems
 -&gt; ...
 </p>
 
+<h2>Line Syntax</h2>
+
 <p>
 Each line should be one of the following:
 <ul>
   <li><dt>Empty lines</dt>: These are skipped.
-  <li>Lines that start with <code>//</code>, <code>;</code> or <code>#</code>
-      are comments and skipped too.
-  <li>If a line ends with <code>{{{</code> or <code>}}}</code>, remove that.
-      These tags are used to facilitate folding in vim.
-  <li>Link specification: See below.
+  <li><dt>Comments</dt>: Lines that start with <code>//</code>, <code>;</code>
+      or <code>#</code> are comments and skipped too.
+  <li><dt>Folding</dt>: If a line ends with <code>{{{</code> or
+      <code>}}}</code>, remove that.  These tags are used to facilitate folding
+      in vim.
+  <li><dt>Link Syntax</dt>: See below.
   <li><dt>Separator</dt>: This is a line containing a name of 3 or more dashes
       (<code>---</code>).  It is rendered as an <code>&lt;hr
       class="separator"&gt;</code> and it closes all indentation levels higher
       than its own, except when its indentation level is lower than block, in
       which case, it assumes the level of the item above it.
-  <li><code>!title name</code>: This specifies the page title to be displayed.
-  <li><code>!search fields</code>: Define a search button to be displayed next
-      to the search box. The fields are separated by <code>|</code> with
-      whitespace allowed.  These are the fields to be specified:
+  <li><dt>Page Title</dt>: The line <code>!title name</code> specifies the page
+      title to be displayed.
+  <li><dt>Search Buttons</dt>: The line <code>!search fields</code> defines a
+      search button to be displayed next to the search box. The fields are
+      separated by <code>|</code> with whitespace allowed.  These are the
+      fields to be specified:
       <ul>
 	<li><dt>Identifier</dt> (mandatory): Unique name for this button
 	    definition.
@@ -104,14 +111,16 @@ Each line should be one of the following:
       </ul>
       In JavaScript, SearchFunctions can be extended with additional
       functions and the new Identifiers can be used.
-  <li><code>!icondef name replacement</code>: This is a special line that
-      defines an icon definition. If a link uses <code>icon=name</code>, it
-      will be replaced.  This also works with the special words
-      <code>none</code>, <code>empty</code>, <code>html:x</code>, etc.  It is
-      also allowed to write this with an <code>=</code> between name and
-      replacement.
+  <li><dt>Icon Definitions</dt>: The line <code>!icondef name
+      replacement</code> defines an icon. If a link uses
+      <code>icon=name</code>, it will be replaced by whatever is defined for
+      name.  This also works with the special words <code>none</code>,
+      <code>empty</code>, <code>html:x</code>, etc.  It is also allowed to
+      write this with an <code>=</code> between name and replacement.
 </ul>
 </p>
+
+<h2>Link Syntax</h2>
 
 <p>
 Each Link is specified on a single line as follows:
@@ -183,8 +192,10 @@ If both Name and URL are not defined, the word <code>LINK</code> is used.
 The elements may be specified in any order on the line.
 </p>
 
+<h3>Example</h3>
+
 <P>
-Examples:
+Below is an example of lines specifying a Link.
 <pre>
   Example                              : Just a string 'Example' without link
   http://example.com                   : Link with name http://example.com and icon http://example.com/favicon.ico
