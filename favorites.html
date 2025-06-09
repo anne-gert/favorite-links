@@ -84,14 +84,18 @@ for each block independently.
 	margin: .5em;
 	color: #000000; background: #C9CDD0;
 }
-.block .expand-icon, .block .collapse-icon {
+.block .resize-icon {
 	float: right;
 	position: relative;
 	top: -0.9em; right: -0.6em;
 	cursor: pointer;
-}
-.block .collapse-icon {
 	color: #888888;
+}
+.block.collapsed .resize-icon {
+	color: #000000;
+}
+.block.collapsed>.items {  /* first level of children in this block */
+	display: none;
 }
 .block>.items {  /* first level of children in a block */
 	margin-left: 0.5em;
@@ -639,7 +643,7 @@ function outputItem(link, level, container, parentPath) {
 			container.appendChild(_itemContainer);
 			if (subItems != null) {
 				var expandIcon = document.createElement('span');  //container to display '-' or '+'
-				expandIcon.className = 'collapse-icon';
+				expandIcon.className = 'resize-icon';
 				_itemContainer.appendChild(expandIcon);
 				var isExpanded = true;  //true if block is expanded
 				var storageKey = 'expanded ' + myPath;
@@ -652,22 +656,15 @@ function outputItem(link, level, container, parentPath) {
 				}
 				var displayExpandState = function() {
 					console.log('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
-					var vars = {
-						'true': {  //expanded
-							'icon': UNICODE_BLACK_DOWN_POINTING_TRIANGLE,  //'click to collapse' icon
-							'display': 'block',  //show children
-							'className': 'collapse-icon'
-						},
-						'false': {  //collapsed
-							'icon': UNICODE_BLACK_RIGHT_POINTING_TRIANGLE,  //'click to collapse' icon
-							'display': 'none',  //hide children
-							'className': 'expand-icon'
-						}
-					}[isExpanded];
-					expandIcon.textContent = vars.icon;
-					expandIcon.className = vars.className;
-					if (_subContainer)
-						_subContainer.style.display = vars.display;
+					if (isExpanded) {
+						// Expand this block
+						expandIcon.textContent = UNICODE_BLACK_DOWN_POINTING_TRIANGLE;
+						_itemContainer.classList.remove('collapsed');
+					} else{
+						// Collapse this block
+						expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
+						_itemContainer.classList.add('collapsed');
+					}
 				};
 				expandIcon.onclick = function() {
 					isExpanded = !isExpanded;
