@@ -12,6 +12,14 @@ General
         GitHub favorite-links https://github.com/anne-gert/favorite-links
         & Direct icon=none https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
         Example Links icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=url:example-links.txt
+    To Do
+        Shopping
+            [ ] Books
+            [x] Presents
+        At work
+            [x] icon=firefox Install Firefox
+            [ ] icon=github Start using favorite-links as todo-list
+            [ ] icon=empty Write review
 Other
     News
         nu.nl https://nu.nl
