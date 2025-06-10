@@ -1284,12 +1284,14 @@ function initSettingsPanel() {
 	var pnlSettings = document.getElementById('SettingsPanel');
 	var txtSettings = document.getElementById('SettingsText');
 	var btnSave = document.getElementById('BtnSaveSettings');
+	var btnClear = document.getElementById('BtnClearSettings');
 	var btnCancel = document.getElementById('BtnCancelSettings');
 	var visible = false;
+	const keyLinks = 'links';
 	var showSettings = function() {
-		var text = 'UNKNOWN';
+		var text = '';
 		if (localStorage) {
-			text = localStorage.getItem('links');
+			text = localStorage.getItem(keyLinks);
 		}
 		txtSettings.value = text;
 		// Slide to visible
@@ -1303,12 +1305,17 @@ function initSettingsPanel() {
 	var hideSettings = function(save) {
 		var text;
 		if (save) {
-			console.log('Save settings');
-			text = txtSettings.value;
-			if (text.match(/^\s*$/)) {
-				localStorage.removeItem('links');
+			if (save == 'clear') {
+				console.log('Clear settings');
+				txtSettings.value = text = '';
 			} else {
-				localStorage.setItem('links', text);
+				console.log('Save settings');
+				text = txtSettings.value;
+			}
+			if (text.match(/^\s*$/)) {
+				localStorage.removeItem(keyLinks);
+			} else {
+				localStorage.setItem(keyLinks, text);
 			}
 		}
 		// slide to hidden
@@ -1331,6 +1338,12 @@ function initSettingsPanel() {
 	if (btnSave) {
 		btnSave.onclick = function() {
 			if (visible) hideSettings(true);
+			return false;  //stop default button action
+		};
+	}
+	if (btnClear) {
+		btnClear.onclick = function() {
+			if (visible) hideSettings('clear');
 			return false;  //stop default button action
 		};
 	}
@@ -1419,6 +1432,7 @@ window.onload = init;
 <textarea id="SettingsText" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Settings"></textarea>
 <div class="button-bar">
 <button id="BtnSaveSettings" class="button">Save</button>
+<button id="BtnClearSettings" class="button">Clear</button>
 <button id="BtnCancelSettings" class="button">Cancel</button>
 </div>
 </div>
