@@ -269,6 +269,8 @@ Other
 !search Google Maps  | Maps   |         | alt
 `;
 
+const KeyLinks = 'links';
+
 // }}}
 
 // Loading Links {{{
@@ -346,13 +348,11 @@ function resolveLinks() {
 
 	} else {
 		// Step 2) Check if links is defined in LocalStorage
-		if (localStorage) {
+		var v = readLocalLinks();
+		if (v !== false) {
 			// LocalStorage is available, use persistent value
-			var v = localStorage.getItem('links');
-			if (v) {
-				console.log('Use links from the LocalStorage');
-				links = v;
-			}
+			console.log('Use links from the LocalStorage');
+			links = v;
 		}
 	}
 
@@ -401,6 +401,29 @@ function resolveLinks() {
 // Start resolving the links here.
 var LinksPromise = resolveLinks();
 
+// Read links settings from LocalStorage.
+// Return links or false in case of error or if it does not exist.
+function readLocalLinks() {
+	if (localStorage) {
+		var v = localStorage.getItem(KeyLinks);
+		if (v) return v;
+	}
+	return false;
+}
+
+// Store links in LocalStorage.
+// If value is null, empty or whitespace, delete value from LocalStorage.
+// Return true if success, false if not saved.
+function writeLocalLinks(value) {
+	if (localStorage) {
+		if (value == null || value.match(/^\s*$/))
+			localStorage.removeItem(KeyLinks);
+		else
+			localStorage.setItem(KeyLinks, value);
+		return true;
+	}
+	return false;
+}
 // }}}
 
 // Parsing Links {{{
@@ -1287,13 +1310,9 @@ function initSettingsPanel() {
 	var btnClear = document.getElementById('BtnClearSettings');
 	var btnCancel = document.getElementById('BtnCancelSettings');
 	var visible = false;
-	const keyLinks = 'links';
 	var showSettings = function() {
-		var text = '';
-		if (localStorage) {
-			text = localStorage.getItem(keyLinks);
-		}
-		txtSettings.value = text;
+		var text = readLocalLinks();
+		txtSettings.value = (text !== false) ? text : '';
 		// Slide to visible
 		pnlSettings.classList.add('to-show');
 		pnlSettings.onanimationend = function() {
@@ -1312,11 +1331,7 @@ function initSettingsPanel() {
 				console.log('Save settings');
 				text = txtSettings.value;
 			}
-			if (text.match(/^\s*$/)) {
-				localStorage.removeItem(keyLinks);
-			} else {
-				localStorage.setItem(keyLinks, text);
-			}
+			writeLocalLinks(text);
 		}
 		// slide to hidden
 		pnlSettings.classList.add('to-hide');
