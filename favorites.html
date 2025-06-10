@@ -281,73 +281,21 @@ const KeyLinks = 'links';
 // use it.
 //
 // The contents of Links can be obtained in the following way:
-// 1) If the links= query string is set on the URL, that contents is used.
-//    This can also be a url:xxx value.
-// 2) Otherwise if there is a 'links' key in LocalStorage, that value is used.
-// 3) If Links matches 'url:url', the contents of that URL is downloaded and
+// 1) If there is a 'links' key in LocalStorage, that value is used.
+// 2) Otherwise if the links= query string is set on the URL, that contents is
+//    used. This can also be a url:xxx value.
+// 3) If Links matches 'url:<url>', the contents of that URL is downloaded and
 //    evaluated as script. It should set the Links variable.
 // 4) If Links is empty at this point, use a default contents.
 // 5) Links should now have a value that can be parsed as specified below.
 function resolveLinks() {
 	var links = null;
 
-	// Step 1) Check if links is defined in the query string
 	var params = new URLSearchParams(location.search);
 	//console.log(params);
-	var v = params.get('links');
-	if (v) {
-		// By default, use this value for links
-		links = v;
 
-		// Check if we should adjust it
-		var matchThisUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
-		//console.log(matchThisUrl);
-		// Captured:
-		// 1: protocol
-		// 2: host ('html-preview.github.io')
-		// 3: path without query string or fragment
-		if (matchThisUrl) {  //the current URL is html-preview.github.io (or similar)
-			// This should have a url= parameter that contains the real location
-			var referredUrl = params.get('url');
-			//console.log(referredUrl);
-			var matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
-			//console.log(matchReferredUrl);
-			// Captured:
-			// 1: protocol
-			// 2: host ('github.com')
-			// 3: path without query string or fragment
-			if (matchReferredUrl) {  //the referred URL is on github.com
-				var matchTargetUrl = v.match(/^\s*url:(https?:\/\/)?(.*)/);
-				//console.log(matchTargetUrl);
-				// Captured:
-				// 1: protocol
-				// 2: rest
-				if (matchTargetUrl && !matchTargetUrl[1]) {  //links is a URL and is relative
-					// We are now in a situation where this page is hosted
-					// on GitHub and links tries to point to a .js file on
-					// there as well.
-					// If you have a normal link to github.com, you get the
-					// file inside the environment. If you use
-					// raw.githubusercontent.com, you get the content of the
-					// file, but with Content-Type=text/plain. When
-					// html-preview.github.io is used, it uses
-					// raw-githubcontent.com and serves it with
-					// Content-Type=text/html.
-					console.log('Fix links= relative URL for GitHub');
-					// To make this relative link work, it should be grafted
-					// onto githubusercontent.
-					var matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
-					//console.log(matchReferredPath);
-					// Captured:
-					// 1: directory
-					// 2: filename (everything after last '/')
-					links = 'url:' + matchReferredUrl[1] + 'raw.githubusercontent.com' + matchReferredPath[1] + matchTargetUrl[2];
-				}
-			}
-		}
-
-	} else {
-		// Step 2) Check if links is defined in LocalStorage
+	// Step 1) Check if links is defined in LocalStorage
+	if (links == null) {
 		var v = readLocalLinks();
 		if (v !== false) {
 			// LocalStorage is available, use persistent value
@@ -356,12 +304,73 @@ function resolveLinks() {
 		}
 	}
 
+	// Step 2) Check if links is defined in the query string
+	if (links == null) {
+		var v = params.get('links');
+		if (v) {
+			// Use this URL argument for links
+			console.log('Use links= URL argument');
+			links = v;
+		}
+	}
+
 	// Step 3) If links is a URL, resolve it
 	if (links != null) {
-		var m = links.match(/^\s*url\s*:\s*(\S+)\s*$/i);
-		if (m) {
-			// It specifies a URL, retrieve it
-			var url = m[1];
+		var matchTargetUrl = links.match(/^\s*url\s*:\s*((https?:\/\/)?(.*?))\s*$/i);
+		//console.log(matchTargetUrl);
+		// Captured:
+		// 1: url
+		// 2: protocol
+		// 3: domain + path + rest
+		if (matchTargetUrl) {
+			// links is a URL
+			var url = matchTargetUrl[1];
+			if (!matchTargetUrl[2]) {
+				// URL is relative, check if we need to adjust it
+				var matchBaseUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
+				//console.log(matchBaseUrl);
+				// Captured:
+				// 1: protocol
+				// 2: host ('html-preview.github.io')
+				// 3: path without query string or fragment
+				if (matchBaseUrl) {
+					// The current URL is html-preview.github.io (or similar)
+					// This should have a url= parameter that contains the real location
+					var referredUrl = params.get('url');
+					//console.log(referredUrl);
+					var matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
+					//console.log(matchReferredUrl);
+					// Captured:
+					// 1: protocol
+					// 2: host ('github.com')
+					// 3: path without query string or fragment
+					if (matchReferredUrl) {
+						// The referred URL is on github.com
+
+						// We are now in a situation where this page is hosted
+						// on GitHub and links tries to point to a file on
+						// there as well.
+						// If you have a normal link to github.com, you get the
+						// file inside the environment. If you use
+						// raw.githubusercontent.com, you get the content of the
+						// file, but with Content-Type=text/plain. When
+						// html-preview.github.io is used, it uses
+						// raw-githubcontent.com and serves it with
+						// Content-Type=text/html.
+						console.log('Fix links= relative URL for GitHub');
+						// To make this relative link work, it should be grafted
+						// onto githubusercontent.
+						var matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
+						//console.log(matchReferredPath);
+						// Captured:
+						// 1: directory
+						// 2: filename (everything after last '/')
+						url = matchReferredUrl[1] + 'raw.githubusercontent.com' + matchReferredPath[1] + matchTargetUrl[3];
+					}
+				}
+			}
+
+			// Retrieve the url
 			console.log('Links defined by URL \'' + url + '\'');
 			links = new Promise((resolveFunc, rejectFunc) => {
 				var xhr = new XMLHttpRequest();
@@ -383,7 +392,7 @@ function resolveLinks() {
 				xhr.send();  //send the request
 			});
 		} else {
-			// It is not a URL
+			// Links is not a URL
 			links = Promise.resolve(links);  //make it into a Promise
 		}
 	}
