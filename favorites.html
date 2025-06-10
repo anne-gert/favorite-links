@@ -429,14 +429,15 @@ function writeLocalLinks(value) {
 // Parsing Links {{{
 
 // Global variables in which parseLinks() puts its output.
+var Links = null;  //links text, input for parseLinks()
 var PageTitle = null;  //specified title
 var SearchButtonDefs = null;  //specified search button declarations
 var RootLinks = null;  //array of Link objects that have no parents (i.e. are roots)
 var IconDefs = null;  //specified icondef declarations
 
 
-// Parse the string in links and fills the global variables above.
-function parseLinks(links) {
+// Parse the string in Links and fills the global variables above.
+function parseLinks() {
 	// Parse the input lines
 	var allLinks = [];  //specified Link objects
 	PageTitle = null;
@@ -445,7 +446,7 @@ function parseLinks(links) {
 	IconDefs = {};
 	var openParents = [];  //currently open parents: 0 is root, 1 its child, etc
 	var openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
-	var lines = links.split(/\r?\n\r?/);  //lines with Link specifications
+	var lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
 	for (var i = 0; i < lines.length; ++i) {
 		var line = lines[i];
 		//console.log('Line=\'' + line + '\'');
@@ -1311,8 +1312,7 @@ function initSettingsPanel() {
 	var btnCancel = document.getElementById('BtnCancelSettings');
 	var visible = false;
 	var showSettings = function() {
-		var text = readLocalLinks();
-		txtSettings.value = (text !== false) ? text : '';
+		txtSettings.value = Links;
 		// Slide to visible
 		pnlSettings.classList.add('to-show');
 		pnlSettings.onanimationend = function() {
@@ -1322,16 +1322,15 @@ function initSettingsPanel() {
 		visible = true;
 	};
 	var hideSettings = function(save) {
-		var text;
 		if (save) {
 			if (save == 'clear') {
 				console.log('Clear settings');
-				txtSettings.value = text = '';
+				txtSettings.value = Links = '';
 			} else {
 				console.log('Save settings');
-				text = txtSettings.value;
+				Links = txtSettings.value;
 			}
-			writeLocalLinks(text);
+			writeLocalLinks(Links);
 		}
 		// slide to hidden
 		pnlSettings.classList.add('to-hide');
@@ -1340,7 +1339,7 @@ function initSettingsPanel() {
 			pnlSettings.classList.remove('to-hide');
 			if (save) {
 				console.log('Reload page');
-				processLinks(text);
+				processLinks();
 			}
 		};
 		visible = false;
@@ -1370,10 +1369,10 @@ function initSettingsPanel() {
 	}
 }
 
-// From the links configuration, parse its content and display it.
-function processLinks(links) {
-		// Parse links
-		parseLinks(links);
+// From the Links configuration, parse its content and display it.
+function processLinks() {
+		// Parse Links
+		parseLinks();
 
 		// Set page title
 		if (PageTitle) {
@@ -1419,13 +1418,10 @@ function init() {
 	LinksPromise.then((value) => {
 		// Links have been resolved
 		//console.log(value);
-		if (localStorage) {
-			// LocalStorage is available, use persistent value
-			localStorage.setItem('links', value);
-		}
+		Links = value;
 
-		// Process the links
-		processLinks(value);
+		// Process the Links
+		processLinks();
 	});
 }
 window.onload = init;
