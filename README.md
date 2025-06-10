@@ -1,5 +1,5 @@
-﻿Favorite-Links
-==============
+﻿Favorite-Links & ToDo-List
+==========================
 
 Generic project to manage favorite URLs in a start-page like fashion.
 
@@ -20,4 +20,7 @@ the browser's LocalStorage.
 
 If the contents in the LocalStorage should be overriden, the links-override=
 URL argument can be used, similar how links= is used.
+
+By starting an item with `[ ]` or `[x]`, the item can also be used as a
+todo-list item.
 

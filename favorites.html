@@ -114,6 +114,11 @@ for each block independently.
 .group .item:first-child {
 	margin-left: unset;
 }
+.todo-checkbox {
+	margin-right: 0.2em;
+}
+.todo-checkbox:checked {
+}
 .item .icon {
 	width: 1.0em; height: 1.0em;
 	margin-right: 0.2em;
@@ -242,6 +247,14 @@ General
         GitHub favorite-links https://github.com/anne-gert/favorite-links
         & Direct icon=none https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
         Example Links icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=url:example-links.txt
+    To Do
+        Shopping
+            [ ] Books
+            [x] Presents
+        At work
+            [x] icon=firefox Install Firefox
+            [ ] icon=github Start using favorite-links as todo-list
+            [ ] icon=empty Write review
 Other
     News
         nu.nl https://nu.nl
@@ -526,6 +539,14 @@ function parseLinks() {
 			icon = m[2];
 			line = m[1] + m[3];  //the rest
 		}
+		// Take out Check: start with '[ ]' or '[x]'
+		var check = null;
+		var m = line.match(/^(\s*)\[(?:( )|(x))\](.*)$/i);
+		if (m) {
+			if (m[2]) check = false;
+			if (m[3]) check = true;
+			line = m[1] + m[4];  //the rest
+		}
 		// Take out Target: /target=non-whitespace/
 		var target = null;
 		var m = line.match(/^(.*)(?:\s|^)target=(\S*)(.*)$/i);
@@ -563,13 +584,15 @@ function parseLinks() {
 
 		// Create the Link object
 		var link = {
+			'lineNum': i,
 			'name' : name,
 			'url' : url,
 			'icon' : icon,
+			'check' : check,
 			'target' : target,
 			'cont' : [],
 			'subs' : [],
-			'toString' : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', #SubItems=' + this.subs.length + ' }' },
+			'toString' : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', check=' + check + ', #SubItems=' + this.subs.length + ' }' },
 		};
 		//console.log('Indentation=' + indent + ', Link=' + link);
 
@@ -620,10 +643,12 @@ function parseLinks() {
 // Level 3 is called Item and is rendered as a line in a Block.
 // Level 4 and higher are called sub-Items and are rendered as indented Items.
 function outputItem(link, level, container, parentPath) {
+	//console.log('outputItem ' + link.toString());
 	// Copy input data
 	var name = link.name;
 	var url = link.url;
 	var icon = link.icon;
+	var check = link.check;
 	var target = link.target;
 	var tooltip = null;
 	var contItems = link.cont;
@@ -779,6 +804,34 @@ function outputItem(link, level, container, parentPath) {
 			innerContainer.className = 'item';
 		}
 		itemContainer.appendChild(innerContainer);
+		// Create checkbox in Item container
+		if (check != null) {
+			// Render a checkbox
+			var checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.className = 'todo-checkbox';
+			checkbox.onchange = function() {
+				var re = new RegExp('(^(?:[^\\n]*\\n){' + link.lineNum + '}\\s*)\\[.\\]');
+				var newCheck;
+				if (checkbox.checked) {
+					// Change checkbox to checked
+					console.log('Check checkbox on line ' + link.lineNum);
+					newCheck = '[x]';
+				} else {
+					// Change checkbox to checked
+					console.log('Uncheck checkbox on line ' + link.lineNum);
+					newCheck = '[ ]';
+				}
+				Links = Links.replace(re, '$1' + newCheck);
+				writeLocalLinks(Links);
+			};
+			if (check === true) {
+				checkbox.checked = true;
+			} else if (check === false) {
+				checkbox.checked = false;
+			}
+			innerContainer.appendChild(checkbox);
+		}
 		// Create icon in Item container
 		var icon_present = outputIcon(innerContainer, null, icon, url);
 		// Create text in Item container
