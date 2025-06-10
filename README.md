@@ -15,5 +15,6 @@ The value may be literal contents or an absolute or relative URL, prefixed
 with 'url:'. This can also be used with a direct link to GitHub:
 <https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=url:example-links.txt>.
 
-Alternatively the contents can be kept in the browser's LocalStorage.
+This contents can be edited from the page (via the Gears icon) and stored in
+the browser's LocalStorage.
 
