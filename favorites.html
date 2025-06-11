@@ -539,9 +539,9 @@ function parseLinks() {
 			icon = m[2];
 			line = m[1] + m[3];  //the rest
 		}
-		// Take out Check: start with '[ ]' or '[x]'
+		// Take out Check: start with '[ ]' '[]' or '[x]'
 		var check = null;
-		var m = line.match(/^(\s*)\[(?:( )|(x))\](.*)$/i);
+		var m = line.match(/^(\s*)\[(?:( ?)|(x))\](.*)$/i);
 		if (m) {
 			if (m[2]) check = false;
 			if (m[3]) check = true;
@@ -811,7 +811,7 @@ function outputItem(link, level, container, parentPath) {
 			checkbox.type = 'checkbox';
 			checkbox.className = 'todo-checkbox';
 			checkbox.onchange = function() {
-				var re = new RegExp('(^(?:[^\\n]*\\n){' + link.lineNum + '}\\s*)\\[.\\]');
+				var re = new RegExp('(^(?:[^\\n]*\\n){' + link.lineNum + '}\\s*)\\[.?\\]');
 				var newCheck;
 				if (checkbox.checked) {
 					// Change checkbox to checked
