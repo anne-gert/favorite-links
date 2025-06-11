@@ -42,18 +42,99 @@
 
 <body class="text-block">
 
-<h1>Links Syntax</h1>
+
+<h1>Favorites and ToDo - Help</h1>
+
+
+<!-- The following section is also included as a text block in
+example-links.txt and DefaultLinks in favorites.html -->
+
+<a name="description"></a>
+<h2>Description</h2>
 
 <p>
-The list of Links to display are specified in the Links variable as a single
-string that consists of lines. The Links form an hierarchical structure,
-indicated by the line's indentation. Each Link can be a hyperlink and/or
-contain sub-Items.<br>
-The Link-levels are called: Sections -&gt; Blocks -&gt; Items -&gt; SubItems
--&gt; ...
+<a href="favorites.html">favorites.html</a> is a single page that can be
+configured to show links, organized in sections and blocks. This configuration
+can be downloaded via a URL and/or edited in the browser's LocalStorage.
 </p>
 
-<h2>Line Syntax</h2>
+
+<a name="usage"></a>
+<h2>Usage</h2>
+
+<p>
+The standard usage is to open the page favorites.html (or possibly set it as
+your homepage). Upon first opening, it shows a default example page.  This
+page can be edited by going to the Settings (Gears (&#x2699;) icon) and just
+edit and save the textual configuration. It might be a good idea to maintain a
+text file with the configuration and copy-paste it into the Settings.<br>
+favorites.html can also be opened and used directly from <a
+href="https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html">GitHub</a>.
+</p>
+
+<p>
+It is also possible to provide the configuration as a URL. This URL can be
+provided in several ways:
+<ul>
+<li>In the configuration txt as <code>url:&lt;URL&gt;</code>.
+<li>With the <code>links=url:&lt;URL&gt;</code> URL argument.
+<li>With the <code>links-override=url:&lt;URL&gt;</code> URL argument.
+</ul>
+</p>
+
+<p>
+This is the order how the configuration is searched:
+<ol>
+<li><dt>links-override=</dt>: If <code>links-override=configuration</code> is
+    provided, that content is used.
+<li><dt>LocalStorage</dt>: If a configuration is stored in the browser's
+    LocalStorage, that is used. Note that LocalStorage is per domain, so if
+    the page is opened from a different domain, a different configuration
+    might be present in the LocalStorage.
+<li><dt>links=</dt>: If <code>links=configuration</code> is provided, that
+    content is used.
+<li>If any of the above was non-empty, that configuration is used. If that
+    configuration is of the form <code>url:&lt;URL&gt;</code>, then
+    &lt;URL&gt; will be downloaded to retrieve the configuration. This URL may
+    be absolute or relative.
+<li>If none of the above provided a non-empty configuration, a default
+    configuration is used which includes examples and some explanation. This
+    is the page that is initially shown if displayed without arguments.
+</ol>
+</p>
+
+
+<a name="syntax"></a>
+<h2>Configuration Syntax</h2>
+
+<p>
+The configuration consists primarily of a list of <a
+href="help.html#link-syntax">Link Definitions</a>.  The Links form an
+hierarchical structure, indicated by the line's indentation:
+<ul>
+<li><dt>Section</dt>: The first indentation level is the Section. Sections are
+    separated by horizontal lines.
+<li><dt>Block</dt>: The second indentation level are the blocks within a
+    Section. Each Block is a visual area that can be collapsed and expanded.
+<li><dt>Item</dt>: The third indentation level are the Items that populate
+    the Blocks.
+<li><dt>SubItem</dt>: The fourth and higher indentation levels are SubItems
+    that are displayed under their respective parent Items
+</ul>
+Each link can be a hyperlink, have an icon and/or a checkbox.
+</p>
+
+<p>
+In addition to Links, the configuration also supports comments, different
+web-search functions and other directives, see <a
+href="help.html#line-syntax">Line Syntax</a> for further details.
+</p>
+
+<!-- End of text to be included in text block -->
+
+
+<a href="line-syntax"></a>
+<h3>Line Syntax</h3>
 
 <p>
 Each line should be one of the following:
@@ -139,7 +220,9 @@ Each line should be one of the following:
 </ul>
 </p>
 
-<h2>Link Syntax</h2>
+
+<a href="link-syntax"></a>
+<h3>Link Syntax</h3>
 
 <p>
 Each Link is specified on a single line as follows:
@@ -214,7 +297,8 @@ If both Name and URL are not defined, the word <code>LINK</code> is used.
 The elements may be specified in any order on the line.
 </p>
 
-<h3>Example</h3>
+
+<h4>Example Links</h4>
 
 <P>
 Below is an example of lines specifying a Link.
