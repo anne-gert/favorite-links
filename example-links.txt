@@ -47,5 +47,5 @@ Other
 !search YouTube
 !search Google Maps  | Maps   |         | alt
 
-// vim: foldmethod=marker nowrap shiftwidth=4 expandtab smartindent
+// vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
 
