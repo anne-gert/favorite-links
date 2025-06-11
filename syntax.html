@@ -13,23 +13,34 @@
 :root, body {
 	font-family:  'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
 	font-size: 12pt;
+}
+
+/* The following .text-block items are the same between all pages */
+.text-block {
 	color: #dddddd; background: #2E323B;
 }
-h1, h2, h3, dt {
+.text-block h1, .text-block h2, .text-block h3, .text-block dt {
 	color: #50a0ee;
 }
-code, pre {
+.text-block code, .text-block pre {
 	background: #282828;
 	padding: 0.1em 0.4em;
 }
-dt {
+.text-block dt {
 	display: inline;
+}
+.text-block a {
+	color: #6666FF;
+	text-decoration: none;
+}
+.text-block a:hover {
+	text-decoration: underline;
 }
 </style>
 
 </head>
 
-<body>
+<body class="text-block">
 
 <h1>Links Syntax</h1>
 
@@ -117,6 +128,14 @@ Each line should be one of the following:
       name.  This also works with the special words <code>none</code>,
       <code>empty</code>, <code>html:x</code>, etc.  It is also allowed to
       write this with an <code>=</code> between name and replacement.
+  <li><dt>Text Block</dt>: A text block is the lines of text between
+      <code>!text</code> and <code>!endtext</code>, which each should appear
+      on a line of their own. The text block will be rendered at that
+      location. It can contain any HTML, so this can also be used to define
+      additional CSS classes (by defining <code>&lt;style&gt; ...
+      &lt;/style&gt;</code> sections) or additional JavaScript (by defining
+      <code>&lt;script&gt; ...  &lt;/script&gt;</code> sections), e.g. to
+      facilitate new SearchButton functions.
 </ul>
 </p>
 
