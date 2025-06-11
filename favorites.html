@@ -218,6 +218,28 @@ for each block independently.
 	}
 }
 
+/* The following .text-block items are the same between all pages */
+.text-block {
+	color: #dddddd; background: #2E323B;
+}
+.text-block h1, .text-block h2, .text-block h3, .text-block dt {
+	color: #50a0ee;
+}
+.text-block code, .text-block pre {
+	background: #282828;
+	padding: 0.1em 0.4em;
+}
+.text-block dt {
+	display: inline;
+}
+.text-block a {
+	color: #6666FF;
+	text-decoration: none;
+}
+.text-block a:hover {
+	text-decoration: underline;
+}
+
 /* }}} */
 </style>
 
@@ -479,12 +501,31 @@ function parseLinks() {
 	SearchButtonDefs = [];
 	RootLinks = [];
 	IconDefs = {};
+	var block = null;  //used for literal !text ... !endtext blocks
 	var openParents = [];  //currently open parents: 0 is root, 1 its child, etc
 	var openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
 	var lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
 	for (var i = 0; i < lines.length; ++i) {
 		var line = lines[i];
 		//console.log('Line=\'' + line + '\'');
+
+		// If we're in a !text block, add this line to the block
+		if (block != null) {
+			// We're in a !text block
+			// Check if it is the end of a literal !text block
+			var m = line.match(/^\s*!endtext\s*$/i);
+			if (m) {
+				// It is the end, save the object and reset block.
+				// Add this object without changing the indent or parents.
+				RootLinks.push(block);
+				allLinks.push(block);
+				block = null;
+				continue;
+			}
+			// Otherwise add this line too
+			block.lines.push(line);
+			continue;
+		}
 
 		// Remove vim folding markers at the end of lines
 		line = line.replace(/\s*(?:{{{|}}})\s*$/, '');
@@ -515,6 +556,19 @@ function parseLinks() {
 			// This is a search button definition
 			var def = m[1].split(/\s*\|\s*/);  //split fields on '|', allowing whitespace
 			SearchButtonDefs.push(def);  //save button def
+			continue;
+		}
+
+		// Check if it is the start of a literal !text block
+		var m = line.match(/^\s*!text\s*$/i);
+		if (m) {
+			// Mark the start of a !text block
+			block = {  //special type of Link object
+				'lineNum' : i,  //start of this !text block
+				'type': 'text',
+				'lines' : [],
+				'toString' : function() { return '{ !text, #Lines=' + this.lines.length + ' }' },
+			};
 			continue;
 		}
 
@@ -585,6 +639,7 @@ function parseLinks() {
 		// Create the Link object
 		var link = {
 			'lineNum': i,
+			'type': 'link',
 			'name' : name,
 			'url' : url,
 			'icon' : icon,
@@ -861,10 +916,24 @@ function outputItem(link, level, container, parentPath) {
 	}
 }
 
+// Output a <div> element as next child of the container.
+function outputText(lines, container) {
+	var html = lines.join('\n');
+	var div = document.createElement('div');
+	div.className = 'text-block';
+	div.innerHTML = html;
+	container.appendChild(div);
+}
+
 // Render array of Links to the container at specified level.
 function outputItems(links, level, container, parentPath = '') {
 	for (var i = 0; i < links.length; ++i) {
-		outputItem(links[i], level, container, parentPath);
+		var link = links[i];
+		if (link.type == 'link') {
+			outputItem(link, level, container, parentPath);
+		} else if (link.type == 'text') {
+			outputText(link.lines, container);
+		}
 	}
 }
 
