@@ -1425,17 +1425,6 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 	}
 }
 
-// }}}
-
-// Initialization {{{
-
-// Function to set the title to the specified string.
-function setPageTitle(title) {
-	var titleCtl = document.getElementById('Title');
-	if (titleCtl)
-		titleCtl.innerText = title;
-}
-
 // Create search button to container and set up the event callback.
 // This also adds icons to the buttons. Do that here instead of with
 // static HTML, because I saw that the browser tries to render static
@@ -1538,6 +1527,10 @@ function addSearchButtons(searchBox, container) {
 	}
 }
 
+// }}}
+
+// Edit Settings {{{
+
 // Set up the events for the settings panel.
 function initSettingsPanel() {
 	var iconSettings = document.getElementById('SettingsIcon');
@@ -1605,46 +1598,57 @@ function initSettingsPanel() {
 	}
 }
 
+// }}}
+
+// Initialization {{{
+
+// Function to set the title to the specified string.
+function setPageTitle(title) {
+	var titleCtl = document.getElementById('Title');
+	if (titleCtl)
+		titleCtl.innerText = title;
+}
+
 // From the Links configuration, parse its content and display it.
 function processLinks() {
-		// Parse Links
-		parseLinks();
+	// Parse Links
+	parseLinks();
 
-		// Set page title
-		if (PageTitle) {
-			setPageTitle(PageTitle);
+	// Set page title
+	if (PageTitle) {
+		setPageTitle(PageTitle);
+	}
+
+	// Render links
+	var container = document.getElementById('LinksBox');
+	container.textContent = '';
+	outputItems(RootLinks, 1, container);
+
+	// Fill SearchForm
+	// Use a static input field, so that the browser retains its contents
+	// after going back to this page.
+	if (SearchButtonDefs != null && SearchButtonDefs.length > 0) {
+		// There are SearchButtens, fill SearchForm
+		console.log('There are ' + SearchButtonDefs.length + ' SearchButtonDefs');
+		// Focus SearchBox
+		var searchBox = document.getElementById('SearchBox');
+		if (searchBox) {
+			searchBox.focus();
+			searchBox.select();
 		}
-
-		// Render links
-		var container = document.getElementById('LinksBox');
-		container.textContent = '';
-		outputItems(RootLinks, 1, container);
-
-		// Fill SearchForm
-		// Use a static input field, so that the browser retains its contents
-		// after going back to this page.
-		if (SearchButtonDefs != null && SearchButtonDefs.length > 0) {
-			// There are SearchButtens, fill SearchForm
-			console.log('There are ' + SearchButtonDefs.length + ' SearchButtonDefs');
-			// Focus SearchBox
-			var searchBox = document.getElementById('SearchBox');
-			if (searchBox) {
-				searchBox.focus();
-				searchBox.select();
-			}
-			// Initialize the search buttons
-			var buttonBox = document.getElementById('SearchButtons');
-			buttonBox.textContent = '';
-			addSearchButtons(searchBox, buttonBox);
-		} else {
-			// No SearchButtons defined, hide SearchForm
-			console.log('There are no SearchButtonDefs');
-			var searchForm = document.getElementById('SearchForm');
-			if (searchForm) {
-				console.log('Hide SearchForm');
-				searchForm.style.display = 'none';
-			}
+		// Initialize the search buttons
+		var buttonBox = document.getElementById('SearchButtons');
+		buttonBox.textContent = '';
+		addSearchButtons(searchBox, buttonBox);
+	} else {
+		// No SearchButtons defined, hide SearchForm
+		console.log('There are no SearchButtonDefs');
+		var searchForm = document.getElementById('SearchForm');
+		if (searchForm) {
+			console.log('Hide SearchForm');
+			searchForm.style.display = 'none';
 		}
+	}
 }
 
 // Initialize the JavaScript on the page
