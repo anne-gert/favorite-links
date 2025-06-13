@@ -197,13 +197,11 @@ for each block independently.
 #SettingsPanel.show {
 	display: block;
 }
-#SettingsPanel.to-show {
+#SettingsPanel.slide-in {
 	animation: settings-panel-slider 0.7s ease;
-	display: block;
 }
-#SettingsPanel.to-hide {
+#SettingsPanel.slide-out {
 	animation: settings-panel-slider 0.7s ease reverse;
-	display: block;
 }
 @keyframes settings-panel-slider {
 	0% {
@@ -1543,10 +1541,10 @@ function initSettingsPanel() {
 	var showSettings = function() {
 		txtSettings.value = Links;
 		// Slide to visible
-		pnlSettings.classList.add('to-show');
+		pnlSettings.classList.add('slide-in');
+		pnlSettings.classList.add('show');
 		pnlSettings.onanimationend = function() {
-			pnlSettings.classList.add('show');
-			pnlSettings.classList.remove('to-show');
+			pnlSettings.classList.remove('slide-in');
 		};
 		visible = true;
 	};
@@ -1569,10 +1567,10 @@ function initSettingsPanel() {
 			}
 		}
 		// slide to hidden
-		pnlSettings.classList.add('to-hide');
+		pnlSettings.classList.add('slide-out');
 		pnlSettings.onanimationend = function() {
 			pnlSettings.classList.remove('show');
-			pnlSettings.classList.remove('to-hide');
+			pnlSettings.classList.remove('slide-out');
 		};
 		visible = false;
 	};
