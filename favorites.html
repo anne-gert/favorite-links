@@ -1554,22 +1554,25 @@ function initSettingsPanel() {
 		if (save) {
 			if (save == 'clear') {
 				console.log('Clear settings');
-				txtSettings.value = Links = '';
+				txtSettings.value = '';
+				writeLocalLinks(null);  //remove persisted Links
+				loadLinks(true);  //re-resolve Links
+			} else if (txtSettings.value == '') {
+				console.log('Clear settings');
+				writeLocalLinks(null);  //remove persistet Links
+				loadLinks(true);  //re-resolve Links
 			} else {
 				console.log('Save settings');
 				Links = txtSettings.value;
+				writeLocalLinks(Links);
+				processLinks();  //Render Links
 			}
-			writeLocalLinks(Links);
 		}
 		// slide to hidden
 		pnlSettings.classList.add('to-hide');
 		pnlSettings.onanimationend = function() {
 			pnlSettings.classList.remove('show');
 			pnlSettings.classList.remove('to-hide');
-			if (save) {
-				console.log('Reload page');
-				processLinks();
-			}
 		};
 		visible = false;
 	};
@@ -1651,9 +1654,14 @@ function processLinks() {
 	}
 }
 
-// Initialize the JavaScript on the page
-function init() {
-	initSettingsPanel();
+// Load the Links and render them.
+// If reload==true, the Links are completely resolved again and possibly
+// reloaded from URLs.
+function loadLinks(reload) {
+	if (LinksPromise == null || reload) {
+		// Resolve links if not already done so
+		LinksPromise = resolveLinks();
+	}
 
 	LinksPromise.then((value) => {
 		// Links have been resolved
@@ -1663,6 +1671,12 @@ function init() {
 		// Process the Links
 		processLinks();
 	});
+}
+
+// Initialize the JavaScript on the page
+function init() {
+	initSettingsPanel();
+	loadLinks();
 }
 window.onload = init;
 
