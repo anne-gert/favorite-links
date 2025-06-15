@@ -90,18 +90,37 @@ for each block independently.
 .items {
 	margin-left: 2em;
 }
+.block-items {  /* First indentatiion level in a block */
+	margin-left: 0.5em;
+}
+
 .block .resize-icon {
 	float: right;
 	position: relative;
 	top: -0.9em; right: -0.6em;
 	cursor: pointer;
 	color: #888888;
+	transform: rotate(90deg);
+}
+.block.collapsing .resize-icon {
+	animation: animate-resize-icon 500ms linear;
+}
+.block.expanding .resize-icon {
+	animation: animate-resize-icon 500ms linear reverse;
 }
 .block.collapsed .resize-icon {
 	color: #000000;
+	transform: rotate(0deg);
 }
-.block-items {  /* First indentatiion level in a block */
-	margin-left: 0.5em;
+@keyframes animate-resize-icon {
+	0% {
+		color: #888888;
+		transform: rotate(90deg);
+	}
+	100% {
+		color: #000000;
+		transform: rotate(0deg);
+	}
 }
 
 .block .slider-container {
@@ -117,10 +136,10 @@ for each block independently.
 	white-space: nowrap;
 }
 .block.collapsing .slider-container {
-	animation: block-expanding-x 0.5s ease-out reverse, block-expanding-y 0.5s ease-out reverse;
+	animation: block-expanding-x 500ms ease-out reverse, block-expanding-y 500ms ease-out reverse;
 }
 .block.expanding .slider-container {
-	animation: block-expanding-x 0.5s ease, block-expanding-y 0.5s ease-out;
+	animation: block-expanding-x 500ms ease, block-expanding-y 500ms ease-out;
 }
 .block.collapsed .slider-container {
 	grid-template-rows: 0fr;
@@ -907,6 +926,7 @@ function outputItem(link, level, container, parentPath) {
 			if (subItems != null) {
 				var expandIcon = document.createElement('span');  //container to display '-' or '+'
 				expandIcon.className = 'resize-icon';
+				expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
 				_itemContainer.appendChild(expandIcon);
 				var isExpanded = true;  //true if block is expanded
 				var storageKey = 'expanded ' + myPath;
@@ -921,23 +941,17 @@ function outputItem(link, level, container, parentPath) {
 					console.log('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
 					if (isExpanded) {
 						// Expand this block
-						// Start animation
 						_itemContainer.classList.add('expanding');
 						_itemContainer.onanimationend = function() {
-							_itemContainer.classList.remove('expanding');
 							_itemContainer.classList.remove('collapsed');
-							// Update icon
-							expandIcon.textContent = UNICODE_BLACK_DOWN_POINTING_TRIANGLE;  //'click to collapse' icon
+							_itemContainer.classList.remove('expanding');
 						};
 					} else {
 						// Collapse this block
-						// Start animation
 						_itemContainer.classList.add('collapsing');
 						_itemContainer.onanimationend = function() {
-							_itemContainer.classList.remove('collapsing');
 							_itemContainer.classList.add('collapsed');
-							// Update icon
-							expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;  //'click to collapse' icon
+							_itemContainer.classList.remove('collapsing');
 						};
 					}
 				};
