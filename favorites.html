@@ -185,6 +185,12 @@ for each block independently.
 }
 .todo-checkbox:checked {
 }
+.todo-checkbox ~ .checkbox-label {
+}
+.todo-checkbox:checked ~ .checkbox-label {
+	color: #666666;
+	text-decoration: line-through;
+}
 .item .icon {
 	width: 1.0em; height: 1.0em;
 	margin-right: 0.2em;
@@ -1030,7 +1036,11 @@ function outputItem(link, level, container, parentPath) {
 		}
 		itemContainer.appendChild(innerContainer);
 		// Create checkbox in Item container
+		var textContainer = null;
 		if (check != null) {
+			// We will render this checkbox' label in its own textContainer.
+			textContainer = document.createElement('span');
+			textContainer.className = 'checkbox-label';
 			// Render a checkbox
 			var checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
@@ -1056,6 +1066,7 @@ function outputItem(link, level, container, parentPath) {
 				checkbox.checked = false;
 			}
 			innerContainer.appendChild(checkbox);
+			innerContainer.appendChild(textContainer);
 		}
 		// Create icon in Item container
 		var icon_present = outputIcon(innerContainer, null, icon, url);
@@ -1065,7 +1076,11 @@ function outputItem(link, level, container, parentPath) {
 				// Do not display the text
 			} else {
 				var text = document.createTextNode(name);
-				innerContainer.appendChild(text);
+				if (textContainer) {
+					textContainer.appendChild(text);
+				} else {
+					innerContainer.appendChild(text);
+				}
 			}
 		}
 		// If there is continuation, output those items in this container too
