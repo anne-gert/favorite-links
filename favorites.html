@@ -751,7 +751,7 @@ function parseLinks() {
 		}
 		// Take out Check: start with '[ ]' '[]' or '[x]'
 		var check = null;
-		var m = line.match(/^(\s*)\[(?:( ?)|(x))\](.*)$/i);
+		var m = line.match(/^(\s*)(?:(\[ ?\])|(\[x\]))(.*)$/i);
 		if (m) {
 			if (m[2]) check = false;
 			if (m[3]) check = true;
