@@ -17,6 +17,22 @@ For syntax description of Links, see help.html
 <style>
 /* CSS styles {{{ */
 
+/* Color palette */
+:root {
+	--background: #2E323B;
+	--foreground: #DDDDDD;
+	--accent-color: #50A0EE;
+	--selection-background: #DDDDFF;
+	--selection-foreground: #000000;
+	--block-background: #C9CDD0;
+	--block-foreground: #000000;
+	--block-border: #EEEEEE;
+	--disabled-color: #888888;
+	--code-background: #282828;
+	--code-foreground: var(--foreground);
+	--link-color: #6666FF;
+}
+
 :root, body, input, textarea, button {
 	font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
 	font-size: 12pt;
@@ -68,10 +84,10 @@ for each block independently.
 }
 
 :root, body {
-	color: #50a0ee; background: #2E323B;
+	color: var(--accent-color); background: var(--background);
 }
 ::selection {
-	color: #000000; background: #ddddff;
+	color: var(--selection-foreground); background: var(--selection-background);
 }
 
 .section {
@@ -81,11 +97,11 @@ for each block independently.
 .block {
 	display: inline-block;
 	vertical-align: top;
-	border: .15em solid #eeeeee;
+	border: .15em solid var(--block-border);
 	border-radius: .5em;
 	padding: 1em;
 	margin: .5em;
-	color: #000000; background: #C9CDD0;
+	color: var(--block-foreground); background: var(--block-background);
 }
 .items {
 	margin-left: 2em;
@@ -99,7 +115,7 @@ for each block independently.
 	position: relative;
 	top: -0.9em; right: -0.6em;
 	cursor: pointer;
-	color: #888888;
+	color: var(--disabled-color);
 	transform: rotate(90deg);
 }
 .block.collapsing .resize-icon {
@@ -109,16 +125,16 @@ for each block independently.
 	animation: animate-resize-icon 500ms linear reverse;
 }
 .block.collapsed .resize-icon {
-	color: #000000;
+	color: var(--block-foreground);
 	transform: rotate(0deg);
 }
 @keyframes animate-resize-icon {
 	0% {
-		color: #888888;
+		color: var(--disabled-color);
 		transform: rotate(90deg);
 	}
 	100% {
-		color: #000000;
+		color: var(--block-foreground);
 		transform: rotate(0deg);
 	}
 }
@@ -188,7 +204,7 @@ for each block independently.
 .todo-checkbox ~ .checkbox-label {
 }
 .todo-checkbox:checked ~ .checkbox-label {
-	color: #666666;
+	color: var(--disabled-color);
 	text-decoration: line-through;
 }
 .item .icon {
@@ -256,7 +272,7 @@ for each block independently.
 	height: 47em;
 	resize: both;
 	overflow: scroll;
-	color: #dddddd; background: #2E323B;
+	color: var(--foreground); background: var(--background);
 	font-family: monospace;
 }
 .button-bar {
@@ -290,20 +306,20 @@ for each block independently.
 
 /* The following .text-block items are the same between all pages */
 .text-block {
-	color: #dddddd; background: #2E323B;
+	color: var(--foreground); background: var(--background);
 }
 .text-block h1, .text-block h2, .text-block h3, .text-block dt {
-	color: #50a0ee;
+	color: var(--accent-color);
 }
 .text-block code, .text-block pre {
-	background: #282828;
+	color: var(--code-foreground); background: var(--code-background);
 	padding: 0.1em 0.4em;
 }
 .text-block dt {
 	display: inline;
 }
 .text-block a {
-	color: #6666FF;
+	color: var(--link-color);
 	text-decoration: none;
 }
 .text-block a:hover {

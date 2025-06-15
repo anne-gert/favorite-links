@@ -10,6 +10,22 @@
 <title>Links Syntax</title>
 
 <style>
+/* Color palette */
+:root {
+	--background: #2E323B;
+	--foreground: #DDDDDD;
+	--accent-color: #50A0EE;
+	--selection-background: #DDDDFF;
+	--selection-foreground: #000000;
+	--block-background: #C9CDD0;
+	--block-foreground: #000000;
+	--block-border: #EEEEEE;
+	--disabled-color: #888888;
+	--code-background: #282828;
+	--code-foreground: var(--foreground);
+	--link-color: #6666FF;
+}
+
 :root, body {
 	font-family:  'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
 	font-size: 12pt;
@@ -17,20 +33,20 @@
 
 /* The following .text-block items are the same between all pages */
 .text-block {
-	color: #dddddd; background: #2E323B;
+	color: var(--foreground); background: var(--background);
 }
 .text-block h1, .text-block h2, .text-block h3, .text-block dt {
-	color: #50a0ee;
+	color: var(--accent-color);
 }
 .text-block code, .text-block pre {
-	background: #282828;
+	color: var(--code-foreground); background: var(--code-background);
 	padding: 0.1em 0.4em;
 }
 .text-block dt {
 	display: inline;
 }
 .text-block a {
-	color: #6666FF;
+	color: var(--link-color);
 	text-decoration: none;
 }
 .text-block a:hover {
