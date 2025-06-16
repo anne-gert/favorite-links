@@ -116,6 +116,10 @@ for each block independently.
 	margin-left: 0.5em;
 }
 
+/* Note: On Firefox, if all collapsing/expanding animations do not take the
+ * same amount of time, it becomes jerky. Therefore, use the same amount of
+ * time and arrange different animation speeds with the @keyframes. */
+
 .block .resize-icon {
 	float: right;
 	position: relative;
@@ -125,21 +129,21 @@ for each block independently.
 	transform: rotate(90deg);
 }
 .block.collapsing .resize-icon {
-	animation: animate-resize-icon 500ms linear;
+	animation: 400ms ease animate-resize-icon;
 }
 .block.expanding .resize-icon {
-	animation: animate-resize-icon 500ms linear reverse;
+	animation: 400ms ease reverse animate-resize-icon;
 }
 .block.collapsed .resize-icon {
 	color: var(--block-foreground);
 	transform: rotate(0deg);
 }
 @keyframes animate-resize-icon {
-	0% {
+	0%, 30% {
 		color: var(--disabled-color);
 		transform: rotate(90deg);
 	}
-	100% {
+	70%, 100% {
 		color: var(--block-foreground);
 		transform: rotate(0deg);
 	}
@@ -158,10 +162,14 @@ for each block independently.
 	white-space: nowrap;
 }
 .block.collapsing .slider-container {
-	animation: block-expanding-x 500ms ease-out reverse, block-expanding-y 500ms ease-out reverse;
+	animation:
+		400ms ease-out reverse block-expanding-x,
+		400ms ease-out reverse block-expanding-y;
 }
 .block.expanding .slider-container {
-	animation: block-expanding-x 500ms ease, block-expanding-y 500ms ease-out;
+	animation:
+		400ms ease-out block-expanding-x,
+		400ms ease-out block-expanding-y;
 }
 .block.collapsed .slider-container {
 	grid-template-rows: 0fr;
@@ -171,18 +179,12 @@ for each block independently.
 	0% {
 		grid-template-columns: 0fr;
 	}
-	40% {
-		grid-template-columns: 1fr;
-	}
-	100% {
+	60%, 100% {
 		grid-template-columns: 1fr;
 	}
 }
 @keyframes block-expanding-y {
-	0% {
-		grid-template-rows: 0fr;
-	}
-	20% {
+	0%, 20% {
 		grid-template-rows: 0fr;
 	}
 	100% {
@@ -250,7 +252,7 @@ for each block independently.
 	margin: 0em 0.3em;
 }
 .blink {
-	animation: blinker 0.5s 4;
+	animation: 500ms 4 blinker;
 	color: rgb(0, 0, 0, 0);  /* transparent (also placeholder) */
 }
 .blink::placeholder {
@@ -292,10 +294,10 @@ for each block independently.
 	display: block;
 }
 #SettingsPanel.slide-in {
-	animation: settings-panel-slider 0.7s ease;
+	animation: 700ms ease settings-panel-slider;
 }
 #SettingsPanel.slide-out {
-	animation: settings-panel-slider 0.7s ease reverse;
+	animation: 700ms ease reverse settings-panel-slider;
 }
 @keyframes settings-panel-slider {
 	0% {
