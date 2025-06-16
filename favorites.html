@@ -81,6 +81,12 @@ for each block independently.
 		-moz-text-size-adjust: none;
 		-webkit-text-size-adjust: none;
 	}
+	input[type=checkbox] {
+		/* For mobile, make checkboxes bigger with more padding for fat fingers. */
+		transform: scale(2);
+		margin: 0.7em;
+		margin-right: 1.5em;
+	}
 }
 
 :root, body {
