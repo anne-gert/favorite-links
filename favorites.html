@@ -1052,11 +1052,7 @@ function outputItem(link, level, container, parentPath) {
 		}
 		itemContainer.appendChild(innerContainer);
 		// Create checkbox in Item container
-		var textContainer = null;
 		if (check != null) {
-			// We will render this checkbox' label in its own textContainer.
-			textContainer = document.createElement('span');
-			textContainer.className = 'checkbox-label';
 			// Render a checkbox
 			var checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
@@ -1082,7 +1078,6 @@ function outputItem(link, level, container, parentPath) {
 				checkbox.checked = false;
 			}
 			innerContainer.appendChild(checkbox);
-			innerContainer.appendChild(textContainer);
 		}
 		// Create icon in Item container
 		var icon_present = outputIcon(innerContainer, null, icon, url);
@@ -1091,12 +1086,15 @@ function outputItem(link, level, container, parentPath) {
 			if (icon_present && name == '_') {
 				// Do not display the text
 			} else {
-				var text = document.createTextNode(name);
-				if (textContainer) {
-					textContainer.appendChild(text);
+				var textContainer = document.createElement('span');
+				textContainer.appendChild(document.createTextNode(name));
+				if (check != null) {
+					// This is a checkbox item, give the name the correct class
+					textContainer.className = 'checkbox-label';
 				} else {
-					innerContainer.appendChild(text);
+					textContainer.className = 'link-name';
 				}
+				innerContainer.appendChild(textContainer);
 			}
 		}
 		// If there is continuation, output those items in this container too
