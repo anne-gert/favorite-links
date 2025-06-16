@@ -8,8 +8,9 @@
 
 <p>
 <a href="favorites.html">favorites.html</a> is a single page that can be
-configured to show links, organized in sections and blocks. This configuration
-can be downloaded via a URL and/or edited in the browser's LocalStorage.
+configured to show links and todo lists, organized in sections and blocks. This
+configuration can be downloaded via a URL and/or edited in the browser's
+LocalStorage.
 </p>
 
 
@@ -27,34 +28,8 @@ href="https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-
 </p>
 
 <p>
-It is also possible to provide the configuration as a URL. This URL can be
-provided in several ways:
-<ul>
-<li>In the configuration txt as <code>url:&lt;URL&gt;</code>.
-<li>With the <code>links=url:&lt;URL&gt;</code> URL argument.
-<li>With the <code>links-override=url:&lt;URL&gt;</code> URL argument.
-</ul>
-</p>
-
-<p>
-This is the order how the configuration is searched:
-<ol>
-<li><dt>links-override=</dt>: If <code>links-override=configuration</code> is
-    provided, that content is used.
-<li><dt>LocalStorage</dt>: If a configuration is stored in the browser's
-    LocalStorage, that is used. Note that LocalStorage is per domain, so if
-    the page is opened from a different domain, a different configuration
-    might be present in the LocalStorage.
-<li><dt>links=</dt>: If <code>links=configuration</code> is provided, that
-    content is used.
-<li>If any of the above was non-empty, that configuration is used. If that
-    configuration is of the form <code>url:&lt;URL&gt;</code>, then
-    &lt;URL&gt; will be downloaded to retrieve the configuration. This URL may
-    be absolute or relative.
-<li>If none of the above provided a non-empty configuration, a default
-    configuration is used which includes examples and some explanation. This
-    is the page that is initially shown if displayed without arguments.
-</ol>
+See <a href="help.html#usage">Help</a> for more information on how to use a
+separate URL to retrieve the configuration.
 </p>
 
 
@@ -95,6 +70,7 @@ Section
             SubItem
         Item
             SubItem
+Examples
     Search
         DuckDuckGo https://duckduckgo.com
         Google Maps icon=alt https://maps.google.com
@@ -109,23 +85,16 @@ Section
             [ ] Books
             [x] Presents
         At work
-            [x] icon=firefox Install Firefox
+            [x] icon=firefox Install Firefox https://www.mozilla.org/firefox/download
             [ ] icon=github Start using favorite-links as todo-list
-            [ ] icon=empty Write review
-Other
-    News
-        nu.nl https://nu.nl
+            []  icon=empty Write review
+                & Goto Blog icon=none url=#
     Socials
         Facebook https://www.facebook.com
             Instagram https://www.instagram.com/
             WhatsApp Web https://web.whatsapp.com/
         ---
         LinkedIn https://www.linkedin.com/
-    Firefox
-        Settings icon=firefox about:preferences target=manual
-            All Configuration icon=firefox about:config target=manual
-        All about:* icon=firefox about:about target=manual
-
 
 // Icon definitions
 !icondef firefox    https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
@@ -134,7 +103,6 @@ Other
 // Search button definitions
 //      Identifier   | Label  | Tooltip | Icon
 !search Duck Duck Go | Search |
-!search Google       | Search |
 !search Wikipedia
 !search YouTube
 !search Google Maps  | Maps   |         | alt
