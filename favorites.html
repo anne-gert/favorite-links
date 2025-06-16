@@ -201,9 +201,9 @@ for each block independently.
 }
 .todo-checkbox:checked {
 }
-.todo-checkbox ~ .checkbox-label {
+.checkbox-label {
 }
-.todo-checkbox:checked ~ .checkbox-label {
+.checkbox-label.checked {
 	color: var(--disabled-color);
 	text-decoration: line-through;
 }
@@ -212,7 +212,7 @@ for each block independently.
 	margin-right: 0.2em;
 	vertical-align: -10%;
 }
-.item.link .icon {
+.item .link .icon {
 	vertical-align: -20%;
 }
 .item .separator {
@@ -980,13 +980,17 @@ function outputItem(link, level, container, parentPath) {
 		var _itemContainer;
 		var _subContainer;
 		addItemContainer = function() {
+			var groupContainer;
 			if (contItems != null) {
-				_itemContainer = document.createElement('div');  //make a div for the continuation group
-				_itemContainer.className = 'group';
-				container.appendChild(_itemContainer);
+				groupContainer = document.createElement('div');  //make a div for the continuation group
+				groupContainer.className = 'group';
+				container.appendChild(groupContainer);
 			} else {
-				_itemContainer = container;  //add item to the same container
+				groupContainer = container;  //there is no group, use same container
 			}
+			_itemContainer = document.createElement('div');
+			_itemContainer.className = 'item';
+			groupContainer.appendChild(_itemContainer);
 			return _itemContainer;
 		}
 		addSubContainer = function() {
@@ -1004,22 +1008,31 @@ function outputItem(link, level, container, parentPath) {
 		container.appendChild(item);
 	} else {
 		var itemContainer = addItemContainer();
-		// Create hyperlink in Item container
-		var innerContainer;
-		if (url != null) {
-			innerContainer = document.createElement('a');
-			innerContainer.href = url;
-			innerContainer.className = 'item link';
-			if (target != null)
-				innerContainer.target = target;
-			if (tooltip != null)
-				innerContainer.title = tooltip;
-		} else {
-			innerContainer = document.createElement('div');
-			innerContainer.className = 'item';
+		// Create textContainer to hold the name/label
+		var textContainer = null;
+		var setTextClass = function(className, add) {
+			if (textContainer != null) {
+				if (add)
+					textContainer.classList.add(className);
+				else
+					textContainer.classList.remove(className);
+			}
+		};
+		if (name != null) {
+			if (icon_present && name == '_') {
+				// Do not display the text
+			} else {
+				textContainer = document.createElement('span');
+				textContainer.appendChild(document.createTextNode(name));
+				if (check != null) {
+					// This is a checkbox item, give the name the correct class
+					textContainer.className = 'checkbox-label';
+				} else {
+					textContainer.className = 'link-name';
+				}
+			}
 		}
-		itemContainer.appendChild(innerContainer);
-		// Create checkbox in Item container
+		// Create and add checkbox in Item container
 		if (check != null) {
 			// Render a checkbox
 			var checkbox = document.createElement('input');
@@ -1039,32 +1052,37 @@ function outputItem(link, level, container, parentPath) {
 				}
 				Links = Links.replace(re, '$1' + newCheck);
 				writeLocalLinks(Links);
+				setTextClass('checked', checkbox.checked);
 			};
 			if (check === true) {
 				checkbox.checked = true;
+				setTextClass('checked', true);
 			} else if (check === false) {
 				checkbox.checked = false;
+				setTextClass('checked', false);
 			}
-			innerContainer.appendChild(checkbox);
+			itemContainer.appendChild(checkbox);
 		}
-		// Create icon in Item container
-		var icon_present = outputIcon(innerContainer, null, icon, url);
-		// Create text in Item container
-		if (name != null) {
-			if (icon_present && name == '_') {
-				// Do not display the text
-			} else {
-				var textContainer = document.createElement('span');
-				textContainer.appendChild(document.createTextNode(name));
-				if (check != null) {
-					// This is a checkbox item, give the name the correct class
-					textContainer.className = 'checkbox-label';
-				} else {
-					textContainer.className = 'link-name';
-				}
-				innerContainer.appendChild(textContainer);
-			}
+		// Create hyperlink in Item container
+		var linkContainer;  //this container holds the link
+		if (url != null) {
+			linkContainer = document.createElement('a');
+			linkContainer.href = url;
+			linkContainer.className = 'link';
+			if (target != null)
+				linkContainer.target = target;
+			if (tooltip != null)
+				linkContainer.title = tooltip;
+			itemContainer.appendChild(linkContainer);
+		} else {
+			linkContainer = itemContainer;  //there is no separate link
 		}
+
+		// Create and add icon
+		var icon_present = outputIcon(linkContainer, null, icon, url);
+		// Add textContainer
+		if (textContainer != null)
+			linkContainer.appendChild(textContainer);
 		// If there is continuation, output those items in this container too
 		if (contItems != null) {
 			outputItems(contItems, level, itemContainer, myPath);
