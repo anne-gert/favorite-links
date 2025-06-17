@@ -87,6 +87,15 @@ for each block independently.
 		margin: 0.7em;
 		position: relative; left: -0.5em;
 	}
+	/* For some reason, the right-hand side of the items is hidden (if overflow=clip it
+	   *is* shown, but then the animation does not work correctly. Also using another
+	   unit besides fr makes the animation not work correctly.
+	   Since this only happens on mobile (I tested Firefox as well as Chrome on Android),
+	   I can force a bit of extra padding on the block-items level.
+	   I also tested if the font-adjustment had any influence. It didn't. */
+	.block-items {
+		padding-right: 1em;
+	}
 }
 
 :root, body {
@@ -117,8 +126,8 @@ for each block independently.
 }
 
 /* Note: On Firefox, if all collapsing/expanding animations do not take the
- * same amount of time, it becomes jerky. Therefore, use the same amount of
- * time and arrange different animation speeds with the @keyframes. */
+   same amount of time, it becomes jerky. Therefore, use the same amount of
+   time and arrange different animation speeds with the @keyframes. */
 
 .block .resize-icon {
 	float: right;
@@ -151,13 +160,13 @@ for each block independently.
 
 .block .slider-container {
 	/* As described in https://keithjgrant.com/posts/2023/04/transitioning-to-height-auto/,
-	 * animating height to height:auto is not always possible, e.g. on Firefox. A solution
-	 * is to animate grid-template-rows and add an extra intermediate <div>. */
+	   animating height to height:auto is not always possible, e.g. on Firefox. A solution
+	   is to animate grid-template-rows and add an extra intermediate <div>. */
 	display: grid;
 	grid-template-rows: 1fr;
 	grid-template-columns: 1fr;
 }
-.slider-container .items {
+.block .slider-container > .items {
 	overflow: hidden;
 	white-space: nowrap;
 }
