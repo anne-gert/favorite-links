@@ -21,8 +21,8 @@ For syntax description of Links, see help.html
  * Global definitions
  ****************************************************************************/
 
-/* Color palette */
-:root {
+/* Color palette - dark theme */
+body.dark-theme {
 	--background: #2E323B;
 	--foreground: #DDDDDD;
 	--accent-color: #50A0EE;
@@ -35,6 +35,22 @@ For syntax description of Links, see help.html
 	--code-background: #282828;
 	--code-foreground: var(--foreground);
 	--link-color: #6666FF;
+}
+
+/* Color palette - light theme */
+body.light-theme {
+	--background: #D0D8E0;
+	--foreground: #444444;
+	--accent-color: #5050CC;
+	--selection-background: #000099;
+	--selection-foreground: #FFFFFF;
+	--block-background: #D9DDE0;
+	--block-foreground: #222222;
+	--block-border: #666666;
+	--disabled-color: #888888;
+	--code-background: #C0C0C0;
+	--code-foreground: var(--foreground);
+	--link-color: #2222AA;
 }
 
 :root, body, input, textarea, button {
@@ -436,6 +452,7 @@ const DefaultLinks = `
 // See also example-links.txt
 
 !title Example Favorites
+!theme dark-theme
 
 !text
 <a name="description"></a>
@@ -726,6 +743,7 @@ function writeLocalLinks(value) {
 // Global variables in which parseLinks() puts its output.
 var Links = null;  //links text, input for parseLinks()
 var PageTitle = null;  //specified title
+var PageTheme = null;  //specified color theme
 var SearchButtonDefs = null;  //specified search button declarations
 var RootLinks = null;  //array of Link objects that have no parents (i.e. are roots)
 var IconDefs = null;  //specified icondef declarations
@@ -736,6 +754,7 @@ function parseLinks() {
 	// Parse the input lines
 	var allLinks = [];  //specified Link objects
 	PageTitle = null;
+	PageTheme = null;
 	SearchButtonDefs = [];
 	RootLinks = [];
 	IconDefs = {};
@@ -777,6 +796,14 @@ function parseLinks() {
 		if (m) {
 			// This is an title
 			PageTitle = m[1];  //save string
+			continue;
+		}
+
+		// Check if it is a theme definition
+		var m = line.match(/^\s*!theme\s+(.+?)\s*$/i);
+		if (m) {
+			// This is an title
+			PageTheme = m[1];  //save string
 			continue;
 		}
 
@@ -1849,6 +1876,23 @@ function setPageTitle(title) {
 		titleCtl.innerText = title;
 }
 
+// Function to set the theme of the body to the specified string.
+function setPageTheme(theme) {
+	// Get the current classes
+	var names = document.body.classList;
+	// Filter out current theme
+	var names2 = [];
+	for (var i = 0; i < names.length; ++i) {
+		var name = names[i];
+		if (!name.match(/-theme$/)) {  //skip current *-theme class
+			names2.push(name);
+		}
+	}
+	// Add new theme
+	names2.push(theme);
+	document.body.classList = names2;
+}
+
 // From the Links configuration, parse its content and display it.
 function processLinks() {
 	// Parse Links
@@ -1857,6 +1901,11 @@ function processLinks() {
 	// Set page title
 	if (PageTitle) {
 		setPageTitle(PageTitle);
+	}
+
+	// Set page theme
+	if (PageTheme) {
+		setPageTheme(PageTheme);
 	}
 
 	// Render links
@@ -1922,7 +1971,7 @@ window.onload = init;
 
 </head>
 
-<body>
+<body class="dark-theme">
 
 <h1 id="Title">Favorites</h1>
 
