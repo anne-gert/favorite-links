@@ -14,8 +14,8 @@
  * Global definitions
  ****************************************************************************/
 
-/* Color palette */
-:root {
+/* Color palette - dark theme */
+body.dark-theme {
 	--background: #2E323B;
 	--foreground: #DDDDDD;
 	--accent-color: #50A0EE;
@@ -28,6 +28,22 @@
 	--code-background: #282828;
 	--code-foreground: var(--foreground);
 	--link-color: #6666FF;
+}
+
+/* Color palette - light theme */
+body.light-theme {
+	--background: #D0D8E0;
+	--foreground: #444444;
+	--accent-color: #5050CC;
+	--selection-background: #000099;
+	--selection-foreground: #FFFFFF;
+	--block-background: #D9DDE0;
+	--block-foreground: #222222;
+	--block-border: #666666;
+	--disabled-color: #888888;
+	--code-background: #C0C0C0;
+	--code-foreground: var(--foreground);
+	--link-color: #2222AA;
 }
 
 :root, body, input, textarea, button {
@@ -72,7 +88,7 @@
 
 </head>
 
-<body class="text-block">
+<body class="text-block dark-theme">
 
 
 <h1>Favorites and ToDo - Help</h1>
@@ -186,6 +202,10 @@ Each line should be one of the following:
       which case, it assumes the level of the item above it.
   <li><dt>Page Title</dt>: The line <code>!title name</code> specifies the page
       title to be displayed.
+  <li><dt>Theme</dt>: The line <code>!theme name</code> specifies the CSS class
+      name to use for the theme. Currently 'dark-theme' (default) and
+      'light-theme' are defined, but custom themes can be defined with a Text
+      Block.
   <li><dt>Search Buttons</dt>: The line <code>!search fields</code> defines a
       search button to be displayed next to the search box. The fields are
       separated by <code>|</code> with whitespace allowed.  These are the
