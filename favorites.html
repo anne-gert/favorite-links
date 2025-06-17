@@ -185,9 +185,13 @@ for each block independently.
 }
 @keyframes block-expanding-y {
 	0%, 20% {
+		transform: scaleY(0);
+		transform-origin: top;
 		grid-template-rows: 0fr;
 	}
 	100% {
+		transform: scaleY(1);
+		transform-origin: top;
 		grid-template-rows: 1fr;
 	}
 }
