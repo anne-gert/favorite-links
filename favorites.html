@@ -1766,6 +1766,24 @@ function initSettingsPanel() {
 			if (visible) hideSettings(false); else showSettings();
 		};
 	}
+	if (txtSettings) {
+		txtSettings.onkeydown = function(e) {
+			//console.log('KeyCode=' + e.keyCode);
+			if (e.keyCode == 9) {
+				// This is the TAB key -> Insert 4 spaces
+				textInsert(this, () => ' '.repeat(4));
+				return false;  //stop further handling
+			} else if (e.keyCode == 13) {
+				// This is the Enter key -> Copy indentation from current line
+				textInsert(this, (before, mid, after) => {
+					var m = before.match(/(?:^|\r|\n)([ \t]*)[^\r\n]*$/);  //match: 'linebreak whitespace line end'
+					return '\n' + m[1];  //insert linebreak plus matched whitespace
+				});
+				return false;  //stop further handling
+			}
+			return true;
+		};
+	}
 	if (btnSave) {
 		btnSave.onclick = function() {
 			if (visible) hideSettings(true);
@@ -1784,6 +1802,40 @@ function initSettingsPanel() {
 			return false;  //stop default button action
 		};
 	}
+}
+
+// Assume the ctl is an input control.
+// Return the sanitized insertion point or selection range.
+function getSelectionPos(ctl) {
+	// The selection position indicates the selection, but also the insertion point
+	var start = ctl.selectionStart;  //char pos AT which the selection starts
+	var end = ctl.selectionEnd;  //char pos AFTER the selection end
+	// Sanitize, so it is within the string:
+	// - start is in [0, len]
+	// - end is in [start, len]
+	var len = ctl.value.len;
+	if (start == null || start < 0) start = 0;
+	if (start > len) start = len;
+	if (end == null || end < start) end = start;
+	if (end > len) end = len;
+
+	return [start, end];
+}
+
+// Assume the ctl is an input control.
+// Determine the strings before and after the insertion point.
+// Then call the inserter with these values. The inserter should return the insertion string.
+// Update ctl and place the new insertion point after the insertion.
+function textInsert(ctl, inserter) {
+	var pos = getSelectionPos(ctl);
+	var start = pos[0], end = pos[1];
+	// Do the insertion, replace the selection if any
+	var before = ctl.value.substring(0, start), mid = ctl.value.substring(start, end), after = ctl.value.substring(end);
+	var mid2 = inserter(before, mid, after);
+	ctl.value = before + mid2 + after;
+	// Put the insertion point after the insertion
+	var newPos = start + mid2.length;
+	ctl.selectionStart = ctl.selectionEnd = newPos;
 }
 
 // }}}
