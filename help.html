@@ -10,6 +10,10 @@
 <title>Favorites and ToDo - Help</title>
 
 <style>
+/****************************************************************************
+ * Global definitions
+ ****************************************************************************/
+
 /* Color palette */
 :root {
 	--background: #2E323B;
@@ -26,12 +30,24 @@
 	--link-color: #6666FF;
 }
 
-:root, body {
-	font-family:  'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
+:root, body, input, textarea, button {
+	font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
 	font-size: 12pt;
 }
 
-/* The following .text-block items are the same between all pages */
+:root, body {
+	color: var(--accent-color); background: var(--background);
+}
+::selection {
+	color: var(--selection-foreground); background: var(--selection-background);
+}
+
+
+/****************************************************************************
+ * Shared styles for displaying text-blocks
+ * These syles are shared between all pages
+ ****************************************************************************/
+
 .text-block {
 	color: var(--foreground); background: var(--background);
 }

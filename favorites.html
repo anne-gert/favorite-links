@@ -17,6 +17,10 @@ For syntax description of Links, see help.html
 <style>
 /* CSS styles {{{ */
 
+/****************************************************************************
+ * Global definitions
+ ****************************************************************************/
+
 /* Color palette */
 :root {
 	--background: #2E323B;
@@ -37,6 +41,19 @@ For syntax description of Links, see help.html
 	font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
 	font-size: 12pt;
 }
+
+:root, body {
+	color: var(--accent-color); background: var(--background);
+}
+::selection {
+	color: var(--selection-foreground); background: var(--selection-background);
+}
+
+
+/****************************************************************************
+ * Resizing for mobile devices
+ ****************************************************************************/
+
 /*
 https://www.w3schools.com/css/css_rwd_mediaqueries.asp advices the following sizes:
 - max-width=600px: Extra small devices (phones)
@@ -98,16 +115,46 @@ for each block independently.
 	}
 }
 
-:root, body {
-	color: var(--accent-color); background: var(--background);
+
+/****************************************************************************
+ * Shared styles for displaying text-blocks
+ * These syles are shared between all pages
+ ****************************************************************************/
+
+.text-block {
+	color: var(--foreground); background: var(--background);
 }
-::selection {
-	color: var(--selection-foreground); background: var(--selection-background);
+.text-block h1, .text-block h2, .text-block h3, .text-block dt {
+	color: var(--accent-color);
 }
+.text-block code, .text-block pre {
+	color: var(--code-foreground); background: var(--code-background);
+	padding: 0.1em 0.4em;
+}
+.text-block dt {
+	display: inline;
+}
+.text-block a {
+	color: var(--link-color);
+	text-decoration: none;
+}
+.text-block a:hover {
+	text-decoration: underline;
+}
+
+
+/****************************************************************************
+ * Section styles
+ ****************************************************************************/
 
 .section {
 	display: block;
 }
+
+
+/****************************************************************************
+ * Block styles
+ ****************************************************************************/
 
 .block {
 	display: inline-block;
@@ -121,44 +168,179 @@ for each block independently.
 .items {
 	margin-left: 2em;
 }
-.block-items {  /* First indentatiion level in a block */
+.block-items {  /* First indentatiion level in a Block (kind-of like the title of a Block) */
 	margin-left: 0.5em;
 }
+
+
+/****************************************************************************
+ * Item and SubItem styles
+ ****************************************************************************/
+
+.item {
+	display: block;
+	padding: 0.1em;
+}
+
+/* Item Groups for continuation */
+
+.group .item {
+	display: inline;
+	margin-left: 0.4em;
+}
+.group .item:first-child {
+	margin-left: unset;
+}
+
+/* Item Checkboxes */
+
+.todo-checkbox {
+	margin-right: 0.2em;
+}
+.todo-checkbox:checked {
+}
+.checkbox-label {
+}
+.checkbox-label.checked {
+	color: var(--disabled-color);
+	text-decoration: line-through;
+}
+
+/* Item Icons */
+
+.item .icon {
+	width: 1.0em; height: 1.0em;
+	margin-right: 0.2em;
+	vertical-align: -10%;
+}
+.item .link .icon {
+	vertical-align: -20%;
+}
+.text-icon {
+	display: inline-block;
+	padding: 0em;
+	text-decoration: none;
+}
+.text-icon div {
+	position: absolute;
+	margin: 0em; padding: 0em;
+	transform-origin: 0 0;
+}
+
+/* Item Separator */
+
+.item .separator {
+	margin: 0em -1em 0em -1em;
+}
+
+
+/****************************************************************************
+ * Search Form
+ ****************************************************************************/
+
+.search-form .textbox {
+	font-size: 110%;
+}
+.search-form .button {
+	margin: 0.3em;
+}
+.search-form .button .icon {
+	width: 1.5em; height: 1.5em;
+	vertical-align: -25%;
+}
+.search-form .button .label {
+	margin: 0em 0.3em;
+}
+
+
+/****************************************************************************
+ * Settings Form
+ ****************************************************************************/
+
+.settings-icon {
+	position: absolute;
+	top: 10px; right: 10px;
+	font-size: 200%;
+	cursor: pointer;
+}
+.settings-form .panel {
+	width: 95%;
+}
+.settings-form .textbox {
+	width: 100%;
+	height: 47em;
+	resize: both;
+	overflow: scroll;
+	color: var(--foreground); background: var(--background);
+	font-family: monospace;
+}
+.settings-form .buttonbar {
+	text-align: right;
+}
+.settings-form .button {
+}
+
+
+/****************************************************************************
+ * blink animation
+ ****************************************************************************/
+
+.blink {
+	animation: 500ms 4 blinker;
+	color: rgb(0, 0, 0, 0);  /* transparent (also placeholder) */
+}
+.blink::placeholder {
+	opacity: 1;  /* in case browser has this lower by default */
+}
+@keyframes blinker {
+	30% {
+		border: .15em solid red;
+		background: #FFCCCC;
+		color: rgb(0, 0, 0, 1);  /* fully visible (also placeholder) */
+	}
+}
+
+
+/****************************************************************************
+ * settings-form animation
+ ****************************************************************************/
+
+.settings-form {
+	display: none;
+	height: 50em;
+}
+.settings-form.show {
+	display: block;
+}
+.settings-form.expanding {
+	animation: 700ms ease settings-form-slider;
+}
+.settings-form.collapsing {
+	animation: 700ms ease reverse settings-form-slider;
+}
+@keyframes settings-form-slider {
+	0% {
+		transform: scaleY(0);
+		transform-origin: top;
+		height: 0em;
+	}
+	100% {
+		transform: scaleY(1);
+		transform-origin: top;
+		height: 50em;
+	}
+}
+
+
+/****************************************************************************
+ * slider-container and resize-button animation
+ ****************************************************************************/
 
 /* Note: On Firefox, if all collapsing/expanding animations do not take the
    same amount of time, it becomes jerky. Therefore, use the same amount of
    time and arrange different animation speeds with the @keyframes. */
 
-.block .resize-icon {
-	float: right;
-	position: relative;
-	top: -0.9em; right: -0.6em;
-	cursor: pointer;
-	color: var(--disabled-color);
-	transform: rotate(90deg);
-}
-.block.collapsing .resize-icon {
-	animation: 400ms ease animate-resize-icon;
-}
-.block.expanding .resize-icon {
-	animation: 400ms ease reverse animate-resize-icon;
-}
-.block.collapsed .resize-icon {
-	color: var(--block-foreground);
-	transform: rotate(0deg);
-}
-@keyframes animate-resize-icon {
-	0%, 30% {
-		color: var(--disabled-color);
-		transform: rotate(90deg);
-	}
-	70%, 100% {
-		color: var(--block-foreground);
-		transform: rotate(0deg);
-	}
-}
-
-.block .slider-container {
+.slider-container {
 	/* As described in https://keithjgrant.com/posts/2023/04/transitioning-to-height-auto/,
 	   animating height to height:auto is not always possible, e.g. on Firefox. A solution
 	   is to animate grid-template-rows and add an extra intermediate <div>. */
@@ -166,21 +348,21 @@ for each block independently.
 	grid-template-rows: 1fr;
 	grid-template-columns: 1fr;
 }
-.block .slider-container > .items {
+.slider-container > .items {  /* the first level of items in the container */
 	overflow: hidden;
 	white-space: nowrap;
 }
-.block.collapsing .slider-container {
+.collapsing .slider-container {
 	animation:
 		400ms ease-out reverse block-expanding-x,
 		400ms ease-out reverse block-expanding-y;
 }
-.block.expanding .slider-container {
+.expanding .slider-container {
 	animation:
 		400ms ease-out block-expanding-x,
 		400ms ease-out block-expanding-y;
 }
-.block.collapsed .slider-container {
+.collapsed .slider-container {
 	grid-template-rows: 0fr;
 	grid-template-columns: 0fr;
 }
@@ -205,146 +387,35 @@ for each block independently.
 	}
 }
 
-.item {
-	display: block;
-	padding: 0.1em;
-}
-.group .item {
-	display: inline;
-	margin-left: 0.4em;
-}
-.group .item:first-child {
-	margin-left: unset;
-}
+/* resize-button animation */
 
-.todo-checkbox {
-	margin-right: 0.2em;
-}
-.todo-checkbox:checked {
-}
-.checkbox-label {
-}
-.checkbox-label.checked {
-	color: var(--disabled-color);
-	text-decoration: line-through;
-}
-.item .icon {
-	width: 1.0em; height: 1.0em;
-	margin-right: 0.2em;
-	vertical-align: -10%;
-}
-.item .link .icon {
-	vertical-align: -20%;
-}
-.item .separator {
-	margin: 0em -1em 0em -1em;
-}
-
-.text-icon {
-	display: inline-block;
-	padding: 0em;
-	text-decoration: none;
-}
-.text-icon div {
-	position: absolute;
-	margin: 0em; padding: 0em;
-	transform-origin: 0 0;
-}
-
-.search-form .box {
-	font-size: 110%;
-}
-.search-form .button {
-	margin: 0.3em;
-}
-.search-form .button .icon {
-	width: 1.5em; height: 1.5em;
-	vertical-align: -25%;
-}
-.search-form .button .label {
-	margin: 0em 0.3em;
-}
-.blink {
-	animation: 500ms 4 blinker;
-	color: rgb(0, 0, 0, 0);  /* transparent (also placeholder) */
-}
-.blink::placeholder {
-	opacity: 1;  /* in case browser has this lower by default */
-}
-@keyframes blinker {
-	30% {
-		border: .15em solid red;
-		background: #FFCCCC;
-		color: rgb(0, 0, 0, 1);  /* fully visible (also placeholder) */
-	}
-}
-
-#SettingsIcon {
-	position: absolute;
-	top: 10px; right: 10px;
-	font-size: 200%;
+.resize-icon {
+	float: right;
+	position: relative;
+	top: -0.9em; right: -0.6em;
 	cursor: pointer;
+	color: var(--disabled-color);
+	transform: rotate(90deg);
 }
-#SettingsContainer {
-	width: 95%;
+.collapsing .resize-icon {
+	animation: 400ms ease animate-resize-icon;
 }
-#SettingsText {
-	width: 100%;
-	height: 47em;
-	resize: both;
-	overflow: scroll;
-	color: var(--foreground); background: var(--background);
-	font-family: monospace;
+.expanding .resize-icon {
+	animation: 400ms ease reverse animate-resize-icon;
 }
-.button-bar {
-	text-align: right;
+.collapsed .resize-icon {
+	color: var(--block-foreground);
+	transform: rotate(0deg);
 }
-#SettingsPanel {
-	display: none;
-	height: 50em;
-}
-#SettingsPanel.show {
-	display: block;
-}
-#SettingsPanel.slide-in {
-	animation: 700ms ease settings-panel-slider;
-}
-#SettingsPanel.slide-out {
-	animation: 700ms ease reverse settings-panel-slider;
-}
-@keyframes settings-panel-slider {
-	0% {
-		transform: scaleY(0);
-		transform-origin: top;
-		height: 0em;
+@keyframes animate-resize-icon {
+	0%, 30% {
+		color: var(--disabled-color);
+		transform: rotate(90deg);
 	}
-	100% {
-		transform: scaleY(1);
-		transform-origin: top;
-		height: 50em;
+	70%, 100% {
+		color: var(--block-foreground);
+		transform: rotate(0deg);
 	}
-}
-
-/* The following .text-block items are the same between all pages */
-.text-block {
-	color: var(--foreground); background: var(--background);
-}
-.text-block h1, .text-block h2, .text-block h3, .text-block dt {
-	color: var(--accent-color);
-}
-.text-block code, .text-block pre {
-	color: var(--code-foreground); background: var(--code-background);
-	padding: 0.1em 0.4em;
-}
-.text-block dt {
-	display: inline;
-}
-.text-block a {
-	color: var(--link-color);
-	text-decoration: none;
-}
-.text-block a:hover {
-	text-decoration: underline;
 }
 
 /* }}} */
@@ -1648,7 +1719,7 @@ function addSearchButtons(searchBox, container) {
 // Set up the events for the settings panel.
 function initSettingsPanel() {
 	var iconSettings = document.getElementById('SettingsIcon');
-	var pnlSettings = document.getElementById('SettingsPanel');
+	var pnlSettings = document.getElementById('SettingsForm');
 	var txtSettings = document.getElementById('SettingsText');
 	var btnSave = document.getElementById('BtnSaveSettings');
 	var btnClear = document.getElementById('BtnClearSettings');
@@ -1657,10 +1728,10 @@ function initSettingsPanel() {
 	var showSettings = function() {
 		txtSettings.value = Links;
 		// Slide to visible
-		pnlSettings.classList.add('slide-in');
+		pnlSettings.classList.add('expanding');
 		pnlSettings.classList.add('show');
 		pnlSettings.onanimationend = function() {
-			pnlSettings.classList.remove('slide-in');
+			pnlSettings.classList.remove('expanding');
 		};
 		visible = true;
 	};
@@ -1683,10 +1754,10 @@ function initSettingsPanel() {
 			}
 		}
 		// slide to hidden
-		pnlSettings.classList.add('slide-out');
+		pnlSettings.classList.add('collapsing');
 		pnlSettings.onanimationend = function() {
 			pnlSettings.classList.remove('show');
-			pnlSettings.classList.remove('slide-out');
+			pnlSettings.classList.remove('collapsing');
 		};
 		visible = false;
 	};
@@ -1803,25 +1874,23 @@ window.onload = init;
 
 <h1 id="Title">Favorites</h1>
 
-<span id="SettingsIcon">&#x2699;</span>
+<span id="SettingsIcon" class="settings-icon">&#x2699;</span>
 
-<div id="SettingsPanel">
-<form id="SettingsForm">
-<div id="SettingsContainer">
-<textarea id="SettingsText" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Settings"></textarea>
-<div class="button-bar">
+<form id="SettingsForm" class="settings-form">
+<div class="panel">
+<textarea id="SettingsText" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Settings" class="textbox"></textarea>
+<div class="buttonbar">
 <button id="BtnSaveSettings" class="button">Save</button>
 <button id="BtnClearSettings" class="button">Clear</button>
 <button id="BtnCancelSettings" class="button">Cancel</button>
 </div>
 </div>
-</form>
 <hr>
-</div>
+</form>
 
 <form id="SearchForm" class="search-form">
 Search:
-<input id="SearchBox" name="q" type="text" size="40" class="box"/>
+<input id="SearchBox" name="q" type="text" size="40" class="textbox"/>
 <span id="SearchButtons"></span>
 </form>
 
