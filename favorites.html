@@ -1154,7 +1154,19 @@ function outputItem(link, level, container, parentPath) {
 		container.appendChild(item);
 	} else {
 		var itemContainer = addItemContainer();
-		// Create textContainer to hold the name/label
+		// The containers are structured as follows:
+		// - groupContainer: Only if there are continued Items
+		//     - itemContainer: Holds the entire (Sub)Item
+		//         - checkbox: Only if it is a checkbox item
+		//         - linkContainer: Only if there is a URL
+		//             - icon: In itemContainer if there is no linkContainer
+		//             - textContainer: Only present if there is a name
+		//                              In itemContainer if there is no linkContainer
+		//                 - text: name
+		//         - continued items
+		//         - items: Only if there are subItems
+
+		// Declare textContainer to hold the name/label
 		var textContainer = null;
 		var setTextClass = function(className, add) {
 			if (textContainer != null) {
@@ -1164,24 +1176,12 @@ function outputItem(link, level, container, parentPath) {
 					textContainer.classList.remove(className);
 			}
 		};
-		if (name != null) {
-			if (icon_present && name == '_') {
-				// Do not display the text
-			} else {
-				textContainer = document.createElement('span');
-				textContainer.appendChild(document.createTextNode(name));
-				if (check != null) {
-					// This is a checkbox item, give the name the correct class
-					textContainer.className = 'checkbox-label';
-				} else {
-					textContainer.className = 'link-name';
-				}
-			}
-		}
-		// Create and add checkbox in Item container
+
+		// Create checkbox
+		var checkbox = null;
 		if (check != null) {
 			// Render a checkbox
-			var checkbox = document.createElement('input');
+			checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
 			checkbox.className = 'todo-checkbox';
 			checkbox.onchange = function() {
@@ -1200,36 +1200,67 @@ function outputItem(link, level, container, parentPath) {
 				writeLocalLinks(Links);
 				setTextClass('checked', checkbox.checked);
 			};
-			if (check === true) {
-				checkbox.checked = true;
-				setTextClass('checked', true);
-			} else if (check === false) {
-				checkbox.checked = false;
-				setTextClass('checked', false);
-			}
-			itemContainer.appendChild(checkbox);
-		}
-		// Create hyperlink in Item container
-		var linkContainer;  //this container holds the link
-		if (url != null) {
-			linkContainer = document.createElement('a');
-			linkContainer.href = url;
-			linkContainer.className = 'link';
-			if (target != null)
-				linkContainer.target = target;
-			if (tooltip != null)
-				linkContainer.title = tooltip;
-			itemContainer.appendChild(linkContainer);
-		} else {
-			linkContainer = itemContainer;  //there is no separate link
+			checkbox.checked = check;
 		}
 
-		// Create and add icon
-		var icon_present = outputIcon(linkContainer, null, icon, url);
-		// Add textContainer
-		if (textContainer != null)
+		// Create icon_control
+		var icon_control = outputIcon(null, icon, url);
+
+		// Create textContainer to hold the name/label
+		if (name != null) {
+			if (icon_control.present && name == '_') {
+				// Do not display the text
+			} else {
+				textContainer = document.createElement('span');
+				textContainer.appendChild(document.createTextNode(name));
+				if (check != null) {
+					// This is a checkbox item, give the name the correct class
+					textContainer.className = 'checkbox-label';
+					setTextClass('checked', check);
+				} else {
+					textContainer.className = 'link-name';
+				}
+			}
+		}
+
+		// Create hyperlink
+		var hyperlink = null;
+		if (url != null) {
+			hyperlink = document.createElement('a');
+			hyperlink.href = url;
+			hyperlink.className = 'link';
+			if (target != null)
+				hyperlink.target = target;
+			if (tooltip != null)
+				hyperlink.title = tooltip;
+		}
+
+		// Add checkbox to the itemContainer
+		if (checkbox != null) {
+			itemContainer.appendChild(checkbox);
+		}
+
+		// Add hyperlink to itemContainer
+		// Alias linkContainer to hyperlink if it exists, itemContainer otherwise
+		var linkContainer;  //this container holds the link
+		if (hyperlink != null) {
+			itemContainer.appendChild(hyperlink);
+			linkContainer = hyperlink;
+		} else {
+			linkContainer = itemContainer;
+		}
+
+		// Add icon_control to linkContainer
+		if (icon_control.element != null) {
+			linkContainer.appendChild(icon_control.element);
+		}
+
+		// Add textContainer to linkContainer
+		if (textContainer != null) {
 			linkContainer.appendChild(textContainer);
-		// If there is continuation, output those items in this container too
+		}
+
+		// If there is continuation, output those items in this itemContainer too
 		if (contItems != null) {
 			outputItems(contItems, level, itemContainer, myPath);
 		}
@@ -1272,17 +1303,19 @@ function outputItems(links, level, container, parentPath = '') {
 
 // Output Icon {{{
 
-// Create <img> item in the container.
+// Create element for icon and return that
 // If alt_text is defined, use that.
 // icon_url is what is specified in the icon=URL argument, see explanation at
 // the top of this file.
-// Returns true if a non-empty icon is generated.
+// Returns object with:
+// - present: true if a non-empty icon is generated.
+// - element: represents the icon, may be null.
 //
 // To retrieve the icon, first try the primary URL. If that fails and skip_alternatives==false,
 // try these alternatives:
 // - http://www.google.com/s2/favicons?domain=<target_url domain>
 // - http://www.google.com/s2/favicons?domain=<icon_url domain>
-function outputIcon(container, alt_text, icon_url, target_url, skip_alternatives = false) {
+function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 	// By default, construct icon_url from target_url
 	if ((icon_url == null || icon_url == 'default') && target_url != null) {
 		icon_url = getDefaultIconUrl(target_url);
@@ -1294,6 +1327,7 @@ function outputIcon(container, alt_text, icon_url, target_url, skip_alternatives
 	}
 
 	var icon_present = false;
+	var icon_element = null;
 
 	// Render icon_url
 	var m;  //for regex matches
@@ -1310,7 +1344,7 @@ function outputIcon(container, alt_text, icon_url, target_url, skip_alternatives
 		htmlDiv.innerHTML = html;  //also takes care of HTML rendering
 		FillScaler.observe(htmlDiv);
 		iconDiv.appendChild(htmlDiv);
-		container.appendChild(iconDiv);
+		icon_element = iconDiv;
 		icon_present = true;
 	} else {
 		console.log('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
@@ -1419,10 +1453,13 @@ function outputIcon(container, alt_text, icon_url, target_url, skip_alternatives
 			img.alt = alt_text;
 		}
 		img.className = 'item-icon';
-		container.appendChild(img);
+		icon_element = img;
 	}
 
-	return icon_present;
+	return {
+		'present' : icon_present,
+		'element' : icon_element,
+	};
 }
 
 // Take icon_url and perform the icondef replacements.
@@ -1689,7 +1726,8 @@ function addSearchButton(container, search_box, button_id, label_text, tooltip, 
 		//console.log('favicon=' + getDefaultIconUrl(target_domain));
 		// When determining the icon, don't consider alternatives,
 		// except when icon_url == 'alt...'
-		outputIcon(btn, tooltip, icon_url, target_domain, true);
+		var icon = outputIcon(tooltip, icon_url, target_domain, true);
+		if (icon.element != null) btn.appendChild(icon.element);
 
 		// Add link text
 		var label = document.createElement('span');
