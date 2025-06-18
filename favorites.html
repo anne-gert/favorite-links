@@ -599,14 +599,14 @@ const KeyLinks = 'links';
 // 5) If Links is empty at this point, use a default contents.
 // 6) Links should now have a value that can be parsed as specified below.
 function resolveLinks() {
-	var links = null;
+	let links = null;
 
-	var params = new URLSearchParams(location.search);
+	let params = new URLSearchParams(location.search);
 	//console.log(params);
 
 	// Step 1) Check if links-override is defined in the query string
 	if (links == null) {
-		var v = params.get('links-override');
+		let v = params.get('links-override');
 		if (v) {
 			// Use this URL argument for links
 			console.log('Use links-override= URL argument');
@@ -616,7 +616,7 @@ function resolveLinks() {
 
 	// Step 2) Check if links is defined in LocalStorage
 	if (links == null) {
-		var v = readLocalLinks();
+		let v = readLocalLinks();
 		if (v !== false) {
 			// LocalStorage is available, use persistent value
 			console.log('Use links from the LocalStorage');
@@ -626,7 +626,7 @@ function resolveLinks() {
 
 	// Step 3) Check if links is defined in the query string
 	if (links == null) {
-		var v = params.get('links');
+		let v = params.get('links');
 		if (v) {
 			// Use this URL argument for links
 			console.log('Use links= URL argument');
@@ -636,7 +636,7 @@ function resolveLinks() {
 
 	// Step 4) If links is a URL, resolve it
 	if (links != null) {
-		var matchTargetUrl = links.match(/^\s*url\s*:\s*((https?:\/\/)?(.*?))\s*$/i);
+		let matchTargetUrl = links.match(/^\s*url\s*:\s*((https?:\/\/)?(.*?))\s*$/i);
 		//console.log(matchTargetUrl);
 		// Captured:
 		// 1: url
@@ -644,10 +644,10 @@ function resolveLinks() {
 		// 3: domain + path + rest
 		if (matchTargetUrl) {
 			// links is a URL
-			var url = matchTargetUrl[1];
+			let url = matchTargetUrl[1];
 			if (!matchTargetUrl[2]) {
 				// URL is relative, check if we need to adjust it
-				var matchBaseUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
+				let matchBaseUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
 				//console.log(matchBaseUrl);
 				// Captured:
 				// 1: protocol
@@ -656,9 +656,9 @@ function resolveLinks() {
 				if (matchBaseUrl) {
 					// The current URL is html-preview.github.io (or similar)
 					// This should have a url= parameter that contains the real location
-					var referredUrl = params.get('url');
+					let referredUrl = params.get('url');
 					//console.log(referredUrl);
-					var matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
+					let matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
 					//console.log(matchReferredUrl);
 					// Captured:
 					// 1: protocol
@@ -680,7 +680,7 @@ function resolveLinks() {
 						console.log('Fix links= relative URL for GitHub');
 						// To make this relative link work, it should be grafted
 						// onto githubusercontent.
-						var matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
+						let matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
 						//console.log(matchReferredPath);
 						// Captured:
 						// 1: directory
@@ -693,7 +693,7 @@ function resolveLinks() {
 			// Retrieve the url
 			console.log('Links defined by URL \'' + url + '\'');
 			links = new Promise((resolveFunc, rejectFunc) => {
-				var xhr = new XMLHttpRequest();
+				let xhr = new XMLHttpRequest();
 				xhr.open('GET', url);
 				xhr.onreadystatechange = function() {
 					if (this.readyState == 4) {
@@ -734,7 +734,7 @@ var LinksPromise = resolveLinks();
 // Return links or false in case of error or if it does not exist.
 function readLocalLinks() {
 	if (localStorage) {
-		var v = localStorage.getItem(KeyLinks);
+		let v = localStorage.getItem(KeyLinks);
 		if (v) return v;
 	}
 	return false;
@@ -770,26 +770,27 @@ var IconDefs = null;  //specified icondef declarations
 // Parse the string in Links and fills the global variables above.
 function parseLinks() {
 	// Parse the input lines
-	var allLinks = [];  //specified Link objects
+	let allLinks = [];  //specified Link objects
 	PageTitle = null;
 	PageTheme = null;
 	FontSize = null;
 	SearchButtonDefs = [];
 	RootLinks = [];
 	IconDefs = {};
-	var block = null;  //used for literal !text ... !endtext blocks
-	var openParents = [];  //currently open parents: 0 is root, 1 its child, etc
-	var openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
-	var lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
-	for (var i = 0; i < lines.length; ++i) {
-		var line = lines[i];
+	let block = null;  //used for literal !text ... !endtext blocks
+	let openParents = [];  //currently open parents: 0 is root, 1 its child, etc
+	let openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
+	let lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
+	for (let i = 0; i < lines.length; ++i) {
+		let line = lines[i];
 		//console.log('Line=\'' + line + '\'');
+		let m;  //for regex matches
 
 		// If we're in a !text block, add this line to the block
 		if (block != null) {
 			// We're in a !text block
 			// Check if it is the end of a literal !text block
-			var m = line.match(/^\s*!endtext\s*$/i);
+			m = line.match(/^\s*!endtext\s*$/i);
 			if (m) {
 				// It is the end, save the object and reset block.
 				// Add this object without changing the indent or parents.
@@ -811,7 +812,7 @@ function parseLinks() {
 			continue;
 
 		// Check if it is a title definition
-		var m = line.match(/^\s*!title\s+(.+?)\s*$/i);
+		m = line.match(/^\s*!title\s+(.+?)\s*$/i);
 		if (m) {
 			// This is an title
 			PageTitle = m[1];  //save string
@@ -819,7 +820,7 @@ function parseLinks() {
 		}
 
 		// Check if it is a theme definition
-		var m = line.match(/^\s*!theme\s+(.+?)\s*$/i);
+		m = line.match(/^\s*!theme\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a theme
 			PageTheme = m[1];  //save string
@@ -827,7 +828,7 @@ function parseLinks() {
 		}
 
 		// Check if it is a font-size definition
-		var m = line.match(/^\s*!size\s+(.+?)\s*$/i);
+		m = line.match(/^\s*!size\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a size
 			FontSize = m[1];  //save string
@@ -835,7 +836,7 @@ function parseLinks() {
 		}
 
 		// Check if it is an icon definition
-		var m = line.match(/^\s*!icondef\s+(\S+)(?:\s+|\s*=\s*)(\S+)\s*$/i);
+		m = line.match(/^\s*!icondef\s+(\S+)(?:\s+|\s*=\s*)(\S+)\s*$/i);
 		if (m) {
 			// This is an icondef
 			IconDefs[m[1]] = m[2];  //save mapping
@@ -843,66 +844,66 @@ function parseLinks() {
 		}
 
 		// Check if it is a search button definition
-		var m = line.match(/^\s*!search\s+(.+?)\s*$/i);
+		m = line.match(/^\s*!search\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a search button definition
-			var def = m[1].split(/\s*\|\s*/);  //split fields on '|', allowing whitespace
+			let def = m[1].split(/\s*\|\s*/);  //split fields on '|', allowing whitespace
 			SearchButtonDefs.push(def);  //save button def
 			continue;
 		}
 
 		// Check if it is the start of a literal !text block
-		var m = line.match(/^\s*!text\s*$/i);
+		m = line.match(/^\s*!text\s*$/i);
 		if (m) {
 			// Mark the start of a !text block
 			block = {  //special type of Link object
-				'lineNum' : i,  //start of this !text block
-				'type': 'text',
-				'lines' : [],
+				'lineNum'  : i,  //start of this !text block
+				'type'     : 'text',
+				'lines'    : [],
 				'toString' : function() { return '{ !text, #Lines=' + this.lines.length + ' }' },
 			};
 			continue;
 		}
 
 		// Take out indentation
-		var indent = 0;
-		var m = line.match(/^(\s+)(.*)$/);
+		let indent = 0;
+		m = line.match(/^(\s+)(.*)$/);
 		if (m) {
 			indent = m[1].replaceAll('\t', '        ').length;
 			line = m[2];  //the rest
 		}
 		// Take out continucation: & ...
-		var cont = false;
-		var m = line.match(/^&\s*(.*)$/);
+		let cont = false;
+		m = line.match(/^&\s*(.*)$/);
 		if (m) {
 			cont = true;
 			line = m[1];  //the rest
 		}
 		// Take out Icon: /icon=non-whitespace/
-		var icon = null;
-		var m = line.match(/^(.*)(?:\s|^)icon=(\S*)(.*)$/i);
+		let icon = null;
+		m = line.match(/^(.*)(?:\s|^)icon=(\S*)(.*)$/i);
 		if (m) {
 			icon = m[2];
 			line = m[1] + m[3];  //the rest
 		}
 		// Take out Check: start with '[ ]' '[]' or '[x]'
-		var check = null;
-		var m = line.match(/^(\s*)(?:(\[ ?\])|(\[x\]))(.*)$/i);
+		let check = null;
+		m = line.match(/^(\s*)(?:(\[ ?\])|(\[x\]))(.*)$/i);
 		if (m) {
 			if (m[2]) check = false;
 			if (m[3]) check = true;
 			line = m[1] + m[4];  //the rest
 		}
 		// Take out Target: /target=non-whitespace/
-		var target = null;
-		var m = line.match(/^(.*)(?:\s|^)target=(\S*)(.*)$/i);
+		let target = null;
+		m = line.match(/^(.*)(?:\s|^)target=(\S*)(.*)$/i);
 		if (m) {
 			target = m[2];
 			line = m[1] + m[3];  //the rest
 		}
 		// Take out URL: /url=non-whitespace/ or last /schema:non-whitespace/
-		var url = null;
-		var m = line.match(/^(.*)(?:\s|^)url=(\S*)(.*)$/i);
+		let url = null;
+		m = line.match(/^(.*)(?:\s|^)url=(\S*)(.*)$/i);
 		if (!m)
 			m = line.match(/^(.*)(?:\s|^)([-+a-zA-Z]{2,}:\S+)(.*)$/);
 		if (m) {
@@ -910,13 +911,13 @@ function parseLinks() {
 			line = m[1] + m[3];  //the rest
 		}
 		// Take out Name: what remains without leading&trailing whitespae
-		var name = line.trim();
+		let name = line.trim();
 
 		// Handle special items
 		if (name.match(/^---+$/)) {  //name with 3 or more '-'
 			// This is a separator
 			name = '---';  //standardize to 3 '-'
-			var minLevel = 2;  //item level
+			let minLevel = 2;  //item level
 			if (openParentIndentSpaces.length <= minLevel) {
 				continue;  //no open parent at this level yet, skip this item
 			} else {
@@ -929,16 +930,16 @@ function parseLinks() {
 		}
 
 		// Create the Link object
-		var link = {
-			'lineNum': i,
-			'type': 'link',
-			'name' : name,
-			'url' : url,
-			'icon' : icon,
-			'check' : check,
-			'target' : target,
-			'cont' : [],
-			'subs' : [],
+		let link = {
+			'lineNum'  : i,
+			'type'     : 'link',
+			'name'     : name,
+			'url'      : url,
+			'icon'     : icon,
+			'check'    : check,
+			'target'   : target,
+			'cont'     : [],
+			'subs'     : [],
 			'toString' : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', check=' + check + ', #SubItems=' + this.subs.length + ' }' },
 		};
 		//console.log('Indentation=' + indent + ', Link=' + link);
@@ -946,12 +947,13 @@ function parseLinks() {
 		if (cont) {
 			// This link is a continuation of the previous link
 			// Ignore the indentation and add it to the last parent
-			var level = openParents.length - 1;
+			let level = openParents.length - 1;
 			openParents[level].cont.push(link);
 			// Do not add this link as a possible parent itself
 		} else {
 			// Find parent level with indentation strictly less
-			for (var level = openParentIndentSpaces.length - 1; level >= 0 && openParentIndentSpaces[level] >= indent; --level) {}
+			let level;
+			for (level = openParentIndentSpaces.length - 1; level >= 0 && openParentIndentSpaces[level] >= indent; --level) {}
 			// Remove all open parents after that
 			openParentIndentSpaces.length = level + 1;
 			openParents.length = level + 1;
@@ -973,9 +975,9 @@ function parseLinks() {
 	}
 
 	// Log all links
-	//for (var i = 0; i < allLinks.length; ++i) console.log('Link=' + allLinks[i]);
+	//for (let i = 0; i < allLinks.length; ++i) console.log('Link=' + allLinks[i]);
 	// Log all roots
-	//for (var i = 0; i < RootLinks.length; ++i) console.log('RootLink=' + RootLinks[i]);
+	//for (let i = 0; i < RootLinks.length; ++i) console.log('RootLink=' + RootLinks[i]);
 }
 
 // }}}
@@ -992,21 +994,21 @@ function parseLinks() {
 function outputItem(link, level, container, parentPath) {
 	//console.log('outputItem ' + link.toString());
 	// Copy input data
-	var name = link.name;
-	var url = link.url;
-	var icon = link.icon;
-	var check = link.check;
-	var target = link.target;
-	var tooltip = null;
-	var contItems = link.cont;
+	let name = link.name;
+	let url = link.url;
+	let icon = link.icon;
+	let check = link.check;
+	let target = link.target;
+	let tooltip = null;
+	let contItems = link.cont;
 	if (contItems != null && contItems.length == 0) contItems = null;
-	var subItems = link.subs;
+	let subItems = link.subs;
 	if (subItems != null && subItems.length == 0) subItems = null;
 	if (name == '') name = null;
 	if (url == '') url = null;
 	if (icon == '') icon = null;
 	if (target == '') target = null;
-	var myPath = parentPath + '->' + name;
+	let myPath = parentPath + '->' + name;
 	// Fill in defaults for missing elements
 	if (name == null) {
 		if (url != null) {
@@ -1017,7 +1019,7 @@ function outputItem(link, level, container, parentPath) {
 	}
 	// Change URL if target=manual
 	if (target == 'manual') {
-		var msg = 'Due to security reasons, this URL cannot be opened automatically.\nCopied URL \'' + url + '\' to clipboard.\n\nManually paste this to the address bar.';
+		let msg = 'Due to security reasons, this URL cannot be opened automatically.\nCopied URL \'' + url + '\' to clipboard.\n\nManually paste this to the address bar.';
 		msg = msg.replaceAll('\'', '\\\'').replaceAll('\n', '\\n');
 		tooltip = url;  //preserve original URL
 		url = 'javascript:navigator.clipboard.writeText(\'' + url + '\');alert(\'' + encodeURI(msg) + '\');void(0)';
@@ -1025,15 +1027,15 @@ function outputItem(link, level, container, parentPath) {
 	}
 	// Render the item
 	// State variables for this item; will be used in closures
-	var addItemContainer;  //function to add a container to put the Item into
-	var addSubContainer;  //function to add a container to put the subItems into
-	var addClosingElements = null;  //function to add closing elements to the container
+	let addItemContainer;  //function to add a container to put the Item into
+	let addSubContainer;  //function to add a container to put the subItems into
+	let addClosingElements = null;  //function to add closing elements to the container
 	// Create element container
-	if (level == 1) (function(){  //define function to have a separate variable scope
+	if (level == 1) {
 		// Render Item as Section
 		//console.log('Render Section ' + name);
-		var _itemContainer;
-		var _subContainer;
+		let _itemContainer;
+		let _subContainer;
 		addItemContainer = function() {
 			_itemContainer = document.createElement('h2');
 			container.appendChild(_itemContainer);
@@ -1046,34 +1048,33 @@ function outputItem(link, level, container, parentPath) {
 			return _subContainer;
 		};
 		addClosingElements = function() {
-			var closingElements = document.createElement('hr');
+			let closingElements = document.createElement('hr');
 			container.appendChild(closingElements);
 		}
-	})();
-	else if (level == 2) (function(){  //define function to have a separate variable scope
+	} else if (level == 2) {
 		// Render Item as Block
 		//console.log('Render Block ' + name);
-		var _itemContainer;
-		var _subContainer;
+		let _itemContainer;
+		let _subContainer;
 		addItemContainer = function() {
 			_itemContainer = document.createElement('div');
 			_itemContainer.className = 'block';
 			container.appendChild(_itemContainer);
 			if (subItems != null) {
-				var expandIcon = document.createElement('span');  //container to display '-' or '+'
+				let expandIcon = document.createElement('span');  //container to display '-' or '+'
 				expandIcon.className = 'resize-icon';
 				expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
 				_itemContainer.appendChild(expandIcon);
-				var isExpanded = true;  //true if block is expanded
-				var storageKey = 'expanded ' + myPath;
+				let isExpanded = true;  //true if block is expanded
+				let storageKey = 'expanded ' + myPath;
 				if (localStorage) {
 					// LocalStorage is available, use persistent value
-					var v = localStorage.getItem(storageKey);
+					let v = localStorage.getItem(storageKey);
 					console.log('Preset isExpanded for \'' + myPath + '\' to ' + v);
 					if (v == 'false')
 						isExpanded = false;
 				}
-				var displayExpandState = function() {
+				let displayExpandState = function() {
 					console.log('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
 					if (isExpanded) {
 						// Expand this block
@@ -1113,20 +1114,19 @@ function outputItem(link, level, container, parentPath) {
 		addSubContainer = function() {
 			_subContainer = document.createElement('div');
 			_subContainer.className = 'items block-items';
-			var sliderContainer = document.createElement('div');
+			let sliderContainer = document.createElement('div');
 			sliderContainer.className = 'slider-container';
 			sliderContainer.appendChild(_subContainer);
 			_itemContainer.appendChild(sliderContainer);
 			return _subContainer;
 		}
-	})();
-	else (function(){  //define function to have a separate variable scope
+	} else {
 		// Render Item is (sub-)Item
 		//console.log('Render Item ' + name);
-		var _itemContainer;
-		var _subContainer;
+		let _itemContainer;
+		let _subContainer;
 		addItemContainer = function() {
-			var groupContainer;
+			let groupContainer;
 			if (contItems != null) {
 				groupContainer = document.createElement('div');  //make a div for the continuation group
 				groupContainer.className = 'group';
@@ -1145,15 +1145,15 @@ function outputItem(link, level, container, parentPath) {
 			container.appendChild(_subContainer);
 			return _subContainer;
 		}
-	})();
+	}
 	// Create element itself
 	if (name == '---') {
 		// Special separator item
-		var item = document.createElement('hr');
+		let item = document.createElement('hr');
 		item.className = 'separator';
 		container.appendChild(item);
 	} else {
-		var itemContainer = addItemContainer();
+		let itemContainer = addItemContainer();
 		// The containers are structured as follows:
 		// - groupContainer: Only if there are continued Items
 		//     - itemContainer: Holds the entire (Sub)Item
@@ -1167,8 +1167,8 @@ function outputItem(link, level, container, parentPath) {
 		//         - items: Only if there are subItems
 
 		// Declare textContainer to hold the name/label
-		var textContainer = null;
-		var setTextClass = function(className, add) {
+		let textContainer = null;
+		let setTextClass = function(className, add) {
 			if (textContainer != null) {
 				if (add)
 					textContainer.classList.add(className);
@@ -1178,15 +1178,15 @@ function outputItem(link, level, container, parentPath) {
 		};
 
 		// Create checkbox
-		var checkbox = null;
+		let checkbox = null;
 		if (check != null) {
 			// Render a checkbox
 			checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
 			checkbox.className = 'todo-checkbox';
 			checkbox.onchange = function() {
-				var re = new RegExp('(^(?:[^\\n]*\\n){' + link.lineNum + '}\\s*)\\[.?\\]');
-				var newCheck;
+				let re = new RegExp('(^(?:[^\\n]*\\n){' + link.lineNum + '}\\s*)\\[.?\\]');
+				let newCheck;
 				if (checkbox.checked) {
 					// Change checkbox to checked
 					console.log('Check checkbox on line ' + link.lineNum);
@@ -1204,7 +1204,7 @@ function outputItem(link, level, container, parentPath) {
 		}
 
 		// Create icon_control
-		var icon_control = outputIcon(null, icon, url);
+		let icon_control = outputIcon(null, icon, url);
 
 		// Create textContainer to hold the name/label
 		if (name != null) {
@@ -1224,7 +1224,7 @@ function outputItem(link, level, container, parentPath) {
 		}
 
 		// Create hyperlink
-		var hyperlink = null;
+		let hyperlink = null;
 		if (url != null) {
 			hyperlink = document.createElement('a');
 			hyperlink.href = url;
@@ -1242,7 +1242,7 @@ function outputItem(link, level, container, parentPath) {
 
 		// Add hyperlink to itemContainer
 		// Alias linkContainer to hyperlink if it exists, itemContainer otherwise
-		var linkContainer;  //this container holds the link
+		let linkContainer;  //this container holds the link
 		if (hyperlink != null) {
 			itemContainer.appendChild(hyperlink);
 			linkContainer = hyperlink;
@@ -1268,7 +1268,7 @@ function outputItem(link, level, container, parentPath) {
 	// Create sub-Items in container
 	if (subItems != null) {
 		if (addSubContainer) {
-			var subContainer = addSubContainer();
+			let subContainer = addSubContainer();
 			outputItems(subItems, level+1, subContainer, myPath);
 		}
 	}
@@ -1280,8 +1280,8 @@ function outputItem(link, level, container, parentPath) {
 
 // Output a <div> element as next child of the container.
 function outputText(lines, container) {
-	var html = lines.join('\n');
-	var div = document.createElement('div');
+	let html = lines.join('\n');
+	let div = document.createElement('div');
 	div.className = 'text-block';
 	div.innerHTML = html;
 	container.appendChild(div);
@@ -1289,8 +1289,8 @@ function outputText(lines, container) {
 
 // Render array of Links to the container at specified level.
 function outputItems(links, level, container, parentPath = '') {
-	for (var i = 0; i < links.length; ++i) {
-		var link = links[i];
+	for (let i = 0; i < links.length; ++i) {
+		let link = links[i];
 		if (link.type == 'link') {
 			outputItem(link, level, container, parentPath);
 		} else if (link.type == 'text') {
@@ -1326,21 +1326,21 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 		icon_url = resolveIconDefs(icon_url);
 	}
 
-	var icon_present = false;
-	var icon_element = null;
+	let icon_present = false;
+	let icon_element = null;
 
 	// Render icon_url
-	var m;  //for regex matches
+	let m;  //for regex matches
 	if (icon_url == null) {
 		console.log('Loading icon for target \'' + target_url + '\': null');
 	} else if (icon_url == 'none') {
 		console.log('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
 	} else if (m = icon_url.match(/^html:(.+)/i)) {
-		var html = m[1];
+		let html = m[1];
 		// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
-		var iconDiv = document.createElement('div');
+		let iconDiv = document.createElement('div');
 		iconDiv.className = 'item-icon text-icon';
-		var htmlDiv = document.createElement('div');
+		let htmlDiv = document.createElement('div');
 		htmlDiv.innerHTML = html;  //also takes care of HTML rendering
 		FillScaler.observe(htmlDiv);
 		iconDiv.appendChild(htmlDiv);
@@ -1348,22 +1348,22 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 		icon_present = true;
 	} else {
 		console.log('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
-		var img = document.createElement('img');
+		let img = document.createElement('img');
 		icon_present = true;
 		if (icon_url == 'empty') {
 			img.style.visibility = 'hidden';
 			icon_present = false;  //there is an image, but still empty
 		} else if (m = icon_url.match(/^char:(.+)/i)) {
-			var text = m[1];
+			let text = m[1];
 			// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
 			icon_url = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">' + text + '</text></svg>';
 			img.src = icon_url;
 		} else {
-			var alternatives = [], methods = [], urls = [];  //prepare options to use for the icon
+			let alternatives = [], methods = [], urls = [];  //prepare options to use for the icon
 			if (m = icon_url.match(/^alt(?::([^?]+))?(?:\?(.+))?/i)) {
 				// icon_url contains an alt specification
-				var method = m[1];
-				var url = m[2];
+				let method = m[1];
+				let url = m[2];
 				if (method == null || method == '' || method == 'any' || method == '*') {
 					// Add all known methods
 					methods.push('google');
@@ -1399,9 +1399,9 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 			//console.log('All methods for ' + icon_url); console.log(methods);
 			//console.log('All urls for ' + icon_url); console.log(urls);
 			// Go through methods and urls and add alternatives
-			for (var m = 0; m < methods.length; ++m) {
-				var method = methods[m];
-				for (var u = 0; u < urls.length; ++u) {
+			for (let m = 0; m < methods.length; ++m) {
+				let method = methods[m];
+				for (let u = 0; u < urls.length; ++u) {
 					if (method == 'google') {
 						alternatives.push(getGoogleAltIconUrl(urls[u]));
 					} else {
@@ -1411,10 +1411,10 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 			}
 			//console.log('All alternatives for ' + icon_url); console.log(alternatives);
 			// Remove duplicates
-			var seen = {};
-			var alt_list = alternatives;  //may have duplicates
+			let seen = {};
+			let alt_list = alternatives;  //may have duplicates
 			alternatives = [];  //get the unique ones
-			for (var a = 0; a < alt_list.length; ++a) {
+			for (let a = 0; a < alt_list.length; ++a) {
 				if (!seen[alt_list[a]]) {
 					seen[alt_list[a]] = true;
 					alternatives.push(alt_list[a]);
@@ -1422,12 +1422,12 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 			}
 			//console.log('All unique alternatives for ' + icon_url); console.log(alternatives);
 			// Set the icon urls until we find one that works
-			var try_next = function() {
+			let try_next = function() {
 				if (alternatives.length > 0) {
 					// Try next alternative
 					//console.log('alternatives.length=' + alternatives.length);
 					//console.log('alternatives[0]=' + alternatives[0]);
-					var alt = alternatives.shift();
+					let alt = alternatives.shift();
 					//console.log('alternatives.length=' + alternatives.length);
 					if (img.src != null && img.src != '') {
 						console.warn('Cannot load icon \'' + img.src + '\', try \'' + alt + '\'');
@@ -1465,10 +1465,10 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 // Take icon_url and perform the icondef replacements.
 // Returns the resolved value or the original value if no icondefs matched.
 function resolveIconDefs(icon_url) {
-	var retval = icon_url;
-	var seen = {};  //to break cycles
+	let retval = icon_url;
+	let seen = {};  //to break cycles
 	seen[icon_url] = 1;
-	var override = IconDefs[icon_url];
+	let override = IconDefs[icon_url];
 	while (override !== undefined && !seen[override]) {
 		console.log('Replace icon=' + icon_url + ' by IconDefs ' + override);
 		retval = override;
@@ -1482,13 +1482,13 @@ function resolveIconDefs(icon_url) {
 // Define a ResizeObserver that is used to resize entries to 100% of their
 // parent's size. This is used for icons that are defined with html:<x>.
 var FillScaler = new ResizeObserver(function(entries) {
-	for (var entry of entries) {
-		var element = entry.target;
+	for (let entry of entries) {
+		let element = entry.target;
 		// Get entries current size
-		var w, h;
+		let w, h;
 		if (entry.borderBoxSize) {
-			var rect = entry.borderBoxSize[0];  //area of 1st (and only) fragment
-			var writingMode = element.style.writingMode;
+			let rect = entry.borderBoxSize[0];  //area of 1st (and only) fragment
+			let writingMode = element.style.writingMode;
 			//console.log('FillScaler: Writing mode ' + writingMode);
 			if (writingMode.match(/^vertical/i)) {
 				// Vertical writing-mode, so inline direction is vertical
@@ -1500,23 +1500,23 @@ var FillScaler = new ResizeObserver(function(entries) {
 				h = rect.blockSize;
 			}
 		} else {
-			var rect = entry.contentRect;
+			let rect = entry.contentRect;
 			w = entry.contentRect.width;
 			h = entry.contentRect.height;
 		}
 		console.log('FillScaler: Element size ' + w + ' x ' + h);
 		// Get parent's current size
-		var parent = element.parentElement;
-		var pw = parent.offsetWidth;
-		var ph = parent.offsetHeight;
+		let parent = element.parentElement;
+		let pw = parent.offsetWidth;
+		let ph = parent.offsetHeight;
 		//console.log('FillScaler: Parent size ' + pw + ' x ' + ph);
 		// Calculate new scaling factor
-		var scaleX = pw / w;
-		var scaleY = ph / h;
+		let scaleX = pw / w;
+		let scaleY = ph / h;
 		//console.log('FillScaler: Scale with ' + scaleX + ' x ' + scaleY);
 		// Check if the change is big enough
-		var changeX = element._scaleX / scaleX;
-		var changeY = element._scaleY / scaleY;
+		let changeX = element._scaleX / scaleX;
+		let changeY = element._scaleY / scaleY;
 		//console.log('FillScaler: Scale change ' + changeX + ' x ' + changeY);
 		if (isNaN(changeX) || changeX < 0.98 || changeX > 1.02 || isNaN(changeY) || changeY < 0.98 || changeY > 1.02) {
 			// More than 2% change
@@ -1538,7 +1538,7 @@ function getDefaultIconUrl(site_url) {
 // Return the URL for an icon of the site_url's domain.
 // This method uses the Google database.
 function getGoogleAltIconUrl(site_url) {
-	var domain = site_url
+	let domain = site_url
 		.replace(/^[^\/]*\/\//, '')  //remove scheme
 		.replace(/\/.*/, '');  //remove path
 	return 'http://www.google.com/s2/favicons?domain=' + domain;
@@ -1583,7 +1583,7 @@ var SearchFunction = {
 
 // Return a URL to handle the address (ie beautify it to go to it).
 function getWithSchemaUrl(address) {
-	var url = address;
+	let url = address;
 	if (!url.match(/^[\w+-]+:/)) {
 		url = 'http://' + url;  //add default scheme
 	}
@@ -1601,7 +1601,7 @@ function getNoUrl(intput) {
 // - %urlinput: Replaced with the URL-encoded input value.
 function getTemplateUrl(template) {
 	return function(input) {
-		var encoded_input = encodeURIComponent(input).replace(' ', '+');
+		let encoded_input = encodeURIComponent(input).replace(' ', '+');
 		return template
 			.replace('%input', input)
 			.replace('%urlinput', encoded_input);
@@ -1610,28 +1610,28 @@ function getTemplateUrl(template) {
 
 // Returns a URL to perform a lookup for the domain with Wayback Machine.
 function getWaybackDomainUrl(domain) {
-	var ts = getWaybackTimestamp();
+	let ts = getWaybackTimestamp();
 	return 'https://web.archive.org/web/' + ts + '/' + domain;
 };
 
 // Returns a URL to perform a search for input with Wayback Machine.
 function getWaybackSearchUrl(input) {
-	var ts = getWaybackTimestamp();
-	var encoded_input = encodeURIComponent(input).replace(' ', '+');
+	let ts = getWaybackTimestamp();
+	let encoded_input = encodeURIComponent(input).replace(' ', '+');
 	return 'https://web.archive.org/web/' + ts + '/' + encoded_input;
 };
 
 // Create a Wayback Machine timestamp that can be used in queries.
 function getWaybackTimestamp(date = new Date()) {
-	var pad = function(number, positions) {
-		var neg = false;
+	let pad = function(number, positions) {
+		let neg = false;
 		if (number < 0) {
 			neg = true;
 			positions--;  //space for '-'
 			number = -number;
 		}
-		var s = '';
-		for (var i = 2, limit = 10; i <= positions; ++i, limit *= 10) {
+		let s = '';
+		for (let i = 2, limit = 10; i <= positions; ++i, limit *= 10) {
 			if (number < limit) s += '0';
 		}
 		s += number;
@@ -1640,7 +1640,7 @@ function getWaybackTimestamp(date = new Date()) {
 	};
 	// I assume the format is 'yyyymmddhhmmss*' with yyyy the year
 	// to query and the rest '0'.
-	var timestamp = pad(date.getFullYear(), 4) +
+	let timestamp = pad(date.getFullYear(), 4) +
 		pad(0, 2) +
 		pad(0, 2) +
 		pad(0, 2) +
@@ -1656,7 +1656,7 @@ var EmptySearchCounter = 0;
 // Redirects to search.
 // May return if search input is not clear.
 function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWithSchemaUrl) {
-	var input = searchBox.value;
+	let input = searchBox.value;
 	if (input.match(/^\s*$/)) {
 		console.log('Empty search string');
 		// Set the blink anymated style
@@ -1664,7 +1664,7 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 		//console.log('searchBox.className=' + searchBox.className);
 		// Set the funny feedback text with angry faces
 		++EmptySearchCounter;
-		var funny_feedback;
+		let funny_feedback;
 		if (EmptySearchCounter <= 2)
 			funny_feedback = '';
 		else if (EmptySearchCounter <= 3)
@@ -1683,8 +1683,8 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 		};
 	} else {
 		EmptySearchCounter = 0;
-		var m = input.match(/^\s*(\S+\.\S+)\s*$/);
-		var url = null;
+		let m = input.match(/^\s*(\S+\.\S+)\s*$/);
+		let url = null;
 		if (m && getDomainSearchUrl) {
 			//console.log('Looks like URL');
 			url = getDomainSearchUrl(m[1]);
@@ -1709,7 +1709,7 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 // The displayed icon is specified by icon_url. If this is 'alt', the
 // target domain is derived from getSearchUrl().
 function addSearchButton(container, search_box, button_id, label_text, tooltip, icon_url, getSearchUrl, getDomainSearchUrl) {
-	var btn = document.createElement('button');
+	let btn = document.createElement('button');
 	if (btn) {
 		// Configure the button
 		btn.id = 'BtnSearch' + button_id;
@@ -1721,18 +1721,18 @@ function addSearchButton(container, search_box, button_id, label_text, tooltip, 
 		btn.title = tooltip;
 
 		// Add icon
-		var target_domain = getSearchUrl('dummy');
+		let target_domain = getSearchUrl('dummy');
 		//console.log('target_domain=' + target_domain);
 		//console.log('favicon=' + getDefaultIconUrl(target_domain));
 		// When determining the icon, don't consider alternatives,
 		// except when icon_url == 'alt...'
-		var icon = outputIcon(tooltip, icon_url, target_domain, true);
+		let icon = outputIcon(tooltip, icon_url, target_domain, true);
 		if (icon.element != null) btn.appendChild(icon.element);
 
 		// Add link text
-		var label = document.createElement('span');
+		let label = document.createElement('span');
 		label.className = 'label';
-		var textNode = document.createTextNode(label_text);
+		let textNode = document.createTextNode(label_text);
 		label.appendChild(textNode);
 		btn.appendChild(label);
 
@@ -1742,30 +1742,30 @@ function addSearchButton(container, search_box, button_id, label_text, tooltip, 
 }
 
 function addSearchButtons(searchBox, container) {
-	for (var i = 0; i < SearchButtonDefs.length; ++i) {
+	for (let i = 0; i < SearchButtonDefs.length; ++i) {
 		// Get the fields from the definition
-		var def = SearchButtonDefs[i];
-		var f = 0;
+		let def = SearchButtonDefs[i];
+		let f = 0;
 
 		// Determine Identifier
-		var id = def[f++];
+		let id = def[f++];
 		if (!id) continue;  //id is mandatory, ignore this entry if absent
-		var key = id.toLowerCase();  //lower case version
+		let key = id.toLowerCase();  //lower case version
 
 		// Determine referenced Search URL Function
-		var getSearchUrl = SearchFunction[key]['text'];
+		let getSearchUrl = SearchFunction[key]['text'];
 
 		// Determine referenced Domain Search URL Function
-		var getDomainSearchUrl = SearchFunction[key]['domain'];
+		let getDomainSearchUrl = SearchFunction[key]['domain'];
 
 		// Determine Label
-		var label = def[f++] || id;
+		let label = def[f++] || id;
 
 		// Determine Tooltip
-		var tooltip = def[f++] || id;
+		let tooltip = def[f++] || id;
 
 		// Determine Icon
-		var icon = def[f++];
+		let icon = def[f++];
 		if (!icon) {
 			if (getSearchUrl) {
 				// Search URL function is defined. This is
@@ -1810,14 +1810,14 @@ function addSearchButtons(searchBox, container) {
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
-	var iconSettings = document.getElementById('SettingsIcon');
-	var pnlSettings = document.getElementById('SettingsForm');
-	var txtSettings = document.getElementById('SettingsText');
-	var btnSave = document.getElementById('BtnSaveSettings');
-	var btnClear = document.getElementById('BtnClearSettings');
-	var btnCancel = document.getElementById('BtnCancelSettings');
-	var visible = false;
-	var showSettings = function() {
+	let iconSettings = document.getElementById('SettingsIcon');
+	let pnlSettings = document.getElementById('SettingsForm');
+	let txtSettings = document.getElementById('SettingsText');
+	let btnSave = document.getElementById('BtnSaveSettings');
+	let btnClear = document.getElementById('BtnClearSettings');
+	let btnCancel = document.getElementById('BtnCancelSettings');
+	let visible = false;
+	let showSettings = function() {
 		txtSettings.value = Links;
 		// Slide to visible
 		pnlSettings.classList.add('expanding');
@@ -1827,7 +1827,7 @@ function initSettingsPanel() {
 		};
 		visible = true;
 	};
-	var hideSettings = function(save) {
+	let hideSettings = function(save) {
 		if (save) {
 			if (save == 'clear') {
 				console.log('Clear settings');
@@ -1868,7 +1868,7 @@ function initSettingsPanel() {
 			} else if (e.keyCode == 13) {
 				// This is the Enter key -> Copy indentation from current line
 				textInsert(this, (before, mid, after) => {
-					var m = before.match(/(?:^|\r|\n)([ \t]*)[^\r\n]*$/);  //match: 'linebreak whitespace line end'
+					let m = before.match(/(?:^|\r|\n)([ \t]*)[^\r\n]*$/);  //match: 'linebreak whitespace line end'
 					return '\n' + m[1];  //insert linebreak plus matched whitespace
 				});
 				return false;  //stop further handling
@@ -1900,12 +1900,12 @@ function initSettingsPanel() {
 // Return the sanitized insertion point or selection range.
 function getSelectionPos(ctl) {
 	// The selection position indicates the selection, but also the insertion point
-	var start = ctl.selectionStart;  //char pos AT which the selection starts
-	var end = ctl.selectionEnd;  //char pos AFTER the selection end
+	let start = ctl.selectionStart;  //char pos AT which the selection starts
+	let end = ctl.selectionEnd;  //char pos AFTER the selection end
 	// Sanitize, so it is within the string:
 	// - start is in [0, len]
 	// - end is in [start, len]
-	var len = ctl.value.len;
+	let len = ctl.value.len;
 	if (start == null || start < 0) start = 0;
 	if (start > len) start = len;
 	if (end == null || end < start) end = start;
@@ -1919,14 +1919,14 @@ function getSelectionPos(ctl) {
 // Then call the inserter with these values. The inserter should return the insertion string.
 // Update ctl and place the new insertion point after the insertion.
 function textInsert(ctl, inserter) {
-	var pos = getSelectionPos(ctl);
-	var start = pos[0], end = pos[1];
+	let pos = getSelectionPos(ctl);
+	let start = pos[0], end = pos[1];
 	// Do the insertion, replace the selection if any
-	var before = ctl.value.substring(0, start), mid = ctl.value.substring(start, end), after = ctl.value.substring(end);
-	var mid2 = inserter(before, mid, after);
+	let before = ctl.value.substring(0, start), mid = ctl.value.substring(start, end), after = ctl.value.substring(end);
+	let mid2 = inserter(before, mid, after);
 	ctl.value = before + mid2 + after;
 	// Put the insertion point after the insertion
-	var newPos = start + mid2.length;
+	let newPos = start + mid2.length;
 	ctl.selectionStart = ctl.selectionEnd = newPos;
 }
 
@@ -1940,7 +1940,7 @@ function setPageTitle(title) {
 	if (title == null) title = 'Favorites';
 	// Set the title
 	console.log('Set PageTitle to \'' + title + '\'');
-	var titleCtl = document.getElementById('Title');
+	let titleCtl = document.getElementById('Title');
 	if (titleCtl)
 		titleCtl.innerText = title;
 }
@@ -1950,11 +1950,11 @@ function setPageTheme(theme) {
 	// Determine value or default
 	if (theme == null) theme = 'dark-theme';
 	// Get the current classes
-	var names = document.body.classList;
+	let names = document.body.classList;
 	// Filter out current theme
-	var names2 = [];
-	for (var i = 0; i < names.length; ++i) {
-		var name = names[i];
+	let names2 = [];
+	for (let i = 0; i < names.length; ++i) {
+		let name = names[i];
 		if (!name.match(/-theme$/)) {  //skip current *-theme class
 			names2.push(name);
 		}
@@ -1985,7 +1985,7 @@ function processLinks() {
 	setFontSize(FontSize);
 
 	// Render links
-	var container = document.getElementById('LinksBox');
+	let container = document.getElementById('LinksBox');
 	container.textContent = '';
 	outputItems(RootLinks, 1, container);
 
@@ -1996,19 +1996,19 @@ function processLinks() {
 		// There are SearchButtens, fill SearchForm
 		console.log('There are ' + SearchButtonDefs.length + ' SearchButtonDefs');
 		// Focus SearchBox
-		var searchBox = document.getElementById('SearchBox');
+		let searchBox = document.getElementById('SearchBox');
 		if (searchBox) {
 			searchBox.focus();
 			searchBox.select();
 		}
 		// Initialize the search buttons
-		var buttonBox = document.getElementById('SearchButtons');
+		let buttonBox = document.getElementById('SearchButtons');
 		buttonBox.textContent = '';
 		addSearchButtons(searchBox, buttonBox);
 	} else {
 		// No SearchButtons defined, hide SearchForm
 		console.log('There are no SearchButtonDefs');
-		var searchForm = document.getElementById('SearchForm');
+		let searchForm = document.getElementById('SearchForm');
 		if (searchForm) {
 			console.log('Hide SearchForm');
 			searchForm.style.display = 'none';
