@@ -1,12 +1,15 @@
 ﻿Favorite-Links & ToDo-List
 ==========================
 
-Generic project to manage favorite URLs in a start-page like fashion. Each
+Homepage implementation to manage favorite URLs in a start-page like fashion. Each
 item can also be associated with a checkbox, so that this can also be used as
 a ToDo list.
+The page can be set as home page in the browser's settings and as the Tab
+start page via an add-on like [New Tab
+Override](https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/).
 
-The favorites.html uses a textual configuration to specify the URLs.
-See [help.html](help.html) for more details a definition of the syntax for
+The favorites.html page uses a textual configuration to specify the URLs.
+See [help.html](help.html) for more details and a definition of the syntax for
 the configuration.
 
 The page favorites.html can be accessed and used directly (i.e. hosted by
@@ -15,9 +18,9 @@ GitHub) by
 This opens the links page with default contents that contains more
 documentation.
 
-It is also possible to supply one's own contents with the links= URL argument.
-The value may be literal contents or an absolute or relative URL, prefixed
-with 'url:'. This can also be used with a direct link to GitHub:
+It is also possible to supply one's own configuration with the links= URL
+argument.  The value may be literal contents or an absolute or relative URL,
+prefixed with 'url:'. This can also be used with a direct link to GitHub:
 <https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=url:example-links.txt>.
 
 This contents can be edited from the page (via the Gears icon) and stored in
