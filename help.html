@@ -46,12 +46,21 @@ body.light-theme {
 	--link-color: #2222AA;
 }
 
-:root, body, input, textarea, button {
-	font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
-	font-size: 12pt;
+:root {
+	/* Define variables that will be used on visible elements */
+	--font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
+	--font-size: 100%
+	/* Set default font and size */
+	font-family: var(--font-family);
+	font-size: 12pt;  /* absolute, so --font-size can be relative too */
 }
 
-:root, body {
+body, input, textarea, button {
+	font-family: var(--font-family);
+	font-size: var(--font-size);
+}
+
+body {
 	color: var(--accent-color); background: var(--background);
 }
 ::selection {
@@ -206,6 +215,9 @@ Each line should be one of the following:
       name to use for the theme. Currently 'dark-theme' (default) and
       'light-theme' are defined, but custom themes can be defined with a Text
       Block.
+  <li><dt>Font Size</dt>: The line <code>!size font-size</code> specifies the
+      base font-size to use. All CSS length quantities can be used, e.g.
+      '10pt' or '120%'. This feature is experimental.
   <li><dt>Search Buttons</dt>: The line <code>!search fields</code> defines a
       search button to be displayed next to the search box. The fields are
       separated by <code>|</code> with whitespace allowed.  These are the

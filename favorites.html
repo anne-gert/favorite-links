@@ -53,16 +53,13 @@ body.light-theme {
 	--link-color: #2222AA;
 }
 
-:root, body, input, textarea, button {
-	font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
-	font-size: 12pt;
-}
-
-:root, body {
-	color: var(--accent-color); background: var(--background);
-}
-::selection {
-	color: var(--selection-foreground); background: var(--selection-background);
+:root {
+	/* Define variables that will be used on visible elements */
+	--font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
+	--font-size: 100%
+	/* Set default font and size */
+	font-family: var(--font-family);
+	font-size: 12pt;  /* absolute, so --font-size can be relative too */
 }
 
 
@@ -103,7 +100,7 @@ for each block independently.
 	only screen and (-o-device-pixel-ratio: 3/2),
 	only screen and (min-device-pixel-ratio: 1.5) {
 	/* high-resolution screens */
-	:root, body, input, textarea, button {
+	:root {
 		/* Make text bigger, because otherwise it gets too small on
 		   phones. (I'm not sure why, because 12pt should be the same
 		   absolute size on every screen. */
@@ -129,6 +126,18 @@ for each block independently.
 	.block-items {
 		padding-right: 1em;
 	}
+}
+
+body, input, textarea, button {
+	font-family: var(--font-family);
+	font-size: var(--font-size);
+}
+
+body {
+	color: var(--accent-color); background: var(--background);
+}
+::selection {
+	color: var(--selection-foreground); background: var(--selection-background);
 }
 
 
@@ -744,6 +753,7 @@ function writeLocalLinks(value) {
 var Links = null;  //links text, input for parseLinks()
 var PageTitle = null;  //specified title
 var PageTheme = null;  //specified color theme
+var FontSize = null;  //specified font-size (may be relative, but that doesn't work very well)
 var SearchButtonDefs = null;  //specified search button declarations
 var RootLinks = null;  //array of Link objects that have no parents (i.e. are roots)
 var IconDefs = null;  //specified icondef declarations
@@ -755,6 +765,7 @@ function parseLinks() {
 	var allLinks = [];  //specified Link objects
 	PageTitle = null;
 	PageTheme = null;
+	FontSize = null;
 	SearchButtonDefs = [];
 	RootLinks = [];
 	IconDefs = {};
@@ -802,8 +813,16 @@ function parseLinks() {
 		// Check if it is a theme definition
 		var m = line.match(/^\s*!theme\s+(.+?)\s*$/i);
 		if (m) {
-			// This is an title
+			// This is a theme
 			PageTheme = m[1];  //save string
+			continue;
+		}
+
+		// Check if it is a font-size definition
+		var m = line.match(/^\s*!size\s+(.+?)\s*$/i);
+		if (m) {
+			// This is a size
+			FontSize = m[1];  //save string
 			continue;
 		}
 
@@ -1732,7 +1751,7 @@ function addSearchButtons(searchBox, container) {
 		console.log('addSearchButtons: Icon=\'' + icon + '\'');
 		console.log('addSearchButtons: getSearchUrl=\'' + getSearchUrl + '\'');
 		console.log('addSearchButtons: getDomainSearchUrl=\'' + getDomainSearchUrl + '\'');
-		console.log(SearchFunction);
+		//console.log(SearchFunction);
 
 		// Create the button
 		addSearchButton(container, searchBox, id, label, tooltip, icon, getSearchUrl, getDomainSearchUrl);
@@ -1871,6 +1890,10 @@ function textInsert(ctl, inserter) {
 
 // Function to set the title to the specified string.
 function setPageTitle(title) {
+	// Determine value or default
+	if (title == null) title = 'Favorites';
+	// Set the title
+	console.log('Set PageTitle to \'' + title + '\'');
 	var titleCtl = document.getElementById('Title');
 	if (titleCtl)
 		titleCtl.innerText = title;
@@ -1878,6 +1901,8 @@ function setPageTitle(title) {
 
 // Function to set the theme of the body to the specified string.
 function setPageTheme(theme) {
+	// Determine value or default
+	if (theme == null) theme = 'dark-theme';
 	// Get the current classes
 	var names = document.body.classList;
 	// Filter out current theme
@@ -1889,8 +1914,18 @@ function setPageTheme(theme) {
 		}
 	}
 	// Add new theme
+	console.log('Set PageTheme to \'' + theme + '\'');
 	names2.push(theme);
 	document.body.classList = names2;
+}
+
+// Function to set the font-size to the specified string.
+function setFontSize(size) {
+	// Determine value or default
+	if (size == null) size = '100%';
+	// Set the --font-size variable that is used in the CSS classes
+	console.log('Set FontSize to \'' + size + '\'');
+	document.documentElement.style.setProperty('--font-size', size);
 }
 
 // From the Links configuration, parse its content and display it.
@@ -1898,15 +1933,10 @@ function processLinks() {
 	// Parse Links
 	parseLinks();
 
-	// Set page title
-	if (PageTitle) {
-		setPageTitle(PageTitle);
-	}
-
-	// Set page theme
-	if (PageTheme) {
-		setPageTheme(PageTheme);
-	}
+	// Set page title, theme and font size
+	setPageTitle(PageTitle);
+	setPageTheme(PageTheme);
+	setFontSize(FontSize);
 
 	// Render links
 	var container = document.getElementById('LinksBox');
