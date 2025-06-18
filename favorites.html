@@ -472,6 +472,10 @@ const DefaultLinks = `
 configured to show links and todo lists, organized in sections and blocks. This
 configuration can be downloaded via a URL and/or edited in the browser's
 LocalStorage.
+This page can be set as home page in the browser's settings and as the Tab
+start page via an add-on like <a
+href="https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/">New Tab
+Override</a>.
 </p>
 
 
@@ -480,7 +484,7 @@ LocalStorage.
 
 <p>
 The standard usage is to open the page favorites.html (or possibly set it as
-your homepage). Upon first opening, it shows a default example page.  This
+your home page). Upon first opening, it shows a default example page.  This
 page can be edited by going to the Settings (Gears (&#x2699;) icon) and just
 edit and save the textual configuration. It might be a good idea to maintain a
 text file with the configuration and copy-paste it into the Settings.<br>
@@ -539,8 +543,12 @@ Examples
         YouTube https://www.youtube.com
     Source
         GitHub favorite-links https://github.com/anne-gert/favorite-links
-        & Direct icon=none https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
-        Example Links icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=url:example-links.txt
+            Use favorites.html icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
+            Example Links override icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links-override=url:example-links.txt
+        Firefox
+            Home page settings icon=firefox target=manual about:preferences#home
+            Plugins
+                New Tab Override https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/
     To Do
         Shopping
             [ ] Books
