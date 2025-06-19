@@ -311,17 +311,13 @@ body {
  ****************************************************************************/
 
 .blink {
+	border: .15em solid transparent;
 	animation: 500ms 4 blinker;
-	color: rgb(0, 0, 0, 0);  /* transparent (also placeholder) */
-}
-.blink::placeholder {
-	opacity: 1;  /* in case browser has this lower by default */
 }
 @keyframes blinker {
 	30% {
-		border: .15em solid red;
-		background: #FFCCCC;
-		color: rgb(0, 0, 0, 1);  /* fully visible (also placeholder) */
+		border-color: red;
+		background-color: #FFCCCC;
 	}
 }
 
@@ -449,10 +445,6 @@ body {
 <script>
 // Some constants {{{
 
-const UNICODE_ANGRY_FACE = '\u{1F620}';  //angry face
-const UNICODE_POUTING_FACE = '\u{1F621}';  //red angry face
-const UNICODE_FACE_WITH_LOOK_OF_TRIUMPH = '\u{1F624}';  //steamy nose angry face
-const UNICODE_SERIOUS_FACE_WITH_SYMBOLS_COVERING_MOUTH = '\u{1F92C}';  //red swearing face
 const UNICODE_BLACK_DOWN_POINTING_TRIANGLE = '\u{25BC}';
 const UNICODE_BLACK_RIGHT_POINTING_TRIANGLE = '\u{25B6}';
 const UNICODE_GEARS = '\u{2699}';  //gears wheel
@@ -1650,8 +1642,6 @@ function getWaybackTimestamp(date = new Date()) {
 	return timestamp;
 }
 
-var EmptySearchCounter = 0;
-
 // Process search input.
 // Redirects to search.
 // May return if search input is not clear.
@@ -1659,30 +1649,13 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 	let input = searchBox.value;
 	if (input.match(/^\s*$/)) {
 		console.log('Empty search string');
-		// Set the blink anymated style
+		// Set the blink animated style
 		searchBox.classList.add('blink');
-		//console.log('searchBox.className=' + searchBox.className);
-		// Set the funny feedback text with angry faces
-		++EmptySearchCounter;
-		let funny_feedback;
-		if (EmptySearchCounter <= 2)
-			funny_feedback = '';
-		else if (EmptySearchCounter <= 3)
-			funny_feedback = UNICODE_ANGRY_FACE;
-		else if (EmptySearchCounter <= 6)
-			funny_feedback = UNICODE_POUTING_FACE.repeat(EmptySearchCounter - 3);
-		else
-			funny_feedback = UNICODE_FACE_WITH_LOOK_OF_TRIUMPH.repeat(EmptySearchCounter - 3);
-		searchBox.placeholder = funny_feedback;
-		// Set the event to clean up
 		searchBox.onanimationend = function() {
 			//console.log('animation end');
 			searchBox.classList.remove('blink');
-			//console.log('searchBox.className=' + searchBox.className);
-			searchBox.placeholder = '';  //remove funny feedback
 		};
 	} else {
-		EmptySearchCounter = 0;
 		let m = input.match(/^\s*(\S+\.\S+)\s*$/);
 		let url = null;
 		if (m && getDomainSearchUrl) {
