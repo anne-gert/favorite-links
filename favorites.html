@@ -1121,6 +1121,8 @@ function outputItem(link, level, container, parentPath) {
 							_itemContainer.classList.remove('collapsed');
 							_itemContainer.classList.remove('expanding');
 						};
+						// Reflect action of resize-icon
+						expandIcon.title = 'Hide';
 					} else {
 						// Collapse this block
 						_itemContainer.classList.add('collapsing');
@@ -1128,6 +1130,8 @@ function outputItem(link, level, container, parentPath) {
 							_itemContainer.classList.add('collapsed');
 							_itemContainer.classList.remove('collapsing');
 						};
+						// Reflect action of resize-icon
+						expandIcon.title = 'Show';
 					}
 				};
 				expandIcon.onclick = function() {
@@ -1142,8 +1146,11 @@ function outputItem(link, level, container, parentPath) {
 				addClosingElements = function() {
 					// Display the initial state
 					//displayExpandState();  //display initial state
-					if (!isExpanded) {
+					if (isExpanded) {
+						expandIcon.title = 'Hide';
+					} else {
 						_itemContainer.classList.add('collapsed');
+						expandIcon.title = 'Show';
 					}
 				}
 			}
@@ -2070,7 +2077,7 @@ window.onload = init;
 
 <h1 id="Title">Favorites</h1>
 
-<span id="SettingsIcon" class="settings-icon">&#x2699;</span>
+<span id="SettingsIcon" class="settings-icon" title="Settings">&#x2699;</span>
 
 <form id="SettingsForm" class="settings-form">
 <div class="panel">
