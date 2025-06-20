@@ -778,7 +778,7 @@ function parseLinks() {
 	SearchButtonDefs = [];
 	RootLinks = [];
 	IconDefs = {};
-	let block = null;  //used for literal !text ... !endtext blocks
+	let textBlock = null;  //used for literal !text ... !endtext blocks
 	let openParents = [];  //currently open parents: 0 is root, 1 its child, etc
 	let openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
 	let lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
@@ -788,20 +788,35 @@ function parseLinks() {
 		let m;  //for regex matches
 
 		// If we're in a !text block, add this line to the block
-		if (block != null) {
+		if (textBlock != null) {
 			// We're in a !text block
 			// Check if it is the end of a literal !text block
 			m = line.match(/^\s*!endtext\s*$/i);
 			if (m) {
-				// It is the end, save the object and reset block.
-				// Add this object without changing the indent or parents.
-				RootLinks.push(block);
-				allLinks.push(block);
-				block = null;
+				// It is the end, save the object and reset textBlock.
+				// Add this object to the last item.
+				let level = openParents.length - 1;  //current level
+				if (level > 0) {
+					// Level not root or Section level.
+					// If a block is inserted into blocks, the layout
+					// gets all weird. Therefore, limit !text blocks
+					// to maximum of Section level.
+					level = 0;
+				}
+				if (level >= 0) {
+					// Add this block as child of this item
+					openParents[level].subs.push(textBlock);
+				} else {
+					// There are no items yet
+					RootLinks.push(textBlock);
+				}
+				// Do not add this block as an open parent itself.
+				allLinks.push(textBlock);  //all items go here
+				textBlock = null;  //reset
 				continue;
 			}
 			// Otherwise add this line too
-			block.lines.push(line);
+			textBlock.lines.push(line);
 			continue;
 		}
 
@@ -857,7 +872,7 @@ function parseLinks() {
 		m = line.match(/^\s*!text\s*$/i);
 		if (m) {
 			// Mark the start of a !text block
-			block = {  //special type of Link object
+			textBlock = {  //special type of Link object
 				'lineNum'  : i,  //start of this !text block
 				'type'     : 'text',
 				'lines'    : [],
