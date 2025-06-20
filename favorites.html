@@ -35,6 +35,8 @@ body.dark-theme {
 	--code-background: #282828;
 	--code-foreground: var(--foreground);
 	--link-color: #6666FF;
+	--error-border-color: #FF6600;
+	--error-background-color: #FFD8C0;
 }
 
 /* Color palette - light theme */
@@ -51,6 +53,8 @@ body.light-theme {
 	--code-background: #C0C0C0;
 	--code-foreground: var(--foreground);
 	--link-color: #2222AA;
+	--error-border-color: #FFBB88;
+	--error-background-color: #FFEEDD;
 }
 
 :root {
@@ -325,8 +329,8 @@ body {
 }
 @keyframes blinker {
 	30% {
-		border-color: red;
-		background-color: #FFCCCC;
+		border-color: var(--error-border-color);
+		background-color: var(--error-background-color);
 	}
 }
 
