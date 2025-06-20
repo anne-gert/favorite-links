@@ -239,7 +239,16 @@ body {
 	vertical-align: -10%;
 }
 .link .item-icon {
-	vertical-align: -20%;
+	vertical-align: -15%;
+}
+.items > .item {  /* selects all non-grouped elements */
+}
+.link {  /* selects all links */
+}
+.items > .item .link {  /* selects all non-grouped links */
+	vertical-align: 15%;
+}
+.items > .group > .item .link {  /* selects all grouped links */
 }
 .text-icon {
 	display: inline-block;
