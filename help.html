@@ -10,6 +10,8 @@
 <title>Favorites and ToDo - Help</title>
 
 <style>
+/* CSS styles {{{ */
+
 /****************************************************************************
  * Global definitions
  ****************************************************************************/
@@ -93,6 +95,8 @@ body {
 .text-block a:hover {
 	text-decoration: underline;
 }
+
+/* }}} */
 </style>
 
 </head>
@@ -111,13 +115,17 @@ example-links.txt and DefaultLinks in favorites.html -->
 
 <p>
 <a href="favorites.html">favorites.html</a> is a single page that can be
-configured to show links and todo lists, organized in sections and blocks. This
-configuration can be downloaded via a URL and/or edited in the browser's
-LocalStorage.
+configured to show <u>links</u> and <u>todo lists</u>, organized in
+<u>sections</u>, <u>blocks</u> and <u>items</u>. This configuration can be
+downloaded via a URL and/or edited in the browser's LocalStorage (see below).
+<br>
 This page can be set as home page in the browser's settings and as the Tab
 start page via an add-on like <a
-href="https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/">New
-Tab Override</a>.
+href="https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/">New Tab
+Override</a>.
+</p>
+
+<p>
 Note that the home page can be a local file (with <code>file:///...</code>
 URL) or an internet address (with <code>http://...</code> or
 <code>https://...</code> URL) and that the tab start page can only be an
@@ -131,11 +139,14 @@ internet address.
 <p>
 The standard usage is to open the page favorites.html (or possibly set it as
 your home page). Upon first opening, it shows a default example page.  This
-page can be edited by going to the Settings (Gears (&#x2699;) icon) and just
-edit and save the textual configuration. It might be a good idea to maintain a
-text file with the configuration and copy-paste it into the Settings.<br>
-favorites.html can also be opened and used directly from <a
+page can be edited by going to the Settings (gears (&#x2699;) icon) and just
+edit and save the textual configuration. Optionally, this configuration can be
+maintained in a separate text file and copy-pasted into the Settings.
+<br>
+Since GitHub provides for a way to serve HTML pages directly, this can be used
+to open and use favorites.html directly from <a
 href="https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html">GitHub</a>.
+Save the target of this link to your home page and you're set.
 </p>
 
 <p>
@@ -393,4 +404,6 @@ Below is an example of lines specifying a Link.
 </body>
 
 </html>
+
+<!-- vim: set fdm=marker: -->
 
