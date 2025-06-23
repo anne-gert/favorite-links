@@ -462,7 +462,7 @@ const UNICODE_BLACK_DOWN_POINTING_TRIANGLE = '\u{25BC}';
 const UNICODE_BLACK_RIGHT_POINTING_TRIANGLE = '\u{25B6}';
 const UNICODE_GEARS = '\u{2699}';  //gears wheel
 
-// DefaultLinks is a copy of example-links.txt
+// DefaultLinks is a textual part with a copy of example-links.txt at the end.
 const DefaultLinks = `
 // For the syntax description, see help.html.
 
@@ -567,6 +567,7 @@ These are some examples of the available features.
         GitHub favorite-links https://github.com/anne-gert/favorite-links
             Use favorites.html icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
             Example Links override icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links-override=url:example-links.txt
+            Help icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/help.html
         Firefox
             Home page settings icon=firefox target=manual about:preferences#home
             Plugins
@@ -579,7 +580,7 @@ These are some examples of the available features.
             [x] icon=firefox Install Firefox https://www.mozilla.org/firefox/download
             [ ] icon=github Start using favorite-links as todo-list
             []  icon=empty Write review
-                & Goto Blog icon=none url=#
+                & Goto Blog icon=none url=https://blog.example.com
     Socials
         Facebook https://www.facebook.com
             Instagram https://www.instagram.com/

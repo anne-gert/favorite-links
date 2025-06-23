@@ -2,96 +2,7 @@
 
 !title Example Favorites
 
-!text
-<a name="description"></a>
-<h2>Description</h2>
-
-<p>
-<a href="favorites.html">favorites.html</a> is a single page that can be
-configured to show <u>links</u> and <u>todo lists</u>, organized in
-<u>sections</u>, <u>blocks</u> and <u>items</u>. This configuration can be
-downloaded via a URL and/or edited in the browser's LocalStorage (see below).
-<br>
-This page can be set as home page in the browser's settings and as the Tab
-start page via an add-on like <a
-href="https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/">New Tab
-Override</a>.
-</p>
-!endtext
-
-Section
-
-!text
-<p>
-The configuration consists primarily of a list of <a
-href="help.html#link-syntax">Link Definitions</a>.  The Links form an
-hierarchical structure, indicated by the line's indentation:
-<ul>
-<li><dt>Section</dt>: The first indentation level is the Section. Sections are
-    separated by horizontal lines.
-<li><dt>Block</dt>: The second indentation level are the blocks within a
-    Section. Each Block is a visual area that can be collapsed and expanded.
-<li><dt>Item</dt>: The third indentation level are the Items that populate
-    the Blocks.
-<li><dt>SubItem</dt>: The fourth and higher indentation levels are SubItems
-    that are displayed under their respective parent Items
-</ul>
-</p>
-!endtext
-
-    Block
-        Item
-            SubItem
-                SubSubItem
-                SubSubItem
-                    ...
-            SubItem
-        Item
-            SubItem
-
-!text
-<p>
-Each link can be a hyperlink, have an icon and/or a checkbox.
-</p>
-!endtext
-
-!text
-<a name="usage"></a>
-<h2>Usage</h2>
-
-<p>
-The standard usage is to open the page favorites.html (or possibly set it as
-your home page). Upon first opening, it shows a default example page.  This
-page can be edited by going to the Settings (gears (&#x2699;) icon) and just
-edit and save the textual configuration. Optionally, this configuration can be
-maintained in a separate text file and copy-pasted into the Settings.
-<br>
-Since GitHub provides for a way to serve HTML pages directly, this can be used
-to open and use favorites.html directly from <a
-href="https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html">GitHub</a>.
-Save the target of this link to your home page and you're set.
-</p>
-
-<p>
-See <a href="help.html#usage">Help</a> for more information on how to use a
-separate URL to retrieve the configuration.
-</p>
-
-<p>
-In addition to Links, the configuration also supports comments, different
-web-search functions and other directives, see <a
-href="help.html#line-syntax">Line Syntax</a> for further details.
-</p>
-!endtext
-
 Examples
-
-!text
-<p>
-These are some examples of the available features.
-</p>
-!endtext
-
     Search
         DuckDuckGo https://duckduckgo.com
         Google Maps icon=alt https://maps.google.com
@@ -101,6 +12,7 @@ These are some examples of the available features.
         GitHub favorite-links https://github.com/anne-gert/favorite-links
             Use favorites.html icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
             Example Links override icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links-override=url:example-links.txt
+            Help icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/help.html
         Firefox
             Home page settings icon=firefox target=manual about:preferences#home
             Plugins
@@ -113,7 +25,7 @@ These are some examples of the available features.
             [x] icon=firefox Install Firefox https://www.mozilla.org/firefox/download
             [ ] icon=github Start using favorite-links as todo-list
             []  icon=empty Write review
-                & Goto Blog icon=none url=#
+                & Goto Blog icon=none url=https://blog.example.com
     Socials
         Facebook https://www.facebook.com
             Instagram https://www.instagram.com/
@@ -132,5 +44,6 @@ These are some examples of the available features.
 !search YouTube
 !search Google Maps  | Maps   |         | alt
 
-// vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
+
+// vim: nowrap shiftwidth=4 tabstop=4 expandtab smartindent
 
