@@ -1,9 +1,9 @@
-﻿Favorite-Links & ToDo-List
-==========================
+﻿Bookmarks & ToDo-List
+=====================
 
-Homepage implementation to manage favorite URLs in a start-page like fashion. Each
-item can also be associated with a checkbox, so that this can also be used as
-a ToDo list.
+Homepage implementation to manage favorite URLs and bookmarks in a start-page
+like fashion. Each item can also be associated with a checkbox, so that this
+can also be used as a ToDo list.
 The page can be set as home page in the browser's settings and as the Tab
 start page via an add-on like [New Tab
 Override](https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/).
