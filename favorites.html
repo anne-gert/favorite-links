@@ -22,37 +22,37 @@ For syntax description of Links, see help.html
  ****************************************************************************/
 
 /* Color palette - dark theme */
-body.dark-theme {
-	--background: #2E323B;
+.dark-theme {
 	--foreground: #DDDDDD;
+	--background: #2E323B;
 	--accent-color: #50A0EE;
-	--selection-background: #DDDDFF;
-	--selection-foreground: #000000;
-	--block-background: #C9CDD0;
 	--block-foreground: #000000;
+	--block-background: #C9CDD0;
 	--block-border: #EEEEEE;
-	--disabled-color: #888888;
-	--code-background: #282828;
+	--selection-foreground: #000000;
+	--selection-background: #DDDDFF;
 	--code-foreground: var(--foreground);
+	--code-background: #282828;
 	--link-color: #6666FF;
+	--disabled-color: #888888;
 	--error-border-color: #FF6600;
 	--error-background-color: #FFD8C0;
 }
 
 /* Color palette - light theme */
-body.light-theme {
-	--background: #D0D8E0;
+.light-theme {
 	--foreground: #444444;
+	--background: #D0D8E0;
 	--accent-color: #5050CC;
-	--selection-background: #000099;
-	--selection-foreground: #FFFFFF;
-	--block-background: #D9DDE0;
 	--block-foreground: #222222;
+	--block-background: #D9DDE0;
 	--block-border: #666666;
-	--disabled-color: #888888;
-	--code-background: #C0C0C0;
+	--selection-foreground: #FFFFFF;
+	--selection-background: #000099;
 	--code-foreground: var(--foreground);
+	--code-background: #C0C0C0;
 	--link-color: #2222AA;
+	--disabled-color: #888888;
 	--error-border-color: #FFBB88;
 	--error-background-color: #FFEEDD;
 }
@@ -467,7 +467,6 @@ const DefaultLinks = `
 // For the syntax description, see help.html.
 
 !title Example Favorites
-!theme dark-theme
 
 !text
 <a name="description"></a>
@@ -1972,23 +1971,12 @@ function setPageTitle(title) {
 }
 
 // Function to set the theme of the body to the specified string.
+// NB: The string theme can contain multiple CSS-class names.
 function setPageTheme(theme) {
 	// Determine value or default
 	if (theme == null) theme = 'dark-theme';
-	// Get the current classes
-	let names = document.body.classList;
-	// Filter out current theme
-	let names2 = [];
-	for (let i = 0; i < names.length; ++i) {
-		let name = names[i];
-		if (!name.match(/-theme$/)) {  //skip current *-theme class
-			names2.push(name);
-		}
-	}
-	// Add new theme
-	console.log('Set PageTheme to \'' + theme + '\'');
-	names2.push(theme);
-	document.body.classList = names2;
+	// Overwrite the current values
+	document.body.className = theme;
 }
 
 // Function to set the font-size to the specified string.

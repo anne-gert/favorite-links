@@ -17,35 +17,39 @@
  ****************************************************************************/
 
 /* Color palette - dark theme */
-body.dark-theme {
-	--background: #2E323B;
+.dark-theme {
 	--foreground: #DDDDDD;
+	--background: #2E323B;
 	--accent-color: #50A0EE;
-	--selection-background: #DDDDFF;
-	--selection-foreground: #000000;
-	--block-background: #C9CDD0;
 	--block-foreground: #000000;
+	--block-background: #C9CDD0;
 	--block-border: #EEEEEE;
-	--disabled-color: #888888;
-	--code-background: #282828;
+	--selection-foreground: #000000;
+	--selection-background: #DDDDFF;
 	--code-foreground: var(--foreground);
+	--code-background: #282828;
 	--link-color: #6666FF;
+	--disabled-color: #888888;
+	--error-border-color: #FF6600;
+	--error-background-color: #FFD8C0;
 }
 
 /* Color palette - light theme */
-body.light-theme {
-	--background: #D0D8E0;
+.light-theme {
 	--foreground: #444444;
+	--background: #D0D8E0;
 	--accent-color: #5050CC;
-	--selection-background: #000099;
-	--selection-foreground: #FFFFFF;
-	--block-background: #D9DDE0;
 	--block-foreground: #222222;
+	--block-background: #D9DDE0;
 	--block-border: #666666;
-	--disabled-color: #888888;
-	--code-background: #C0C0C0;
+	--selection-foreground: #FFFFFF;
+	--selection-background: #000099;
 	--code-foreground: var(--foreground);
+	--code-background: #C0C0C0;
 	--link-color: #2222AA;
+	--disabled-color: #888888;
+	--error-border-color: #FFBB88;
+	--error-background-color: #FFEEDD;
 }
 
 :root {
@@ -398,6 +402,58 @@ Below is an example of lines specifying a Link.
     ...
   http://example.com                   : Submenu with link that is used as name too
     ...
+</pre>
+</p>
+
+
+<h2>Themes</h2>
+
+<p>
+Themes are done in a very simple way. The colors that are used are defined as
+CSS variables in a *-theme CSS class. The default is <code>dark-theme</code>
+and the alternate is <code>light-theme</code>. The theme can be changed by
+using <code>!theme name</code> where name is the CSS class name of the theme.
+</p>
+
+<p>
+The current variables are:
+<ul>
+<li><dt>--foreground</dt>,
+    <dt>--background</dt>:
+    Default foreground and background colors.
+<li><dt>--accent-color</dt>:
+    Color for titles, labels and icons.
+<li><dt>--block-foreground</dt>,
+    <dt>--block-background</dt>,
+    <dt>--block-border</dt>:
+    Foreground, background and border colors for Block level items.
+<li><dt>--selection-foreground</dt>,
+    <dt>--selection-background</dt>:
+    Foreground and background color for selected text.
+<li><dt>--code-foreground</dt>,
+    <dt>--code-background</dt>:
+    Foreground and background color for <code>&lt;code&gt;</code> and
+    <code>&lt;pre&gt;</code> fragments.
+<li><dt>--link-color</dt>: 
+    Foreground color of hyperlinks.
+<li><dt>--disabled-color</dt>:
+    Foreground color for disabled items.
+<li><dt>--error-border-color</dt>,
+    <dt>--error-background-color</dt>:
+    Border and background color for search box in case of unrecognized input.
+</ul>
+</p>
+
+<p>
+A theme can be modified like this:
+<pre>
+!text
+&lt;style&gt;
+.dark-theme {
+    --accent-color: #CC6600;
+} 
+&lt;/style&gt;
+!endtext
 </pre>
 </p>
 

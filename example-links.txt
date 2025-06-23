@@ -1,7 +1,6 @@
 // For the syntax description, see help.html.
 
 !title Example Favorites
-!theme dark-theme
 
 !text
 <a name="description"></a>
