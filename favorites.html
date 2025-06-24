@@ -295,11 +295,15 @@ body {
  * Settings Form
  ****************************************************************************/
 
-.settings-icon {
+.settings-iconbar {
 	position: absolute;
 	top: 10px; right: 10px;
+	text-align: right;
+}
+.settings-icon {
 	font-size: 200%;
 	cursor: pointer;
+	padding: 0px 0.1em;
 }
 .settings-form .panel {
 	width: 95%;
@@ -314,6 +318,7 @@ body {
 }
 .settings-form .buttonbar {
 	text-align: right;
+	display: none;  /* use icons instead */
 }
 .settings-form .button {
 }
@@ -336,7 +341,7 @@ body {
 
 
 /****************************************************************************
- * settings-form animation
+ * settings-form and settings-iconbar animation
  ****************************************************************************/
 
 .settings-form {
@@ -362,6 +367,26 @@ body {
 		transform: scaleY(1);
 		transform-origin: top;
 		height: 50em;
+	}
+}
+
+.settings-iconbar .hidden {
+	display: none;
+}
+.settings-iconbar .slide-in {
+	animation: 200ms ease-in settings-iconbar-slider;
+}
+.settings-iconbar .slide-out {
+	animation: 200ms ease-out reverse settings-iconbar-slider;
+}
+@keyframes settings-iconbar-slider {
+	0% {
+		transform: scale(0, 0.4);
+		transform-origin: right;
+	}
+	100% {
+		transform: scale(1, 1);
+		transform-origin: right;
 	}
 }
 
@@ -463,6 +488,15 @@ const UNICODE_BLACK_RIGHT_POINTING_TRIANGLE = '\u{25B6}';
 const UNICODE_LEFT_POINTING_MAGNIFYING_GLASS = '\u{1F50D}';
 const UNICODE_RIGHT_POINTING_MAGNIFYING_GLASS = '\u{1F50E}';
 const UNICODE_GEARS = '\u{2699}';  //gears wheel
+const UNICODE_EMPTY_DOCUMENT = '\u{1F5CB}';
+const UNICODE_CHECK_MARK = '\u{2713}';
+const UNICODE_HEAVY_CHECK_MARK = '\u{2714}';
+const UNICODE_LIGHT_CHECK_MARK = '\u{1F5F8}';
+const UNICODE_CANCELLATION = '\u{1F5D9}';  //cross
+const UNICODE_FLOPPY_DISK = '\u{1F4BE}';  //colored floppy disk
+const UNICODE_BLACK_HARD_SHELL_FLOPPY_DISK = '\u{1F5AA}';  //black&white 3½" floppy disk
+const UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK = '\u{1F5AB}';  //black&white 3½" floppy disk
+const UNICODE_SOFT_SHELL_FLOPPY_DISK = '\u{1F5AB}';  //black&white 5¼" floppy disk
 
 // DefaultLinks is a textual part with a copy of example-links.txt at the end.
 const DefaultLinks = `
@@ -1840,20 +1874,43 @@ function addSearchButtons(searchBox, container) {
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
-	let iconSettings = document.getElementById('SettingsIcon');
+	let iconOpen = document.getElementById('SettingsIcon');
+	let iconSave = document.getElementById('SettingsSaveIcon');
+	let iconClear = document.getElementById('SettingsClearIcon');
+	let iconCancel = document.getElementById('SettingsCancelIcon');
 	let pnlSettings = document.getElementById('SettingsForm');
 	let txtSettings = document.getElementById('SettingsText');
 	let btnSave = document.getElementById('BtnSaveSettings');
 	let btnClear = document.getElementById('BtnClearSettings');
 	let btnCancel = document.getElementById('BtnCancelSettings');
+	let iconBarClosed = document.getElementById('SettingsIconBarClosed');  //iconbar for closed status
+	let iconBarOpen = document.getElementById('SettingsIconBarOpen');  //iconbar for open status
+	// Set characters in icons
+	iconOpen.textContent = UNICODE_GEARS;
+	iconSave.textContent = UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK;
+	iconClear.textContent = UNICODE_EMPTY_DOCUMENT;
+	iconCancel.textContent = UNICODE_CANCELLATION;
+	// Set show/hide animations
 	let visible = false;
 	let showSettings = function() {
 		txtSettings.value = Links;
-		// Slide to visible
+		// Slide panel to visible
 		pnlSettings.classList.add('expanding');
 		pnlSettings.classList.add('show');
 		pnlSettings.onanimationend = function() {
 			pnlSettings.classList.remove('expanding');
+		};
+		// Slide iconBarClosed out and iconBarOpen in
+		let going = iconBarClosed, coming = iconBarOpen;
+		going.classList.add('slide-out');
+		going.onanimationend = function() {
+			going.classList.add('hidden');
+			going.classList.remove('slide-out');
+			coming.classList.remove('hidden');
+			coming.classList.add('slide-in');
+		};
+		coming.onanimationend = function() {
+			coming.classList.remove('slide-in');
 		};
 		visible = true;
 	};
@@ -1875,19 +1932,46 @@ function initSettingsPanel() {
 				processLinks();  //Render Links
 			}
 		}
-		// slide to hidden
+		// slide panel to hidden
 		pnlSettings.classList.add('collapsing');
 		pnlSettings.onanimationend = function() {
 			pnlSettings.classList.remove('show');
 			pnlSettings.classList.remove('collapsing');
 		};
+		// Slide iconBarOpen out and iconBarClosed in
+		let going = iconBarOpen, coming = iconBarClosed;
+		going.classList.add('slide-out');
+		going.onanimationend = function() {
+			going.classList.add('hidden');
+			going.classList.remove('slide-out');
+			coming.classList.remove('hidden');
+			coming.classList.add('slide-in');
+		};
+		coming.onanimationend = function() {
+			coming.classList.remove('slide-in');
+		};
 		visible = false;
 	};
-	if (iconSettings && pnlSettings) {
-		iconSettings.onclick = function() {
+	// Set initial state
+	if (visible) {
+		// showSettings() without animation
+		txtSettings.value = Links;
+		pnlSettings.classList.add('show');
+		iconBarClosed.classList.add('hidden');
+		iconBarOpen.classList.remove('hidden');
+	} else {
+		// hideSettings() without animation
+		pnlSettings.classList.remove('show');
+		iconBarClosed.classList.remove('hidden');
+		iconBarOpen.classList.add('hidden');
+	}
+	// Bind iconOpen
+	if (iconOpen && pnlSettings) {
+		iconOpen.onclick = function() {
 			if (visible) hideSettings(false); else showSettings();
 		};
 	}
+	// Initialize special behavior in the text panel
 	if (txtSettings) {
 		txtSettings.onkeydown = function(e) {
 			//console.log('KeyCode=' + e.keyCode);
@@ -1906,6 +1990,7 @@ function initSettingsPanel() {
 			return true;
 		};
 	}
+	// Bind buttons (in case those are used)
 	if (btnSave) {
 		btnSave.onclick = function() {
 			if (visible) hideSettings(true);
@@ -1922,6 +2007,22 @@ function initSettingsPanel() {
 		btnCancel.onclick = function() {
 			if (visible) hideSettings(false);
 			return false;  //stop default button action
+		};
+	}
+	// Bind icons (in case those are used)
+	if (iconSave) {
+		iconSave.onclick = function() {
+			if (visible) hideSettings(true);
+		};
+	}
+	if (iconClear) {
+		iconClear.onclick = function() {
+			if (visible) hideSettings('clear');
+		};
+	}
+	if (iconCancel) {
+		iconCancel.onclick = function() {
+			if (visible) hideSettings(false);
 		};
 	}
 }
@@ -2070,7 +2171,19 @@ window.onload = init;
 
 <h1 id="Title">Favorites</h1>
 
-<span id="SettingsIcon" class="settings-icon" title="Settings">&#x2699;</span>
+<span id="SettingsIconBar" class="settings-iconbar">
+
+<div id="SettingsIconBarClosed">
+<span id="SettingsIcon" class="settings-icon" title="Settings">[Settings]</span>
+</div>
+
+<div id="SettingsIconBarOpen">
+<span id="SettingsSaveIcon" class="settings-icon" title="Save">[Save]</span>
+<span id="SettingsClearIcon" class="settings-icon" title="Clear">[Clear]</span>
+<span id="SettingsCancelIcon" class="settings-icon" title="Cancel">[Cancel]</span>
+</div>
+
+</span>
 
 <form id="SettingsForm" class="settings-form">
 <div class="panel">
