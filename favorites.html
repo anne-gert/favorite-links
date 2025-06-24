@@ -824,6 +824,8 @@ var FontSize = null;  //specified font-size (may be relative, but that doesn't w
 var SearchButtonDefs = null;  //specified search button declarations
 var RootLinks = null;  //array of Link objects that have no parents (i.e. are roots)
 var IconDefs = null;  //specified icondef declarations
+var StyleBlocks = null;  //array of !style...!endstyle blocks
+var ScriptBlocks = null;  //array of !script...!endscript blocks
 
 
 // Parse the string in Links and fills the global variables above.
@@ -836,7 +838,11 @@ function parseLinks() {
 	SearchButtonDefs = [];
 	RootLinks = [];
 	IconDefs = {};
+	StyleBlocks = [];
+	ScriptBlocks = [];
 	let textBlock = null;  //used for literal !text ... !endtext blocks
+	let styleBlock = false;  //used for literal !style ... !endstyle blocks
+	let scriptBlock = false;  //used for literal !script ... !endscript blocks
 	let openParents = [];  //currently open parents: 0 is root, 1 its child, etc
 	let openParentIndentSpaces = [];  //indentation level (number of spaces) for each open parent
 	let lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
@@ -875,6 +881,36 @@ function parseLinks() {
 			}
 			// Otherwise add this line too
 			textBlock.lines.push(line);
+			continue;
+		}
+
+		// If we're in a !style block, add this line to the block
+		if (styleBlock) {
+			// We're in a !style block
+			// Check if it is the end of a literal !style block
+			m = line.match(/^\s*!endstyle\s*$/i);
+			if (m) {
+				// It is the end, reset styleBlock.
+				styleBlock = false;
+				continue;
+			}
+			// Otherwise add this line too
+			StyleBlocks.push(line);
+			continue;
+		}
+
+		// If we're in a !script block, add this line to the block
+		if (scriptBlock) {
+			// We're in a !script block
+			// Check if it is the end of a literal !script block
+			m = line.match(/^\s*!endscript\s*$/i);
+			if (m) {
+				// It is the end, reset scriptBlock.
+				scriptBlock = false;
+				continue;
+			}
+			// Otherwise add this line too
+			ScriptBlocks.push(line);
 			continue;
 		}
 
@@ -936,6 +972,24 @@ function parseLinks() {
 				'lines'    : [],
 				'toString' : function() { return '{ !text, #Lines=' + this.lines.length + ' }' },
 			};
+			continue;
+		}
+
+		// Check if it is the start of a literal !style block
+		m = line.match(/^\s*!style\s*$/i);
+		if (m) {
+			// Mark the start of a !style block
+			if (StyleBlocks == null) StyleBlocks = [];
+			styleBlock = true;
+			continue;
+		}
+
+		// Check if it is the start of a literal !script block
+		m = line.match(/^\s*!script\s*$/i);
+		if (m) {
+			// Mark the start of a !script block
+			if (ScriptBlocks == null) ScriptBlocks = [];
+			scriptBlock = true;
 			continue;
 		}
 
@@ -1676,7 +1730,7 @@ function getNoUrl(intput) {
 	return null;
 }
 
-// This function returns a functions that uses the template to construct a URL.
+// This function returns a function that uses the template to construct a URL.
 // The template is a URL with the following placeholders:
 // - %input: Replaced with the supplied input value.
 // - %urlinput: Replaced with the URL-encoded input value.
@@ -1815,8 +1869,8 @@ function addSearchButtons(searchBox, container) {
 		let key = id.toLowerCase();  //lower case version
 
 		// Determine referenced Search URL Functions
-		let searchFunction = SearchFunction[key];
 		let getSearchUrl = null, getDomainSearchUrl = null;
+		let searchFunction = SearchFunction[key];
 		if (searchFunction) {
 			getSearchUrl = SearchFunction[key]['text'];
 			getDomainSearchUrl = SearchFunction[key]['domain'];
@@ -2065,6 +2119,25 @@ function textInsert(ctl, inserter) {
 
 // Initialization {{{
 
+// Function to set the styles defined by the configuration.
+function setStyleBlocks(styles) {
+	let el = document.getElementById('dynamic-styles');
+	if (!el) {
+		el = document.createElement('style');
+		el.id = 'dynamic-styles';
+		document.head.appendChild(el);
+	}
+	el.innerHTML = styles.join('\n');
+}
+
+// Function to add the script defined by the configuration.
+function addScriptBlocks(script) {
+	if (script != null) {
+		if ('length' in script) script = script.join('\n');  //concatenate if array
+		eval(script);
+	}
+}
+
 // Function to set the title to the specified string.
 function setPageTitle(title) {
 	// Determine value or default
@@ -2098,6 +2171,10 @@ function setFontSize(size) {
 function processLinks() {
 	// Parse Links
 	parseLinks();
+
+	// First handle scripts and styles
+	setStyleBlocks(StyleBlocks);
+	addScriptBlocks(ScriptBlocks);
 
 	// Set page title, theme and font size
 	setPageTitle(PageTitle);

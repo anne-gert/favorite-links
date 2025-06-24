@@ -236,61 +236,14 @@ Each line should be one of the following:
       title to be displayed.
   <li><dt>Theme</dt>: The line <code>!theme name</code> specifies the CSS class
       name to use for the theme. Currently 'dark-theme' (default) and
-      'light-theme' are defined, but custom themes can be defined with a Text
-      Block.
+      'light-theme' are defined, but custom themes can be defined with a Style
+      Block. See <a href="#themes">below</a> on use cases.
   <li><dt>Font Size</dt>: The line <code>!size font-size</code> specifies the
       base font-size to use. All CSS length quantities can be used, e.g.
       '10pt' or '120%'. This feature is experimental.
-  <li><dt>Search Buttons</dt>: The line <code>!search fields</code> defines a
-      search button to be displayed next to the search box. The fields are
-      separated by <code>|</code> with whitespace allowed.  These are the
-      fields to be specified:
-      <ul>
-	<li><dt>Identifier</dt> (mandatory): Unique name for this button
-	    definition.
-	<li><dt>Label</dt> (default: Identifier): This is the text to be
-	    displayed next to the icon on the button.
-	<li><dt>Tooltip</dt> (default: Identifier): This is the text to be
-	    displayd if the mouse is hovered over the button.
-	<li><dt>Icon</dt> (default: <code>default</code> if SearchFunction
-	    exists, <code>html:&amp;#x1F50D;</code> (magnifying glass,
-	    &#x1F50D;) if not): This is the specification of the icon to
-	    display. See the icon=URL for Links for the syntax.
-      </ul>
-      The following properties are derived:
-      <ul>
-        <li><dt>Search URL Function</dt>:
-	    Function to call to retrieve the URL to go to for the results if
-	    the search query does not look like a domain.
-            Input of this function is the contents of the SearchBox.
-            This function is found by looking up the Identifier in
-            SearchFunctions and then the 'text' sub-function.
-            If no SearchFunction can be found, use the one with
-            Identifier='default'.
-        <li><dt>Domain Search URL Function</dt>:
-            Function to call to retrieve the URL to go to for the results if
-            the search query does look like a domain.
-            Input of this function is the contents of the SearchBox.
-            This function is found by looking up the Identifier in
-            SearchFunctions and then the 'domain' sub-function.
-            If no SearchFunction can be found, use the one with
-            Identifier='default'.
-      </ul>
-      Pre-defined Identifiers (case-insensitive) are:
-      <ul>
-        <li><code>Duck</code>: Use Duck Duck Go for text
-        <li><code>Google</code>: Use Google Search for text
-        <li><code>Wikipedia</code>: Use Wikipedia for text
-        <li><code>YouTube</code>: Use YouTube for text
-	<li><code>Wayback</code>: Use Wayback Machine Internet Arcive for both
-	    text and domains.
-        <li><code>GoogleMaps</code>: Use Google Maps for text
-	<li><code>default</code>: Text search returns null to ignore the
-	    search.  Domain search returns the input as URL to bypass a results
-	    page.
-      </ul>
-      In JavaScript, SearchFunctions can be extended with additional
-      functions and the new Identifiers can be used.
+  <li><dt>Search Buttons</dt>: The line <code>!search identifier | label |
+      tooltip | icon</code> defines a search button to be displayed next to the
+      search box.  See <a href="#search-functions">below</a> for more details.
   <li><dt>Icon Definitions</dt>: The line <code>!icondef name
       replacement</code> defines an icon. If a link uses
       <code>icon=name</code>, it will be replaced by whatever is defined for
@@ -300,11 +253,14 @@ Each line should be one of the following:
   <li><dt>Text Block</dt>: A text block is the lines of text between
       <code>!text</code> and <code>!endtext</code>, which each should appear
       on a line of their own. The text block will be rendered at that
-      location. It can contain any HTML, so this can also be used to define
-      additional CSS classes (by defining <code>&lt;style&gt; ...
-      &lt;/style&gt;</code> sections) or additional JavaScript (by defining
-      <code>&lt;script&gt; ...  &lt;/script&gt;</code> sections), e.g. to
-      facilitate new SearchButton functions.
+      location. It can contain any HTML
+  <li><dt>Style Block</dt>: A style block is the lines of text between
+      <code>!style</code> and <code>!endstyle</code>, which should contain CSS
+      definitions. See <a href="#themes">Themes</a> for an example.
+  <li><dt>Script Block</dt>: A script block is the lines of text between
+      <code>!script</code> and <code>!endscript</code>, which should contain
+      JavaScript code that is executed at the beginning of the page. See <a
+      href="#search-functions">Search Functions</a> for an example.
 </ul>
 </p>
 
@@ -406,6 +362,116 @@ Below is an example of lines specifying a Link.
 </p>
 
 
+<a name="search-functions"></a>
+<h2>New Search Function</h2>
+
+<p>
+The line <code>!search identifier | label | tooltip | icon</code> defines a
+search button to be displayed next to the search box. The fields are separated
+by <code>|</code> with whitespace allowed.  These are the fields to be
+specified:
+<ul>
+<li><dt>Identifier</dt> (mandatory): Unique name for this button definition.
+<li><dt>Label</dt> (default: <i>Identifier</i>): This is the text to be
+    displayed next to the icon on the button.
+<li><dt>Tooltip</dt> (default: <i>Identifier</i>): This is the text to be
+    displayd if the mouse is hovered over the button.
+<li><dt>Icon</dt> (default: <code>default</code> if SearchFunction exists,
+    <code>char:U+1F50D</code> (magnifying glass, &#x1F50D;) if not): This is
+    the specification of the icon to display. See the icon=URL of Links for the
+    syntax.
+</ul>
+</p>
+
+<p>
+The following properties are derived:
+<ul>
+<li><dt>Search URL Function</dt>:
+    Function to call to retrieve the URL to go to for the results if
+    the search query does not look like a domain.
+    Input of this function is the contents of the SearchBox.
+    This function is found by looking up the Identifier in
+    SearchFunctions and then the 'text' sub-function.
+    If no SearchFunction can be found, use the one with
+    Identifier='default'.
+<li><dt>Domain Search URL Function</dt>:
+    Function to call to retrieve the URL to go to for the results if
+    the search query does look like a domain.
+    Input of this function is the contents of the SearchBox.
+    This function is found by looking up the Identifier in
+    SearchFunctions and then the 'domain' sub-function.
+    If no SearchFunction can be found, use the one with
+    Identifier='default'.
+</ul>
+</p>
+
+<p>
+Pre-defined Identifiers (case-insensitive) are:
+<ul>
+<li><code>Duck</code>: Use Duck Duck Go for text
+<li><code>Google</code>: Use Google Search for text
+<li><code>Wikipedia</code>: Use Wikipedia for text
+<li><code>YouTube</code>: Use YouTube for text
+<li><code>Wayback</code>: Use Wayback Machine Internet Arcive for both text and
+    domains.
+<li><code>GoogleMaps</code>: Use Google Maps for text
+<li><code>default</code>: Text search returns null to ignore the search.
+    Domain search returns the input as URL to bypass a results page.
+</ul>
+</p>
+
+<p>
+In JavaScript, <code>SearchFunction</code> can be extended with additional
+functions that can be used for new buttons. The field name in SearchFunction
+must be all lowercase. The function should have a single argument that is
+the string to search for. The function should return a URL to go to for the
+search results.
+<br>
+The function <code>getTemplateUrl</code> can be used to generate such a
+function, based on a template of the URL.
+<br>
+Note that this function is also used to try and find a
+<code>favicon.ico</code>.
+</p>
+
+<p>
+The <code>SearchFunction</code> has the following sub-keys:
+<ul>
+<li><code>'domain'</code>: This function is called when the search text
+    resembles a domain name.
+<li><code>'text'</code>: This function is called to search other text.
+</ul>
+</p>
+
+<p>
+Example on how to create a search button for Amazon:
+<pre>
+!search Amazon
+!script
+SearchFunction['amazon'] = { 'text': getTemplateUrl('https://www.amazon.com/s?k=%urlinput') };
+!endscript
+</pre>
+</p>
+
+<p>
+Silly example for a Random button:
+<pre>
+!search Random ||| html:&amp;#x2753;
+!script
+SearchFunction['xkcd'] = { 'text': () =&gt; 'https://c.xkcd.com/random/comic/' };
+SearchFunction['random'] = {
+    'text': input =&gt; {
+        let options = [ 'google', 'duck', 'wikipedia', 'amazon', 'xkcd' ];
+        let r = Math.trunc(Math.random() * options.length);
+        return SearchFunction[options[r]]['text'](input);
+    }
+};
+!endscript
+</pre>
+</p>
+
+
+<a name="themes"></a>
 <h2>Themes</h2>
 
 <p>
@@ -447,13 +513,11 @@ The current variables are:
 <p>
 A theme can be modified like this:
 <pre>
-!text
-&lt;style&gt;
+!style
 .dark-theme {
     --accent-color: #CC6600;
 } 
-&lt;/style&gt;
-!endtext
+!endstyle
 </pre>
 </p>
 
