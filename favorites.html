@@ -1780,11 +1780,13 @@ function addSearchButtons(searchBox, container) {
 		if (!id) continue;  //id is mandatory, ignore this entry if absent
 		let key = id.toLowerCase();  //lower case version
 
-		// Determine referenced Search URL Function
-		let getSearchUrl = SearchFunction[key]['text'];
-
-		// Determine referenced Domain Search URL Function
-		let getDomainSearchUrl = SearchFunction[key]['domain'];
+		// Determine referenced Search URL Functions
+		let searchFunction = SearchFunction[key];
+		let getSearchUrl = null, getDomainSearchUrl = null;
+		if (searchFunction) {
+			getSearchUrl = SearchFunction[key]['text'];
+			getDomainSearchUrl = SearchFunction[key]['domain'];
+		}
 
 		// Determine Label
 		let label = def[f++] || id;
