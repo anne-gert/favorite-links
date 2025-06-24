@@ -460,6 +460,8 @@ body {
 
 const UNICODE_BLACK_DOWN_POINTING_TRIANGLE = '\u{25BC}';
 const UNICODE_BLACK_RIGHT_POINTING_TRIANGLE = '\u{25B6}';
+const UNICODE_LEFT_POINTING_MAGNIFYING_GLASS = '\u{1F50D}';
+const UNICODE_RIGHT_POINTING_MAGNIFYING_GLASS = '\u{1F50E}';
 const UNICODE_GEARS = '\u{2699}';  //gears wheel
 
 // DefaultLinks is a textual part with a copy of example-links.txt at the end.
@@ -1800,7 +1802,7 @@ function addSearchButtons(searchBox, container) {
 			} else {
 				// There is no Search URL function, use a
 				// standard magnifying glass icon.
-				icon = 'html:&#x1F50D;';
+				icon = 'char:' + UNICODE_LEFT_POINTING_MAGNIFYING_GLASS;
 			}
 		}
 
