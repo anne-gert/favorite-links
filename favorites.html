@@ -642,10 +642,14 @@ const KeyLinks = 'links';
 
 // Loading Links {{{
 
-// This function returns a Promise to set the Links content. It is intended to
-// be called as soon as possible, so that a download may start.
-// When the page is ready to use the result, it can wait for the Promise and
-// use it.
+// Global variable to hold the Promise for the Links.
+// Set by resolveLinks().
+var LinksPromise = null;
+
+// This function tries to find the configuration for the Links.
+// It sets the global LinksPromise variable with a Promise that should resolve
+// to the Links contents..
+// It also returns this Promise for chaining.
 //
 // The contents of Links can be obtained in the following way:
 // 1) If the links-override= query string is set on the URL, that contents is
@@ -657,7 +661,7 @@ const KeyLinks = 'links';
 //    evaluated as script. It should set the Links variable.
 // 5) If Links is empty at this point, use a default contents.
 // 6) Links should now have a value that can be parsed as specified below.
-function resolveLinks() {
+function resolveLinks(skipLocalStorage = false) {
 	let links = null;
 
 	let params = new URLSearchParams(location.search);
@@ -674,7 +678,7 @@ function resolveLinks() {
 	}
 
 	// Step 2) Check if links is defined in LocalStorage
-	if (links == null) {
+	if (!skipLocalStorage && links == null) {
 		let v = readLocalLinks();
 		if (v !== false) {
 			// LocalStorage is available, use persistent value
@@ -783,11 +787,13 @@ function resolveLinks() {
 	}
 
 	// Step 6) Now links can be parsed when init() is called.
-	return links;  //return the Promise for later consumption
+	LinksPromise = links;  //allow the result to be accessible via this global
+	return links;  //return the Promise for chaining too
 }
 
-// Start resolving the links here.
-var LinksPromise = resolveLinks();
+// The resolveLinks() should be called as soon as possible to start the
+// downloading already.
+resolveLinks();
 
 // Read links settings from LocalStorage.
 // Return links or false in case of error or if it does not exist.
@@ -1926,6 +1932,8 @@ function addSearchButtons(searchBox, container) {
 
 // Edit Settings {{{
 
+let showSettings = null;  // will be set later
+
 // Set up the events for the settings panel.
 function initSettingsPanel() {
 	let iconOpen = document.getElementById('SettingsIcon');
@@ -1946,7 +1954,7 @@ function initSettingsPanel() {
 	setIfSupported(iconCancel, 'textContent', UNICODE_CANCELLATION);
 	// Set show/hide animations
 	let visible = false;
-	let showSettings = function() {
+	showSettings = function() {
 		txtSettings.value = Links;
 		// Slide panel to visible
 		pnlSettings.classList.add('expanding');
@@ -1969,42 +1977,69 @@ function initSettingsPanel() {
 		visible = true;
 	};
 	let hideSettings = function(save) {
+		let hide = () => {
+			// slide panel to hidden
+			pnlSettings.classList.add('collapsing');
+			pnlSettings.onanimationend = function() {
+				pnlSettings.classList.remove('show');
+				pnlSettings.classList.remove('collapsing');
+			};
+			// Slide iconBarOpen out and iconBarClosed in
+			let going = iconBarOpen, coming = iconBarClosed;
+			going.classList.add('slide-out');
+			going.onanimationend = function() {
+				going.classList.add('hidden');
+				going.classList.remove('slide-out');
+				coming.classList.remove('hidden');
+				coming.classList.add('slide-in');
+			};
+			coming.onanimationend = function() {
+				coming.classList.remove('slide-in');
+			};
+			visible = false;
+		};
 		if (save) {
-			if (save == 'clear') {
+			let saveLinks = Links;
+			if (save == 'clear' || txtSettings.value == '') {
 				console.log('Clear settings');
-				txtSettings.value = '';
-				writeLocalLinks(null);  //remove persisted Links
-				loadLinks(true);  //re-resolve Links
-			} else if (txtSettings.value == '') {
-				console.log('Clear settings');
-				writeLocalLinks(null);  //remove persistet Links
-				loadLinks(true);  //re-resolve Links
+				loadLinks(true, true)  //re-resolve Links
+				.then(() => {
+					// Links are correct
+					txtSettings.value = '';
+					writeLocalLinks(null);  //remove previous stored Links
+					// Close the panel
+					hide();
+				})
+				.catch(error => {
+					// There was an error
+					// Put newly read value in txtSettings to correct.
+					// Restore old value in Links in case of cancel.
+					txtSettings.value = Links;
+					Links = saveLinks;
+					window.alert('Error when reloading settings: ' + error +
+						'\n\nPlease correct or cancel.');
+				});
 			} else {
 				console.log('Save settings');
-				Links = txtSettings.value;
-				writeLocalLinks(Links);
-				processLinks();  //Render Links
+				try {
+					Links = txtSettings.value;
+					processLinks();  //Render Links
+					// Links are correct
+					writeLocalLinks(Links);
+					// Close the panel
+					hide();
+				} catch (error) {
+					window.alert('Error when saving settings: ' + error +
+						'\n\nPlease correct or cancel.');
+					// Leave the value in txtSettings to correct.
+					// Restore old value in Links in case of cancel.
+					Links = saveLinks;
+				}
 			}
+		} else {
+			// Cancel
+			hide();
 		}
-		// slide panel to hidden
-		pnlSettings.classList.add('collapsing');
-		pnlSettings.onanimationend = function() {
-			pnlSettings.classList.remove('show');
-			pnlSettings.classList.remove('collapsing');
-		};
-		// Slide iconBarOpen out and iconBarClosed in
-		let going = iconBarOpen, coming = iconBarClosed;
-		going.classList.add('slide-out');
-		going.onanimationend = function() {
-			going.classList.add('hidden');
-			going.classList.remove('slide-out');
-			coming.classList.remove('hidden');
-			coming.classList.add('slide-in');
-		};
-		coming.onanimationend = function() {
-			coming.classList.remove('slide-in');
-		};
-		visible = false;
 	};
 	// Set initial state
 	if (visible) {
@@ -2257,11 +2292,13 @@ function setFontSize(size) {
 }
 
 // From the Links configuration, parse its content and display it.
+// This function may throw exceptions when something is wrong with the
+// contents of the Links variable.
 function processLinks() {
 	// Parse Links
 	parseLinks();
 
-	// First handle scripts and styles
+	// First handle scripts and styles (to catch errors quickly)
 	setStyleBlocks(StyleBlocks);
 	addScriptBlocks(ScriptBlocks);
 
@@ -2302,29 +2339,63 @@ function processLinks() {
 	}
 }
 
+// Constructor function to construct a Promise in a pending state with
+// additional functions resolve(value) and reject(error) to settle it.
+function PendingPromise()
+{
+	let resolve, reject;
+	let result = new Promise((resolveFunc, rejectFunc) => {  //Promise in pending state
+		// Expose callbacks to be called later
+		resolve = resolveFunc;
+		reject = rejectFunc;
+	});
+	result['resolve'] = resolve;
+	result['reject'] = reject;
+	return result;
+}
+
 // Load the Links and render them.
 // If reload==true, the Links are completely resolved again and possibly
 // reloaded from URLs.
-function loadLinks(reload) {
+// If resolveLinks() is called, the value of skipLocalStorage is passed to
+// control whether the value in LocalStorage is considered.
+// This function returns a Promise to communicate when it's done or if there
+// are exceptions.
+function loadLinks(reload = false, skipLocalStorage = false, ready = null) {
 	if (LinksPromise == null || reload) {
 		// Resolve links if not already done so
-		LinksPromise = resolveLinks();
+		resolveLinks(skipLocalStorage);
 	}
 
-	LinksPromise.then((value) => {
+	let result = new PendingPromise();
+
+	LinksPromise
+	.then((value) => {
 		// Links have been resolved
 		//console.log(value);
 		Links = value;
 
 		// Process the Links
 		processLinks();
-	});
+
+		// Signal that this is done.
+		result.resolve(true);
+	})
+	.catch(result.reject);
+
+	return result;
 }
 
 // Initialize the JavaScript on the page
 function init() {
 	initSettingsPanel();
-	loadLinks();
+	loadLinks(false, false)
+	.catch(error => {
+		// There is an error, report and open Settings
+		window.alert('Error when loading settings: ' + error +
+			'\n\nPlease correct or cancel.');
+		showSettings();
+	});
 }
 window.onload = init;
 
