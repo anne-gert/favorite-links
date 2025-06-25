@@ -859,8 +859,7 @@ function parseLinks() {
 
 		// If we're in a !text block, add this line to the block
 		if (textBlock != null) {
-			// We're in a !text block
-			// Check if it is the end of a literal !text block
+			// Check if it is the end of a literal block
 			m = line.match(/^\s*!endtext\s*$/i);
 			if (m) {
 				// It is the end, save the object and reset textBlock.
@@ -892,8 +891,7 @@ function parseLinks() {
 
 		// If we're in a !style block, add this line to the block
 		if (styleBlock) {
-			// We're in a !style block
-			// Check if it is the end of a literal !style block
+			// Check if it is the end of a literal block
 			m = line.match(/^\s*!endstyle\s*$/i);
 			if (m) {
 				// It is the end, reset styleBlock.
@@ -907,8 +905,7 @@ function parseLinks() {
 
 		// If we're in a !script block, add this line to the block
 		if (scriptBlock) {
-			// We're in a !script block
-			// Check if it is the end of a literal !script block
+			// Check if it is the end of a literal block
 			m = line.match(/^\s*!endscript\s*$/i);
 			if (m) {
 				// It is the end, reset scriptBlock.
@@ -971,9 +968,9 @@ function parseLinks() {
 		// Check if it is the start of a literal !text block
 		m = line.match(/^\s*!text\s*$/i);
 		if (m) {
-			// Mark the start of a !text block
+			// Mark the start of the block
 			textBlock = {  //special type of Link object
-				'lineNum'  : i,  //start of this !text block
+				'lineNum'  : i+1,  //start of this block
 				'type'     : 'text',
 				'lines'    : [],
 				'toString' : function() { return '{ !text, #Lines=' + this.lines.length + ' }' },
@@ -984,18 +981,16 @@ function parseLinks() {
 		// Check if it is the start of a literal !style block
 		m = line.match(/^\s*!style\s*$/i);
 		if (m) {
-			// Mark the start of a !style block
 			if (StyleBlocks == null) StyleBlocks = [];
-			styleBlock = true;
+			styleBlock = i+1;  //line number where this block started
 			continue;
 		}
 
 		// Check if it is the start of a literal !script block
 		m = line.match(/^\s*!script\s*$/i);
 		if (m) {
-			// Mark the start of a !script block
 			if (ScriptBlocks == null) ScriptBlocks = [];
-			scriptBlock = true;
+			scriptBlock = i+1;  //line number where this block started
 			continue;
 		}
 
@@ -1065,7 +1060,7 @@ function parseLinks() {
 
 		// Create the Link object
 		let link = {
-			'lineNum'  : i,
+			'lineNum'  : i+1,
 			'type'     : 'link',
 			'name'     : name,
 			'url'      : url,
@@ -1106,6 +1101,17 @@ function parseLinks() {
 
 		// Add this Link
 		allLinks.push(link);
+	}
+
+	// Check if all blocks have been closed
+	if (textBlock) {
+		throw 'Missing !endtext for !text starting on line ' + textBlock.lineNum;
+	}
+	if (styleBlock) {
+		throw 'Missing !endstyle for !style starting on line ' + styleBlock;
+	}
+	if (scriptBlock) {
+		throw 'Missing !endscript for !script starting on line ' + scriptBlock;
 	}
 
 	// Log all links
