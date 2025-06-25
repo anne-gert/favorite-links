@@ -2220,7 +2220,10 @@ function setStyleBlocks(styles) {
 function addScriptBlocks(script) {
 	if (script != null) {
 		if ('length' in script) script = script.join('\n');  //concatenate if array
-		eval(script);
+		// Do an indirect eval().
+		// According to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval ,
+		// indirect eval() is safer.
+		eval?.(script);
 	}
 }
 
