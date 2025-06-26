@@ -235,7 +235,7 @@ Each line should be one of the following:
   <li><dt>Page Title</dt>: The line <code>!title name</code> specifies the page
       title to be displayed.
   <li><dt>Theme</dt>: The line <code>!theme name</code> specifies the CSS class
-      name to use for the theme. Currently 'dark-theme' (default) and
+      name to use for the theme. Currently 'auto' (default), 'dark-theme' and
       'light-theme' are defined, but custom themes can be defined with a Style
       Block. See <a href="#themes">below</a> on use cases.
   <li><dt>Font Size</dt>: The line <code>!size font-size</code> specifies the
@@ -475,10 +475,13 @@ SearchFunction['random'] = {
 <h2>Themes</h2>
 
 <p>
-Themes are done in a very simple way. The colors that are used are defined as
-CSS variables in a *-theme CSS class. The default is <code>dark-theme</code>
-and the alternate is <code>light-theme</code>. The theme can be changed by
-using <code>!theme name</code> where name is the CSS class name of the theme.
+Themes are implemented in a very simple way. The colors that are used are
+defined as CSS variables in a *-theme CSS class. Currently there is a
+<code>dark-theme</code> and and a <code>light-theme</code>.
+<br>
+The theme can be changed by using <code>!theme name</code> where name is the
+CSS class name of the theme or <code>auto</code> (the default)  in which case
+the browser preference setting is used.
 </p>
 
 <p>

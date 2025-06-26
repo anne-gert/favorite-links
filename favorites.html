@@ -42,8 +42,8 @@ For syntax description of Links, see help.html
 /* Color palette - light theme */
 .light-theme {
 	--foreground: #444444;
-	--background: #D0D8E0;
-	--accent-color: #5050CC;
+	--background: #E8F0F8;
+	--accent-color: #4444EE;
 	--block-foreground: #222222;
 	--block-background: #D9DDE0;
 	--block-border: #666666;
@@ -2158,6 +2158,77 @@ function textInsert(ctl, inserter) {
 
 // }}}
 
+// Handling prefer-color-scheme and PageTheme {{{
+
+// Global variables that are used to monitor prefers-color-scheme
+var PrefersColorSchemeListener = null;
+
+// Function to set the theme of the body to the specified string.
+// NB: The string theme can contain multiple CSS-class names.
+function setPageTheme(theme) {
+	// Determine value or default
+	if (theme == null) theme = 'dark-theme';
+	// Overwrite the current values
+	console.log('Set PageTheme to \'' + theme + '\'');
+	document.body.className = theme;
+}
+
+// Initialize monitoring of light/dark theme and adjust PageTheme accordingly.
+function initMonitorPreferColorScheme(enable) {
+	// Remove existing listener
+	if (PrefersColorSchemeListener) {
+		console.log('call PrefersColorSchemeListener.finit()');
+		PrefersColorSchemeListener.finit();
+		PrefersColorSchemeListener = null;
+	}
+
+	// Enable listener
+	if (enable) {
+		// Create a new listener
+		// Note: If the function(){} syntax is used, 'this' refers to
+		// the object. If ()=>{} syntax is used, 'this' refers to the
+		// global window object, which is not what we need here.
+		PrefersColorSchemeListener = {
+			dark : window.matchMedia('(prefers-color-scheme: dark)'),
+			light : window.matchMedia('(prefers-color-scheme: light)'),
+			init : function() {
+				console.log('Install prefers-color-scheme listener');
+				this.dark.addEventListener('change', this.handler);
+				this.light.addEventListener('change', this.handler);
+			},
+			finit : function() {
+				console.log('Remove prefers-color-scheme listener');
+				this.dark.removeEventListener('change', this.handler);
+				this.light.removeEventListener('change', this.handler);
+			},
+			handler : function() {
+				// Note: This handler may be called as event of
+				// a matchMedia, in which case 'this' refers
+				// to *that* object.
+				if (!PrefersColorSchemeListener) return;
+				if (PrefersColorSchemeListener.dark.matches) {
+					console.log('User prefers dark mode.');
+					setPageTheme('dark-theme');
+				} else if (PrefersColorSchemeListener.light.matches) {
+					console.log('User prefers light mode.');
+					setPageTheme('light-theme');
+				} else {
+					console.log('No specific preference detected, use default.');
+					setPageTheme(null);
+				}
+			},
+		};
+		//console.log('call PrefersColorSchemeListener.init()');
+		PrefersColorSchemeListener.init();
+
+		// Set the current theme
+		//console.log('call PrefersColorSchemeListener.handler()');
+		PrefersColorSchemeListener.handler();
+	}
+}
+
+// }}}
+
 // Initialization {{{
 
 // Function to detect if a unicode character is supported by the specified font.
@@ -2279,15 +2350,6 @@ function setPageTitle(title) {
 		titleCtl.innerText = title;
 }
 
-// Function to set the theme of the body to the specified string.
-// NB: The string theme can contain multiple CSS-class names.
-function setPageTheme(theme) {
-	// Determine value or default
-	if (theme == null) theme = 'dark-theme';
-	// Overwrite the current values
-	document.body.className = theme;
-}
-
 // Function to set the font-size to the specified string.
 function setFontSize(size) {
 	// Determine value or default
@@ -2310,7 +2372,13 @@ function processLinks() {
 
 	// Set page title, theme and font size
 	setPageTitle(PageTitle);
-	setPageTheme(PageTheme);
+	if (PageTheme == null || PageTheme.toLowerCase() == 'auto') {
+		PageTheme = 'auto';
+		initMonitorPreferColorScheme(true);
+	} else {
+		initMonitorPreferColorScheme(false);
+		setPageTheme(PageTheme);
+	}
 	setFontSize(FontSize);
 
 	// Render links
