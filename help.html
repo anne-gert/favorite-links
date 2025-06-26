@@ -30,15 +30,16 @@
 	--code-background: #282828;
 	--link-color: #6666FF;
 	--disabled-color: #888888;
-	--error-border-color: #FF6600;
-	--error-background-color: #FFD8C0;
+	--error-foreground: #FF6600;
+	--error-background: #FFD8C0;
+	--error-border: var(--error-foreground);
 }
 
 /* Color palette - light theme */
 .light-theme {
 	--foreground: #444444;
-	--background: #D0D8E0;
-	--accent-color: #5050CC;
+	--background: #E8F0F8;
+	--accent-color: #4444EE;
 	--block-foreground: #222222;
 	--block-background: #D9DDE0;
 	--block-border: #666666;
@@ -48,8 +49,9 @@
 	--code-background: #C0C0C0;
 	--link-color: #2222AA;
 	--disabled-color: #888888;
-	--error-border-color: #FFBB88;
-	--error-background-color: #FFEEDD;
+	--error-foreground: #FFBB88;
+	--error-background: #FFEEDD;
+	--error-border: var(--error-foreground);
 }
 
 :root {
@@ -507,9 +509,11 @@ The current variables are:
     Foreground color of hyperlinks.
 <li><dt>--disabled-color</dt>:
     Foreground color for disabled items.
-<li><dt>--error-border-color</dt>,
-    <dt>--error-background-color</dt>:
-    Border and background color for search box in case of unrecognized input.
+<li><dt>--error-foreground</dt>,
+    <dt>--error-background</dt>,
+    <dt>--error-border</dt>:
+    Foreground, background and border color for search box in case of
+    unrecognized input.
 </ul>
 </p>
 

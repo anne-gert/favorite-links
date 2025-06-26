@@ -35,8 +35,9 @@ For syntax description of Links, see help.html
 	--code-background: #282828;
 	--link-color: #6666FF;
 	--disabled-color: #888888;
-	--error-border-color: #FF6600;
-	--error-background-color: #FFD8C0;
+	--error-foreground: #FF6600;
+	--error-background: #FFD8C0;
+	--error-border: var(--error-foreground);
 }
 
 /* Color palette - light theme */
@@ -53,8 +54,9 @@ For syntax description of Links, see help.html
 	--code-background: #C0C0C0;
 	--link-color: #2222AA;
 	--disabled-color: #888888;
-	--error-border-color: #FFBB88;
-	--error-background-color: #FFEEDD;
+	--error-foreground: #FFBB88;
+	--error-background: #FFEEDD;
+	--error-border: var(--error-foreground);
 }
 
 :root {
@@ -334,8 +336,9 @@ body {
 }
 @keyframes blinker {
 	30% {
-		border-color: var(--error-border-color);
-		background-color: var(--error-background-color);
+		color: var(--error-foreground);
+		background-color: var(--error-background);
+		border-color: var(--error-border);
 	}
 }
 
