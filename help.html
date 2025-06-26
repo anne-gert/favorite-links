@@ -101,6 +101,9 @@ body {
 .text-block a:hover {
 	text-decoration: underline;
 }
+.text-block .important {
+	color: var(--error-foreground);
+}
 
 /* }}} */
 </style>
@@ -114,7 +117,7 @@ body {
 
 
 <!-- The following section is also included as a text block in
-example-links.txt and DefaultLinks in favorites.html -->
+DefaultLinks in favorites.html -->
 
 <a name="description"></a>
 <h2>Description</h2>
@@ -264,6 +267,37 @@ Each line should be one of the following:
       JavaScript code that is executed at the beginning of the page. See <a
       href="#search-functions">Search Functions</a> for an example.
 </ul>
+</p>
+
+<p>
+<span class="important">Known Issue</span>: Once script is added, it can only
+be reset by completely reloading the page. Just commenting out the script in
+the settings and saving will not do the trick, because the previous script is
+still present in memory.
+</p>
+
+<p>
+As an example, add the following to the settings:
+<pre>
+!script
+let hue = 0;
+const step = 5;
+const interval = 50;
+window.setInterval(() =&gt; document.body.style.backgroundColor = 'hsl(' + (hue += step) + 'deg, 100%, 20%)', interval);
+!endscript
+</pre>
+This will set a timer handler that continuously changes the background color.
+<br>
+Now open the settings and make the following change:
+<pre>
+const interval = 60;
+</pre>
+When this is saved, the background starts to blink erraticly. After reloading
+the page, it starts changing the color normally again.
+<br>
+The reason is that after saving the change, a <b>second</b> timer handler was
+set and both timers interferred. The reload discards both timers and a new
+one in a clean page.
 </p>
 
 
