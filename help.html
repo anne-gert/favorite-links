@@ -162,27 +162,22 @@ Save the target of this link to your home page and you're set.
 It is also possible to provide the configuration as a URL. This URL can be
 provided in several ways:
 <ul>
-<li>In the configuration txt as <code>url:&lt;URL&gt;</code>.
-<li>With the <code>links=url:&lt;URL&gt;</code> URL argument.
-<li>With the <code>links-override=url:&lt;URL&gt;</code> URL argument.
+<li>With the <code>links=&lt;URL&gt;</code> URL argument.
+<li>With the <code>links-override=&lt;URL&gt;</code> URL argument.
 </ul>
 </p>
 
 <p>
 This is the order how the configuration is searched:
 <ol>
-<li><dt>links-override=</dt>: If <code>links-override=configuration</code> is
-    provided, that content is used.
+<li><dt>links-override=</dt>: If <code>links-override=&lt;URL&gt;</code> is
+    provided, that URL is downloaded and its contents is used.
 <li><dt>LocalStorage</dt>: If a configuration is stored in the browser's
     LocalStorage, that is used. Note that LocalStorage is per domain, so if
     the page is opened from a different domain, a different configuration
     might be present in the LocalStorage.
-<li><dt>links=</dt>: If <code>links=configuration</code> is provided, that
-    content is used.
-<li>If any of the above was non-empty, that configuration is used. If that
-    configuration is of the form <code>url:&lt;URL&gt;</code>, then
-    &lt;URL&gt; will be downloaded to retrieve the configuration. This URL may
-    be absolute or relative.
+<li><dt>links=</dt>: If <code>links=&lt;URL&gt;</code> is provided, that
+    URL is downloaded and its contents is used.
 <li>If none of the above provided a non-empty configuration, a default
     configuration is used which includes examples and some explanation. This
     is the page that is initially shown if displayed without arguments.

@@ -608,7 +608,7 @@ These are some examples of the available features.
     Source
         GitHub favorite-links https://github.com/anne-gert/favorite-links
             Use favorites.html icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
-            Example Links override icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links-override=url:example-links.txt
+            Example Links override icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links-override=example-links.txt
             Help icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/help.html
         Firefox
             Home page settings icon=firefox target=manual about:preferences#home
@@ -659,16 +659,17 @@ var LinksPromise = null;
 //
 // The contents of Links can be obtained in the following way:
 // 1) If the links-override= query string is set on the URL, that contents is
-//    used. This can also be a url:xxx value.
+//    used as URL to download.
 // 2) Otherwise if there is a 'links' key in LocalStorage, that value is used.
 // 3) Otherwise if the links= query string is set on the URL, that contents is
-//    used. This can also be a url:xxx value.
-// 4) If Links matches 'url:<url>', the contents of that URL is downloaded and
-//    evaluated as script. It should set the Links variable.
+//    used as URL to download.
+// 4) If the above resulted in a URL to download, it may be an absolute or
+//    relative URL. Download it and use its contents for the Links variable.
 // 5) If Links is empty at this point, use a default contents.
 // 6) Links should now have a value that can be parsed as specified below.
 function resolveLinks(skipLocalStorage = false) {
 	let links = null;
+	let isUrl = false;
 
 	let params = new URLSearchParams(location.search);
 	//console.log(params);
@@ -680,6 +681,7 @@ function resolveLinks(skipLocalStorage = false) {
 			// Use this URL argument for links
 			console.log('Use links-override= URL argument');
 			links = v;
+			isUrl = true;
 		}
 	}
 
@@ -700,19 +702,20 @@ function resolveLinks(skipLocalStorage = false) {
 			// Use this URL argument for links
 			console.log('Use links= URL argument');
 			links = v;
+			isUrl = true;
 		}
 	}
 
 	// Step 4) If links is a URL, resolve it
 	if (links != null) {
-		let matchTargetUrl = links.match(/^\s*url\s*:\s*((https?:\/\/)?(.*?))\s*$/i);
-		//console.log(matchTargetUrl);
-		// Captured:
-		// 1: url
-		// 2: protocol
-		// 3: domain + path + rest
-		if (matchTargetUrl) {
+		if (isUrl) {
 			// links is a URL
+			let matchTargetUrl = links.match(/^\s*((https?:\/\/)?(.*?))\s*$/i);  //always matches
+			//console.log(matchTargetUrl);
+			// Captured:
+			// 1: url
+			// 2: protocol
+			// 3: domain + path + rest
 			let url = matchTargetUrl[1];
 			if (!matchTargetUrl[2]) {
 				// URL is relative, check if we need to adjust it
