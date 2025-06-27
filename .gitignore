@@ -1,7 +1,0 @@
-# Exclude most files
-*.txt
-*.zip
-*.pl
-.svn
-!example*
-
