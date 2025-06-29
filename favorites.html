@@ -859,6 +859,7 @@ function parseLinks() {
 	let styleBlock = false;  //used for literal !style ... !endstyle blocks
 	let scriptBlock = false;  //used for literal !script ... !endscript blocks
 	let openIndentLevels = [];  //indentation level (number of spaces) for each open level
+	let maxLevel = null;  //keep track of the maximum level
 	let lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
 	for (let i = 0; i < lines.length; ++i) {
 		let line = lines[i];
@@ -1050,6 +1051,7 @@ function parseLinks() {
 			for (level = openIndentLevels.length - 1; level >= 0 && openIndentLevels[level] >= indent; --level) {}
 			// We found the parent's level (-1 if no parent), add 1 for this level
 			++level;
+			if (maxLevel == null || level > maxLevel) maxLevel = level;
 			// Remove all open levels after that
 			openIndentLevels.length = level;
 			// Add this link as open parent
@@ -1082,42 +1084,112 @@ function parseLinks() {
 		}
 	}
 
+	// Search from position to the front in allLinks and find the first
+	// link item that has a level set.
+	// Returns item or null if not found.
+	let findLinkBefore = function(position) {
+		for (let i = position - 1; i >= 0; --i) {
+			let item = allLinks[i];
+			if (item.level != null) return item;
+		}
+		return null;
+	}
+
+	// Search from position to the end in allLinks and find the first
+	// link item that has a level set.
+	// Returns item or null if not found.
+	let findLinkAfter = function(position) {
+		for (let i = position + 1; i < allLinks.length; ++i) {
+			let item = allLinks[i];
+			if (item.level != null) return item;
+		}
+		return null;
+	}
+
+	// If maxLevel==0, all items are at root level. It was probably
+	// intended to have all items in a block. To fix this, add a
+	// dummy Section (level 0) and Block (level 1).
+	// Similarly with maxLevel==0. Now all items are separate blocks.
+	// Fix this by adding a dummy Section (level 0).
+	if (maxLevel < 2) {
+		// These are the special cases
+		let firstLink = findLinkAfter(-1);
+		if (firstLink == null) {
+			// There are no links at all.
+			// In this case, there is nothing to adjust
+		} else {
+			// Add 1 or 2 levels in the front of allLinks
+			// In either case, we need to add a Section
+			let section = {
+				'lineNum'  : 0,
+				'type'     : 'link',
+				'level'    : 0,
+				'name'     : '_',  //this makes this section not render
+				'url'      : null,
+				'icon'     : null,
+				'check'    : null,
+				'target'   : null,
+				'cont'     : [],
+				'subs'     : [],
+				'toString' : function() { return '{ Dummy Section }' },
+			};
+			if (maxLevel == 0) {
+				// Only in this case, we need to add a Block level too
+				let block = {
+					'lineNum'  : 0,
+					'type'     : 'link',
+					'level'    : 1,
+					'name'     : firstLink.name,  //give it the same name as the first link
+					'url'      : null,
+					'icon'     : null,
+					'check'    : null,
+					'target'   : null,
+					'cont'     : [],
+					'subs'     : [],
+					'toString' : function() { return '{ Dummy Block }' },
+				};
+				console.log('Add dummy Block');
+				allLinks.unshift(block);
+			}
+			console.log('Add dummy Section');
+			allLinks.unshift(section);
+			// Increase level of all existing items
+			//  maxLevel | num items added | start original items | increase
+			// ----------|-----------------|----------------------|----------
+			//         0 |               2 |                    2 |        2
+			//         1 |               1 |                    1 |        1
+			//        >2 |               0 |                  n/a |      n/a
+			let x = 2 - maxLevel;
+			for (let i = x; i < allLinks.length; ++i) {
+				let level = allLinks[i].level;
+				if (level != null) {
+					allLinks[i].level = level + x;
+				}
+			}
+		}
+	}
+	//console.log(allLinks);
+
 	// Go through allLinks and adjust the level if needed
 	for (let i = 0; i < allLinks.length; ++i) {
 		let item = allLinks[i];
 		if (item.type == 'text') {
 			// This is a text block
 			// Make its level the lowest of the item before and the item after
-			// Search the item before
-			let before = null;
-			for (let j = i - 1; j >= 0; --j) {
-				let l = allLinks[j].level;
-				if (l != null) {
-					before = l;
-					break;
-				}
-			}
-			// Search the item after
-			let after = null;
-			for (let j = i + 1; j < allLinks.length; ++j) {
-				let l = allLinks[j].level;
-				if (l != null) {
-					after = l;
-					break;
-				}
-			}
+			let before = findLinkBefore(i);
+			let after = findLinkAfter(i);
 			if (before != null) {
 				if (after != null) {
 					// There is a line before and a line after
-					if (before < after) {
+					if (before.level < after.level) {
 						// Indent in -> regard this item as 1 below before
-						item.level = before + 1;
-					} else if (before == after) {
+						item.level = before.level + 1;
+					} else if (before.level == after.level) {
 						// Same indent -> regard this item as that level too
-						item.level = before;
+						item.level = before.level;
 					} else {
 						// Indent out -> regard this item as 1 deeper than after
-						item.level = after + 1;
+						item.level = after.level + 1;
 					}
 				} else {
 					// There is a line before, but no line after
@@ -1148,7 +1220,6 @@ function parseLinks() {
 			if (item.level > 0) {
 				// This is a regular item, find a parent
 				let parent = openParents[item.level - 1];
-				console.log(item.type);
 				parent.subs.push(item);
 			} else {
 				// This item does not have a parent, it's a root
@@ -1359,6 +1430,9 @@ function outputItem(link, level, container, parentPath) {
 		let item = document.createElement('hr');
 		item.className = 'separator';
 		container.appendChild(item);
+	} else if (link.lineNum == 0 && name == '_') {
+		// This is an added (because lineNum==0) item.
+		// If name=='_', it should not be displayed.
 	} else {
 		let itemContainer = addItemContainer();
 		// The containers are structured as follows:
