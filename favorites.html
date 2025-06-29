@@ -652,8 +652,9 @@ const LSKey_ItemExpandedPrefix = LSKey_Prefix + 'expanded_';
 
 // Loading Links {{{
 
-// Global variable to hold the Promise for the Links.
+// Global variables to hold the URL and Promise for the Links.
 // Set by resolveLinks().
+var LinksUrl = null;
 var LinksPromise = null;
 
 // This function tries to find the configuration for the Links.
@@ -661,147 +662,179 @@ var LinksPromise = null;
 // to the Links contents..
 // It also returns this Promise for chaining.
 //
-// The contents of Links can be obtained in the following way:
-// 1) If the links-override= query string is set on the URL, that contents is
-//    used as URL to download.
-// 2) Otherwise if there is a 'links' key in LocalStorage, that value is used.
-// 3) Otherwise if the links= query string is set on the URL, that contents is
-//    used as URL to download.
-// 4) If the above resulted in a URL to download, it may be an absolute or
-//    relative URL. Download it and use its contents for the Links variable.
-// 5) If Links is empty at this point, use a default contents.
-// 6) Links should now have a value that can be parsed as specified below.
+// The contents of Links can be obtained from links-override=, links=,
+// LocalStorage or DefaultLinks. See the table in the function for the details.
+//
+// If this search results in a URL to download, it may be an absolute or
+// relative URL. Download it and use its contents for the Links variable.
 function resolveLinks(skipLocalStorage = false) {
-	let links = null;
-	let isUrl = false;
+	LinksUrl = null;
+	LinksPromise = null;
+
+	// The general order is:
+	// 1) links-override=
+	// 2) LocalStorage if skipLocalStorage==false
+	// 3) links=
+	//
+	// If save= is set, the order of LocalStorage and links= is swapped,
+	// resulting in a modified table:
+	// 1) links-override=
+	// 2) links=
+	// 3) LocalStorage if skipLocalStorage==false
+	//
+	// We now need to find 2 things:
+	// - Source to use for links, which can be a URL or a stored string.
+	// - URL, that may not actually be used, because the string is stored
+	//   in LocalStorage.
+	// Below are 2 tables to derive these values.
+	//
+	// Derive LinksUrl:
+	// - LinksUrl should always be the first of links-override= or links=
+	//   or null if neither is set.
+	//
+	// Derive linksText:
+	// - If LinksUrl is set, the contents should generally be downloaded.
+	//   There is 1 exception if we're in read-only mode in which case
+	//   LocalStorage is used before links=. This can be expressed as
+	//   LinksUrl set AND save= not set AND LocalStorage set AND not
+	//   skipped. In that case, use LocalStorage. Otherwise set to null
+	//   to indicate LinksUrl should be downloaded.
+	// - If LocalStorage is set and not skipped, use that.
+	// - Otherwise, use DefaultLinks.
+	//
+	// Derive LinksPromise:
+	// - If linksText is set, use that.
+	// - Otherwise LinksUrl should be set, download that.
 
 	let params = new URLSearchParams(location.search);
+	let linksOverride = params.get('links-override');
+	let save = params.get('save');
+	let links = params.get('links');
 	//console.log(params);
 
-	// Step 1) Check if links-override is defined in the query string
-	if (links == null) {
-		let v = params.get('links-override');
-		if (v) {
-			// Use this URL argument for links
-			console.log('Use links-override= URL argument');
-			links = v;
-			isUrl = true;
+	// Derive LinksUrl: The first of links-override= or links=
+	if (linksOverride) {
+		console.log('LinksUrl: Use links-override= URL argument');
+		LinksUrl = linksOverride;
+	} else if (links) {
+		console.log('LinksUrl: Use links= URL argument');
+		LinksUrl = links;
+	} else {
+		console.log('LinksUrl: No URL specified');
+		LinksUrl = null;
+	}
+
+	// Derive linksText
+	let checkLocalStorage = () => {
+		if (skipLocalStorage) return null;  //ignore LocalStorage
+		let locStor = readLocalLinks();
+		if (locStor === false) return null;  //nothing in LocalStorage
+		// LocalStorage is available, return that
+		console.log('LinksPromise: Use links from the LocalStorage');
+		return locStor;
+	}
+	let linksText = null;  //defaults to download LinksUrl
+	if (LinksUrl) {
+		// LinksUrl is set. Generally download it, except in 1 exception
+		if (!linksOverride && !save) linksText = checkLocalStorage();  //the exception
+	} else {
+		// LinksUrl not set, linksText must be set here to display anything.
+		linksText = checkLocalStorage();
+		if (linksText == null) {
+			// Nothing in LocalStorage, use DefaultLinks
+			console.log('LinksPromise: Use standard example links');
+			linksText = DefaultLinks;
 		}
 	}
 
-	// Step 2) Check if links is defined in LocalStorage
-	if (!skipLocalStorage && links == null) {
-		let v = readLocalLinks();
-		if (v !== false) {
-			// LocalStorage is available, use persistent value
-			console.log('Use links from the LocalStorage');
-			links = v;
-		}
-	}
+	// Here, either or both of LinksUrl or linksText must be set.
 
-	// Step 3) Check if links is defined in the query string
-	if (links == null) {
-		let v = params.get('links');
-		if (v) {
-			// Use this URL argument for links
-			console.log('Use links= URL argument');
-			links = v;
-			isUrl = true;
-		}
-	}
-
-	// Step 4) If links is a URL, resolve it
-	if (links != null) {
-		if (isUrl) {
-			// links is a URL
-			let matchTargetUrl = links.match(/^\s*((https?:\/\/)?(.*?))\s*$/i);  //always matches
-			//console.log(matchTargetUrl);
+	// If no text found yet, there must be a URL, resolve it
+	if (linksText == null) {
+		// links is a URL
+		let matchTargetUrl = LinksUrl.match(/^\s*((https?:\/\/)?(.*?))\s*$/i);  //always matches
+		//console.log(matchTargetUrl);
+		// Captured:
+		// 1: url
+		// 2: protocol
+		// 3: domain + path + rest
+		let url = matchTargetUrl[1];
+		if (!matchTargetUrl[2]) {
+			// URL is relative, check if we need to adjust it
+			let matchBaseUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
+			//console.log(matchBaseUrl);
 			// Captured:
-			// 1: url
-			// 2: protocol
-			// 3: domain + path + rest
-			let url = matchTargetUrl[1];
-			if (!matchTargetUrl[2]) {
-				// URL is relative, check if we need to adjust it
-				let matchBaseUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
-				//console.log(matchBaseUrl);
+			// 1: protocol
+			// 2: host ('html-preview.github.io')
+			// 3: path without query string or fragment
+			if (matchBaseUrl) {
+				// The current URL is html-preview.github.io (or similar)
+				// This should have a url= parameter that contains the real location
+				let referredUrl = params.get('url');
+				//console.log(referredUrl);
+				let matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
+				//console.log(matchReferredUrl);
 				// Captured:
 				// 1: protocol
-				// 2: host ('html-preview.github.io')
+				// 2: host ('github.com')
 				// 3: path without query string or fragment
-				if (matchBaseUrl) {
-					// The current URL is html-preview.github.io (or similar)
-					// This should have a url= parameter that contains the real location
-					let referredUrl = params.get('url');
-					//console.log(referredUrl);
-					let matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
-					//console.log(matchReferredUrl);
-					// Captured:
-					// 1: protocol
-					// 2: host ('github.com')
-					// 3: path without query string or fragment
-					if (matchReferredUrl) {
-						// The referred URL is on github.com
+				if (matchReferredUrl) {
+					// The referred URL is on github.com
 
-						// We are now in a situation where this page is hosted
-						// on GitHub and links tries to point to a file on
-						// there as well.
-						// If you have a normal link to github.com, you get the
-						// file inside the environment. If you use
-						// raw.githubusercontent.com, you get the content of the
-						// file, but with Content-Type=text/plain. When
-						// html-preview.github.io is used, it uses
-						// raw-githubcontent.com and serves it with
-						// Content-Type=text/html.
-						console.log('Fix links= relative URL for GitHub');
-						// To make this relative link work, it should be grafted
-						// onto githubusercontent.
-						let matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
-						//console.log(matchReferredPath);
-						// Captured:
-						// 1: directory
-						// 2: filename (everything after last '/')
-						url = matchReferredUrl[1] + 'raw.githubusercontent.com' + matchReferredPath[1] + matchTargetUrl[3];
-					}
+					// We are now in a situation where this page is hosted
+					// on GitHub and links tries to point to a file on
+					// there as well.
+					// If you have a normal link to github.com, you get the
+					// file inside the environment. If you use
+					// raw.githubusercontent.com, you get the content of the
+					// file, but with Content-Type=text/plain. When
+					// html-preview.github.io is used, it uses
+					// raw-githubcontent.com and serves it with
+					// Content-Type=text/html.
+					console.log('Fix links= relative URL for GitHub');
+					// To make this relative link work, it should be grafted
+					// onto githubusercontent.
+					let matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
+					//console.log(matchReferredPath);
+					// Captured:
+					// 1: directory
+					// 2: filename (everything after last '/')
+					url = matchReferredUrl[1] + 'raw.githubusercontent.com' + matchReferredPath[1] + matchTargetUrl[3];
 				}
 			}
-
-			// Retrieve the url
-			console.log('Links defined by URL \'' + url + '\'');
-			links = new Promise((resolveFunc, rejectFunc) => {
-				let xhr = new XMLHttpRequest();
-				xhr.open('GET', url);
-				xhr.onreadystatechange = function() {
-					if (this.readyState == 4) {
-						// Request has been handled
-						if (this.status == 200) {
-							// Success
-							console.log('Loaded links successfully');
-							resolveFunc(xhr.responseText);
-						} else {
-							// Failed
-							console.log('Failed to load links, use standard example links');
-							resolveFunc(DefaultLinks);
-						}
-					}
-				};
-				xhr.send();  //send the request
-			});
-		} else {
-			// Links is not a URL
-			links = Promise.resolve(links);  //make it into a Promise
 		}
+
+		// Derive LinksPromise: Download the URL
+		console.log('LinksPromise: Download URL \'' + url + '\'');
+		LinksPromise = new Promise((resolveFunc, rejectFunc) => {
+			let xhr = new XMLHttpRequest();
+			xhr.open('GET', url);
+			xhr.onreadystatechange = function() {
+				if (this.readyState == 4) {
+					// Request has been handled
+					if (this.status == 200) {
+						// Success
+						console.log('LinksPromise: Download successful');
+						resolveFunc(xhr.responseText);
+					} else {
+						// Failed
+						console.log('LinksPromise: Download failed, use standard example links');
+						resolveFunc(DefaultLinks);
+					}
+				}
+			};
+			xhr.send();  //send the request
+		});
+	} else {
+		// Derive LinksPromise: Return linksText
+		LinksPromise = Promise.resolve(linksText);
 	}
 
-	// Step 5) If links is still empty, use a default contents.
-	if (links == null) {
-		console.log('Use standard example links');
-		links = Promise.resolve(DefaultLinks);
-	}
+	// Here LinkPromise has been set to the links contents.
+	// Also LinksUrl has been set to the URL used or that would have been used.
 
-	// Step 6) Now links can be parsed when init() is called.
-	LinksPromise = links;  //allow the result to be accessible via this global
-	return links;  //return the Promise for chaining too
+	// Return the Promise too (for chaining)
+	return LinksPromise;
 }
 
 // The resolveLinks() should be called as soon as possible to start the
@@ -821,7 +854,7 @@ function readLocalLinks() {
 // Store links in LocalStorage.
 // If value is null, empty or whitespace, delete value from LocalStorage.
 // Return true if success, false if not saved.
-function writeLocalLinks(value) {
+function _writeLocalLinks(value) {
 	if (localStorage) {
 		if (value == null || value.match(/^\s*$/))
 			localStorage.removeItem(LSKey_Links);
@@ -831,6 +864,128 @@ function writeLocalLinks(value) {
 	}
 	return false;
 }
+
+// Save links online by the method specified.
+// If the value is null, empty or whitespace, save an empty string.
+// Returns Promise of the upload or false if not saving.
+function _writeOnlineLinks(value) {
+	let params = new URLSearchParams(location.search);
+	let save = params.get('save');
+	if (!save) {
+		console.log('No save=, skip saving');
+		return false;
+	}
+
+	// If value is null or whitespace, send an empty string
+	if (value == null || value.match(/^\s*$/)) {
+		value = '';
+	}
+
+	// Split into parts
+	let parts = save.split('\\');
+
+	// The first part should specify the method and the URL
+	let method, saveUrl, special = false;
+	let method_url = parts.shift().match(/^(?:(put|post):)?(.*)$/i);
+	if (method_url) {
+		if (method_url[1]) {
+			// This is the standard syntax method:url
+			method = method_url[1].toUpperCase();
+		} else {
+			// This is the special save syntax
+			method = 'POST';
+			special = true;
+		}
+		if (method_url[2]) {
+			// A URL has been specified
+			saveUrl = method_url[2];
+		} else if (LinksUrl) {
+			// No URL has been specified, use the URL for reading
+			saveUrl = LinksUrl;
+		} else {
+			// No URL to use
+			console.error('Cannot find read nor write url');
+			return false;
+		}
+	} else {
+		console.error('Incorrect method/url in \'' + save + '\'');
+		return false;
+	}
+
+	// Derive absolute URL to save
+	let saveUrlAbs;
+	if (LinksUrl) {
+		// LinksUrl may be relative to this script and saveUrl may be relative to LinksUrl
+		let linksUrlAbs = new URL(LinksUrl, window.location).href;
+		saveUrlAbs = new URL(saveUrl, linksUrlAbs).href;
+	} else {
+		// No LinksUrl known, assume base of saveUrl is this script
+		saveUrlAbs = new URL(saveUrl, window.location).href;
+	}
+
+	console.log((special ? 'Special ' : '') + method + ' ' + value.length + ' characters to ' + saveUrlAbs);
+
+	// The other parts are additional headers
+	let headers = [];
+	if (special) {
+		// For the special syntax, the next part is the token
+		if (parts.length > 0) {
+			headers.push([ 'x-token', parts.shift() ]);
+		}
+		// Create the x-name header
+		if (LinksUrl) {
+			let name = LinksUrl.replace(/\?.*/, '').replace(/.*\//, '');
+			headers.push([ 'x-name', name ]);
+		} else {
+			console.error('Special save cannot find LinksUrl for x-name');
+			return false;
+		}
+	}
+	// The other parts are additional headers in name:value format
+	for (let i = 0; i < parts.length; ++i) {
+		let name_value = parts[i].match(/([^:]+):(.+)/);
+		if (name_value) {
+			headers.push(name_value.slice(1,3));
+		} else {
+			console.warning('Expected header: ' + parts[i]);
+		}
+	}
+
+	console.log('Request headers: ', headers);
+
+	// Create the Promise for uploading
+	let uploadPromise = new Promise((resolveFunc, rejectFunc) => {
+		let xhr = new XMLHttpRequest();
+		xhr.open(method, saveUrlAbs);
+		for (let i = 0; i < headers.length; ++i) {
+			xhr.setRequestHeader(headers[i][0], headers[i][1]);
+		}
+		xhr.onreadystatechange = function() {
+			if (this.readyState == 4) {
+				// Request has been handled
+				if (this.status == 200) {
+					// Success
+					console.log('Uploaded links successfully');
+					resolveFunc(this.status);
+				} else {
+					// Failed
+					console.log('Failed to upload links, good luck next time (' + this.status + ')');
+					resolveFunc(this.status);  //do not see this as a fail
+				}
+			}
+		};
+		xhr.send(value);  //send the request
+	});
+
+	return uploadPromise;
+}
+
+// Save links by calling _writeLocalLinks() and _saveOnlineLinks().
+function writeLinks(value) {
+	_writeLocalLinks(value);
+	_writeOnlineLinks(value);
+}
+
 // }}}
 
 // Parsing Links {{{
@@ -1507,7 +1662,7 @@ function outputItem(link, level, container, parentPath) {
 					newCheck = '[ ]';
 				}
 				Links = Links.replace(re, '$1' + newCheck);
-				writeLocalLinks(Links);
+				writeLinks(Links);
 				setTextClass('checked', checkbox.checked);
 			};
 			checkbox.checked = check;
@@ -2191,7 +2346,7 @@ function initSettingsPanel() {
 				.then(() => {
 					// Links are correct
 					txtSettings.value = '';
-					writeLocalLinks(null);  //remove previous stored Links
+					writeLinks(null);  //remove previous stored Links
 					// Close the panel
 					hide();
 				})
@@ -2220,7 +2375,7 @@ function initSettingsPanel() {
 					Links = txtSettings.value;
 					processLinks();  //Render Links
 					// Links are correct
-					writeLocalLinks(Links);
+					writeLinks(Links);
 					// Close the panel
 					hide();
 				} catch (error) {

@@ -26,11 +26,3 @@ with a direct link to GitHub:
 This contents can be edited from the page (via the Gears icon) and stored in
 the browser's LocalStorage.
 
-Further Ideas
--------------
-
-* Use a PUT or POST URL to store the links contents online.
-    - Where should this be defined? On the URL?
-    - Should we use credentials or maybe a GUID in the path?
-    - Can this be done with NextCloud?
-
