@@ -853,11 +853,11 @@ function parseLinks() {
 	SearchButtonDefs = [];
 	RootLinks = [];
 	IconDefs = {};
-	StyleBlocks = [];
-	ScriptBlocks = [];
+	StyleBlocks = null;
+	ScriptBlocks = null;
 	let textBlock = null;  //used for literal !text ... !endtext blocks
-	let styleBlock = false;  //used for literal !style ... !endstyle blocks
-	let scriptBlock = false;  //used for literal !script ... !endscript blocks
+	let styleBlock = null;  //used for literal !style ... !endstyle blocks
+	let scriptBlock = null;  //used for literal !script ... !endscript blocks
 	let openIndentLevels = [];  //indentation level (number of spaces) for each open level
 	let maxLevel = null;  //keep track of the maximum level
 	let lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
@@ -882,30 +882,36 @@ function parseLinks() {
 		}
 
 		// If we're in a !style block, add this line to the block
-		if (styleBlock) {
+		if (styleBlock != null) {
 			// Check if it is the end of a literal block
 			m = line.match(/^\s*!endstyle\s*$/i);
 			if (m) {
-				// It is the end, reset styleBlock.
-				styleBlock = false;
+				// It is the end, save the object and reset styleBlock.
+				if (StyleBlocks == null) StyleBlocks = [];
+				console.log('Add !style block (' + styleBlock.lines.length + ' lines)');
+				StyleBlocks.push(styleBlock);
+				styleBlock = null;  //reset
 				continue;
 			}
 			// Otherwise add this line too
-			StyleBlocks.push(line);
+			styleBlock.lines.push(line);
 			continue;
 		}
 
 		// If we're in a !script block, add this line to the block
-		if (scriptBlock) {
+		if (scriptBlock != null) {
 			// Check if it is the end of a literal block
 			m = line.match(/^\s*!endscript\s*$/i);
 			if (m) {
-				// It is the end, reset scriptBlock.
-				scriptBlock = false;
+				// It is the end, save the object and reset scriptBlock.
+				if (ScriptBlocks == null) ScriptBlocks = [];
+				console.log('Add !script block (' + scriptBlock.lines.length + ' lines)');
+				ScriptBlocks.push(scriptBlock);
+				scriptBlock = null;  //reset
 				continue;
 			}
 			// Otherwise add this line too
-			ScriptBlocks.push(line);
+			scriptBlock.lines.push(line);
 			continue;
 		}
 
@@ -974,16 +980,24 @@ function parseLinks() {
 		// Check if it is the start of a literal !style block
 		m = line.match(/^\s*!style\s*$/i);
 		if (m) {
-			if (StyleBlocks == null) StyleBlocks = [];
-			styleBlock = i+1;  //line number where this block started
+			// Mark the start of the block
+			styleBlock = {
+				'lineNum'  : i+1,  //start of this block
+				'lines'    : [],
+				'toString' : function() { return '{ !style, #Lines=' + this.lines.length + ' }' },
+			};
 			continue;
 		}
 
 		// Check if it is the start of a literal !script block
 		m = line.match(/^\s*!script\s*$/i);
 		if (m) {
-			if (ScriptBlocks == null) ScriptBlocks = [];
-			scriptBlock = i+1;  //line number where this block started
+			// Mark the start of the block
+			scriptBlock = {
+				'lineNum'  : i+1,  //start of this block
+				'lines'    : [],
+				'toString' : function() { return '{ !script, #Lines=' + this.lines.length + ' }' },
+			};
 			continue;
 		}
 
@@ -1236,19 +1250,33 @@ function parseLinks() {
 
 	// Check if all blocks have been closed
 	if (textBlock) {
-		throw 'Missing !endtext for !text starting on line ' + textBlock.lineNum;
+		throw new UserInputError('Missing !endtext for !text', textBlock.lineNum);
 	}
 	if (styleBlock) {
-		throw 'Missing !endstyle for !style starting on line ' + styleBlock;
+		throw new UserInputError('Missing !endstyle for !style', styleBlock.lineNum);
 	}
 	if (scriptBlock) {
-		throw 'Missing !endscript for !script starting on line ' + scriptBlock;
+		throw new UserInputError('Missing !endscript for !script', scriptBlock.lineNum);
 	}
 
 	// Log all links
 	//for (let i = 0; i < allLinks.length; ++i) console.log('Link=' + allLinks[i]);
 	// Log all roots
 	//for (let i = 0; i < RootLinks.length; ++i) console.log('RootLink=' + RootLinks[i]);
+}
+
+class UserInputError extends Error {
+	constructor(message, lineNumber) {
+		// Update message
+		let fileName = 'configuration';
+		if (lineNumber != null) {
+			message += ' on line ' + lineNumber;
+		}
+
+		// Construct object
+		super(message, fileName, lineNumber);
+		this.name = 'UserInputError';
+	}
 }
 
 // }}}
@@ -2152,12 +2180,22 @@ function initSettingsPanel() {
 				})
 				.catch(error => {
 					// There was an error
+					// Always log for debugging
+					console.error(error);
 					// Put newly read value in txtSettings to correct.
 					// Restore old value in Links in case of cancel.
 					txtSettings.value = Links;
 					Links = saveLinks;
-					window.alert('Error when reloading settings: ' + error +
-						'\n\nPlease correct or cancel.');
+					if (error instanceof UserInputError) {
+						// It is a UserInputError, show a dialog,
+						// because the user can fix it.
+						window.alert('Error when reloading settings: ' +
+							error.message +
+							'\n\nPlease correct or cancel.');
+					} else {
+						// It is another error, discard it, because
+						// it has already been logged.
+					}
 				});
 			} else {
 				console.log('Save settings');
@@ -2169,8 +2207,18 @@ function initSettingsPanel() {
 					// Close the panel
 					hide();
 				} catch (error) {
-					window.alert('Error when saving settings: ' + error +
-						'\n\nPlease correct or cancel.');
+					// Always log for debugging
+					console.error(error);
+					if (error instanceof UserInputError) {
+						// It is a UserInputError, show a dialog,
+						// because the user can fix it.
+						window.alert('Error when saving settings: ' +
+							error.message +
+							'\n\nPlease correct or cancel.');
+					} else {
+						// It is another error, discard it, because
+						// it has already been logged.
+					}
 					// Leave the value in txtSettings to correct.
 					// Restore old value in Links in case of cancel.
 					Links = saveLinks;
@@ -2451,26 +2499,86 @@ function setIfSupported(control, property, character) {
 	return supported;
 }
 
-// Function to set the styles defined by the configuration.
-function setStyleBlocks(styles) {
-	let el = document.getElementById('dynamic-styles');
-	if (!el) {
-		el = document.createElement('style');
-		el.id = 'dynamic-styles';
-		document.head.appendChild(el);
+// The input is direct content or an array with blocks that contain lines and
+// a starting line number. If blocks==null, nothing is done.
+// The blocks are used to create a single content string. applyFunc is caled
+// with that string. This function returns whatever applyFunc() returned.
+// If applyFunc() throws an error, the stacktrace is searched and if it
+// contains an eval(), that line number is converted and added to the error
+// string. This (optionally modified) error is re-thrown.
+function applyBlocks(blocks, applyFunc) {
+	if (blocks != null) {
+		let contents, lineNums;
+		if ('length' in blocks) {
+			// This is an array, assume of Block objects.
+			// Concatenate and translate line numbers.
+			contents = [];
+			lineNums = [ 0 ];  //eval lineNum -> input lineNum
+			let inputLineNum;
+			for (let i = 0; i < blocks.length; ++i) {
+				let block = blocks[i];
+				inputLineNum = block.lineNum + 1;  //content starts 1 line after block
+				for (let j = 0; j < block.lines.length; ++j) {
+					contents.push(block.lines[j]);
+					lineNums.push(inputLineNum + j);
+				}
+			}
+			contents = contents.join('\n');
+		} else {
+			contents = blocks;  //single string
+			lineNums = null;  // not available
+		}
+		try {
+			// Try to apply the contents
+			return applyFunc(contents);
+		} catch (error) {
+			if ('stack' in error && lineNums != null) {
+				// There's a stack and line numbers to try to
+				// report on the original input line number.
+				let stack = error.stack.toString();
+				let m = stack.match(/\beval:(\d+)/);  //Firefox syntax
+				if (!m) m = stack.match(/<?\banonymous>?:(\d+)/);  //Edge syntax
+				if (m) {
+					// We got the line number inside an eval
+					// translate it to the input line numbers
+					let lineNum = m[1];
+					if (lineNum >= 1 && lineNum < lineNums.length) {
+						// It in the expected range
+						lineNum = lineNums[lineNum];
+						error.message += ' on line ' + lineNum;
+					}
+				}
+			}
+			throw error;  //re-throw
+		}
 	}
-	el.innerHTML = styles.join('\n');
+}
+
+// Function to set the styles defined by the configuration.
+// Should not throw exception, because errors are silently ignored.
+function setStyleBlocks(styles) {
+	applyBlocks(styles, function(str) {
+		let el = document.getElementById('dynamic-styles');
+		if (!el) {
+			// Does not yet exist, create it
+			el = document.createElement('style');
+			el.id = 'dynamic-styles';
+			document.head.appendChild(el);
+		}
+		el.innerHTML = str;
+	});
 }
 
 // Function to add the script defined by the configuration.
+// Throws exception if something is wrong.
 function addScriptBlocks(script) {
-	if (script != null) {
-		if ('length' in script) script = script.join('\n');  //concatenate if array
+	applyBlocks(script, function(str) {
 		// Do an indirect eval().
 		// According to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval ,
 		// indirect eval() is safer.
-		eval?.(script);
-	}
+		//console.log('Eval script: ', contents, lineNums);
+		eval?.(str);
+	});
 }
 
 // Function to set the title to the specified string.
@@ -2494,15 +2602,21 @@ function setFontSize(size) {
 }
 
 // From the Links configuration, parse its content and display it.
-// This function may throw exceptions when something is wrong with the
-// contents of the Links variable.
+// This function may throw a UserInputError exceptions when something is wrong
+// with the contents of the Links variable.
 function processLinks() {
 	// Parse Links
 	parseLinks();
 
 	// First handle scripts and styles (to catch errors quickly)
-	setStyleBlocks(StyleBlocks);
-	addScriptBlocks(ScriptBlocks);
+	try {
+		setStyleBlocks(StyleBlocks);
+		addScriptBlocks(ScriptBlocks);
+	} catch (error) {
+		let newError = new UserInputError(error.message);
+		newError.cause = error;
+		throw newError;
+	}
 
 	// Set page title, theme and font size
 	setPageTitle(PageTitle);
@@ -2589,7 +2703,18 @@ function loadLinks(reload = false, skipLocalStorage = false, ready = null) {
 		// Signal that this is done.
 		result.resolve(true);
 	})
-	.catch(result.reject);
+	.catch(error => {
+		if (error instanceof UserInputError) {
+			// It is a UserInputError, trigger reject, because
+			// the user can fix it.
+			result.reject(error);
+		} else {
+			// It is another error, log it for debugging, but
+			// do a resolve, so that no dialog is triggered.
+			console.error(error);
+			result.resolve(false);
+		}
+	});
 
 	return result;
 }
@@ -2600,9 +2725,19 @@ function init() {
 	loadLinks(false, false)
 	.catch(error => {
 		// There is an error, report and open Settings
-		window.alert('Error when loading settings: ' + error +
-			'\n\nPlease correct or cancel.');
-		showSettings();
+		// Always log for debugging
+		console.error(error);
+		if (error instanceof UserInputError) {
+			// It is a UserInputError, show a dialog,
+			// and open Settings, because the user can fix it.
+			window.alert('Error when loading settings: ' +
+				error.message +
+				'\n\nPlease correct or cancel.');
+			showSettings();
+		} else {
+			// It is another error, discard it, because
+			// it has already been logged.
+		}
 	});
 }
 window.onload = init;
