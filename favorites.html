@@ -642,7 +642,10 @@ These are some examples of the available features.
 !search Google Maps  | Maps   |         | alt
 `;
 
-const KeyLinks = 'links';
+// LocalStorage keys.
+const LSKey_Prefix = 'favlist_';
+const LSKey_Links = LSKey_Prefix + 'links';
+const LSKey_ItemExpandedPrefix = LSKey_Prefix + 'expanded_';
 
 // }}}
 
@@ -808,7 +811,7 @@ resolveLinks();
 // Return links or false in case of error or if it does not exist.
 function readLocalLinks() {
 	if (localStorage) {
-		let v = localStorage.getItem(KeyLinks);
+		let v = localStorage.getItem(LSKey_Links);
 		if (v) return v;
 	}
 	return false;
@@ -820,9 +823,9 @@ function readLocalLinks() {
 function writeLocalLinks(value) {
 	if (localStorage) {
 		if (value == null || value.match(/^\s*$/))
-			localStorage.removeItem(KeyLinks);
+			localStorage.removeItem(LSKey_Links);
 		else
-			localStorage.setItem(KeyLinks, value);
+			localStorage.setItem(LSKey_Links, value);
 		return true;
 	}
 	return false;
@@ -1365,7 +1368,7 @@ function outputItem(link, level, container, parentPath) {
 				expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
 				_itemContainer.appendChild(expandIcon);
 				let isExpanded = true;  //true if block is expanded
-				let storageKey = 'expanded ' + myPath;
+				let storageKey = LSKey_ItemExpandedPrefix + myPath;
 				if (localStorage) {
 					// LocalStorage is available, use persistent value
 					let v = localStorage.getItem(storageKey);
