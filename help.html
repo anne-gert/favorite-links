@@ -318,8 +318,15 @@ Each Link is specified on a single line as follows:
   <li><dt>Name</dt>: Arbitrary string of characters.
       <ul>
         <li>If no name is given, the URL is used.
-	<li>If the name is <code>_</code> and an icon is provided, an empty
-	    label is used.
+	<li>If the name is <code>_</code> and any of the following conditions
+	    is met, no name is displayed. The conditions are:
+	    <ul>
+	      <li>An icon is present.
+	      <li>It is not clickable, i.e. there is no URL.
+	    </ul>
+	    If none of these conditions are met, the <code>_</code> is
+	    replaced by 'Heading', 'Block' or 'Item', depending on the
+	    indentation level.
       </ul>
   <li><dt>URL</dt>: A string of non-whitespace characters, beginning with
       <code>scheme:</code>.
@@ -368,7 +375,6 @@ Each Link is specified on a single line as follows:
 	    user to manually paste the URL in the address bar.
       </ul>	
 </ul>
-If both Name and URL are not defined, the word <code>LINK</code> is used.
 The elements may be specified in any order on the line.
 </p>
 
@@ -389,6 +395,14 @@ Below is an example of lines specifying a Link.
     ...
   http://example.com                   : Submenu with link that is used as name too
     ...
+  _                                    : Will not be displayed
+  _ http://example.com                 : Will display a clickable icon
+  _ icon=none http://example.com       : Will display 'Heading' that is clickable
+    _ icon=empty http://example.com    : Will display 'Block' that is clickable
+      _ icon=empty http://example.com  : Will display 'Item' that is clickable
+  [ ]                                  : Displays a checkbox without label
+  [] _                                 : Same thing
+  [x] http://example.com               : Display checkbox with link
 </pre>
 </p>
 

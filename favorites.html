@@ -1316,7 +1316,7 @@ function outputItem(link, level, container, parentPath) {
 		if (url != null) {
 			name = url;  //name defaults to url
 		} else {
-			name = 'LINK';  //default name
+			name = '_';  //indicates the name may be hidden
 		}
 	}
 	// Change URL if target=manual
@@ -1461,9 +1461,6 @@ function outputItem(link, level, container, parentPath) {
 		let item = document.createElement('hr');
 		item.className = 'separator';
 		container.appendChild(item);
-	} else if (link.lineNum == 0 && name == '_') {
-		// This is an added (because lineNum==0) item.
-		// If name=='_', it should not be displayed.
 	} else {
 		let itemContainer = addItemContainer();
 		// The containers are structured as follows:
@@ -1520,9 +1517,25 @@ function outputItem(link, level, container, parentPath) {
 
 		// Create textContainer to hold the name/label
 		if (name != null) {
-			if (icon_control.present && name == '_') {
-				// Do not display the text
-			} else {
+			let display_name = true;
+			if (name == '_') {
+				// Name indicates it should not be displayed.
+				// Do this only if this doesn't lead to
+				// unclickable links and the like.
+				if (icon_control.present) {
+					// There is an icon that is clickable too.
+					display_name = false;
+				} else if (url == null) {
+					// This item is not clickable anyway.
+					display_name = false;
+				} else {
+					// We cannot hide it, give it a better name
+					if (level == 1) name = 'Heading';
+					else if (level == 2) name = 'Block';
+					else name = 'Item';
+				}
+			}
+			if (display_name) {
 				textContainer = document.createElement('span');
 				textContainer.appendChild(document.createTextNode(name));
 				if (check != null) {
