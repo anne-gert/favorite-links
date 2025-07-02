@@ -66,6 +66,7 @@ For syntax description of Links, see help.html
 	/* Set default font and size */
 	font-family: var(--font-family);
 	font-size: 12pt;  /* absolute, so --font-size can be relative too */
+	scrollbar-width: thin;
 }
 
 
@@ -2595,6 +2596,17 @@ function addScriptBlocks(script) {
 		//console.log('Eval script: ', contents, lineNums);
 		eval?.(str);
 	});
+	// Note: Script is added and I don't know of a way to remove script
+	// (especially if they are used for events). This could be remedied
+	// by performing a reload (window.location = window.location or so)
+	// if the supplied script is different from the previously supplied
+	// script.
+	// I'm not doing automatic reload, because:
+	// - With many scripts, reloading is not needed.
+	// - Reloading may have side-effect, especially with events handlers.
+	// - It wouldn't be sufficient, because a !text block may also contain
+	//   script.
+	// - The work-around of a manual page reload is not a big issue.
 }
 
 // Function to set the title to the specified string.
@@ -2770,33 +2782,33 @@ window.onload = init;
 <span id="SettingsIconBar" class="settings-iconbar">
 
 <div id="SettingsIconBarClosed">
-<span id="SettingsIcon" class="settings-icon" title="Settings">[Settings]</span>
+  <span id="SettingsIcon" class="settings-icon" title="Settings">[Settings]</span>
 </div>
 
 <div id="SettingsIconBarOpen">
-<span id="SettingsSaveIcon" class="settings-icon" title="Save">[OK]</span>
-<span id="SettingsClearIcon" class="settings-icon" title="Clear">[_]</span>
-<span id="SettingsCancelIcon" class="settings-icon" title="Cancel">[X]</span>
+  <span id="SettingsSaveIcon" class="settings-icon" title="Save">[OK]</span>
+  <span id="SettingsClearIcon" class="settings-icon" title="Clear">[_]</span>
+  <span id="SettingsCancelIcon" class="settings-icon" title="Cancel">[X]</span>
 </div>
 
 </span>
 
 <form id="SettingsForm" class="settings-form">
-<div class="panel">
-<textarea id="SettingsText" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Settings" class="textbox"></textarea>
-<div class="buttonbar">
-<button id="BtnSaveSettings" class="button">Save</button>
-<button id="BtnClearSettings" class="button">Clear</button>
-<button id="BtnCancelSettings" class="button">Cancel</button>
-</div>
-</div>
-<hr>
+  <div class="panel">
+    <textarea id="SettingsText" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Settings" class="textbox"></textarea>
+    <div class="buttonbar">
+      <button id="BtnSaveSettings" class="button">Save</button>
+      <button id="BtnClearSettings" class="button">Clear</button>
+      <button id="BtnCancelSettings" class="button">Cancel</button>
+    </div>
+  </div>
+  <hr>
 </form>
 
 <form id="SearchForm" class="search-form">
-Search:
-<input id="SearchBox" name="q" type="text" size="40" class="textbox"/>
-<span id="SearchButtons"></span>
+  Search:
+  <input id="SearchBox" name="q" type="text" size="40" class="textbox"/>
+  <span id="SearchButtons"></span>
 </form>
 
 <div id="LinksBox"></div>
