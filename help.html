@@ -158,6 +158,39 @@ href="https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-
 Save the target of this link to your home page and you're set.
 </p>
 
+
+<h3>Easy</h3>
+
+<p>
+The easiest method to get started is to copy the contents of the
+example-links.txt file into the Settings text panel and start editing that.
+<br>
+The vsst majority of the lines will simply consist of indentation, name and
+URL. Add a view <code>!search</code> options and that's it.
+</p>
+
+<p>
+Many more things are possible, but you DON'T NEED to and can stop reading here.
+If you want to, though, please continue reading any of these topics:
+<ul>
+<li><a href="#download-configuration">Download configuration</a>
+<li><a href="#syntax">Configuration</a>
+    <ul>
+    <li><a href="#line-syntax">How to configure different options?</a>
+    <li><a href="#link-syntax">Link syntax</a>
+    <li><a href="#link-examples">Link examples</a>
+    </ul>
+<li><a href="#search-functions">Adding new search methods</a>
+<li><a href="#themes">Theming</a>
+</ul>
+</p>
+
+<hr>
+
+
+<a name="download-configuration"></a>
+<h3>Download Configuration</h3>
+
 <p>
 It is also possible to provide the configuration as a URL. This URL can be
 provided in several ways:
@@ -226,12 +259,11 @@ Each line should be one of the following:
   <li><dt>Folding</dt>: If a line ends with <code>{{{</code> or
       <code>}}}</code>, remove that.  These tags are used to facilitate folding
       in vim.
-  <li><dt>Link Syntax</dt>: See below.
+  <li><dt>Link Item</dt>: Specify a Link or ToDo item. See <a
+      href="#link-syntax">below</a>.
   <li><dt>Separator</dt>: This is a line containing a name of 3 or more dashes
       (<code>---</code>).  It is rendered as an <code>&lt;hr
-      class="separator"&gt;</code> and it closes all indentation levels higher
-      than its own, except when its indentation level is lower than block, in
-      which case, it assumes the level of the item above it.
+      class="separator"&gt;</code>.
   <li><dt>Page Title</dt>: The line <code>!title name</code> specifies the page
       title to be displayed.
   <li><dt>Theme</dt>: The line <code>!theme name</code> specifies the CSS class
@@ -379,6 +411,7 @@ The elements may be specified in any order on the line.
 </p>
 
 
+<a name="link-examples"></a>
 <h4>Example Links</h4>
 
 <P>
@@ -388,7 +421,8 @@ Below is an example of lines specifying a Link.
   http://example.com                   : Link with name http://example.com and icon http://example.com/favicon.ico
   Example http://example.com           : Same link with name 'Example'
   Example icon=none http://example.com : Same link, but no Icon
-  Example:3 url=                       : Show 'Example:3' without link (although Name matches a URL)
+  Example:3                            : Show 'Example:3', linking to the URL Example:3, because it also matches schema:location
+  Example:3 url=                       : Show 'Example:3' without link
   Submenu http://example.com           : Item 'Submenu' that is a link and has sub-Items.
     ...
   Submenu                              : Submenu without link
@@ -453,13 +487,13 @@ The following properties are derived:
 <p>
 Pre-defined Identifiers (case-insensitive) are:
 <ul>
-<li><code>Duck</code>: Use Duck Duck Go for text
+<li><code>Duck Duck Go</code>: Use Duck Duck Go for text
 <li><code>Google</code>: Use Google Search for text
 <li><code>Wikipedia</code>: Use Wikipedia for text
 <li><code>YouTube</code>: Use YouTube for text
-<li><code>Wayback</code>: Use Wayback Machine Internet Arcive for both text and
-    domains.
-<li><code>GoogleMaps</code>: Use Google Maps for text
+<li><code>Wayback Machine</code>: Use Wayback Machine Internet Arcive for both
+    text and domains.
+<li><code>Google Maps</code>: Use Google Maps for text
 <li><code>default</code>: Text search returns null to ignore the search.
     Domain search returns the input as URL to bypass a results page.
 </ul>
@@ -468,9 +502,9 @@ Pre-defined Identifiers (case-insensitive) are:
 <p>
 In JavaScript, <code>SearchFunction</code> can be extended with additional
 functions that can be used for new buttons. The field name in SearchFunction
-must be all lowercase. The function should have a single argument that is
-the string to search for. The function should return a URL to go to for the
-search results.
+<u>must</u> be all <u>lowercase</u>. The function should have a single argument
+that is the string to search for. The function should return a URL to go to for
+the search results.
 <br>
 The function <code>getTemplateUrl</code> can be used to generate such a
 function, based on a template of the URL.
@@ -506,7 +540,7 @@ Silly example for a Random button:
 SearchFunction['xkcd'] = { 'text': () =&gt; 'https://c.xkcd.com/random/comic/' };
 SearchFunction['random'] = {
     'text': input =&gt; {
-        let options = [ 'google', 'duck', 'wikipedia', 'amazon', 'xkcd' ];
+        let options = [ 'google', 'duck duck go', 'wikipedia', 'amazon', 'xkcd' ];
         let r = Math.trunc(Math.random() * options.length);
         return SearchFunction[options[r]]['text'](input);
     }
@@ -567,6 +601,14 @@ A theme can be modified like this:
 .dark-theme {
     --accent-color: #CC6600;
 } 
+!endstyle
+</pre>
+Or you can go wild with:
+<pre>
+!style
+body {
+    background-image: linear-gradient(120deg, red,orange,yellow,green,blue,indigo,violet,red,orange,yellow,green,blue,indigo,violet);
+}
 !endstyle
 </pre>
 </p>
