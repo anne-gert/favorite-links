@@ -173,7 +173,7 @@ URL. Add a view <code>!search</code> options and that's it.
 Many more things are possible, but you DON'T NEED to and can stop reading here.
 If you want to, though, please continue reading any of these topics:
 <ul>
-<li><a href="#download-configuration">Download configuration</a>
+<li><a href="#online-configuration">Read online configuration</a>
 <li><a href="#syntax">Configuration</a>
     <ul>
     <li><a href="#line-syntax">How to configure different options?</a>
@@ -188,12 +188,12 @@ If you want to, though, please continue reading any of these topics:
 <hr>
 
 
-<a name="download-configuration"></a>
-<h3>Download Configuration</h3>
+<a name="online-configuration"></a>
+<h2>Read Online Configuration</h2>
 
 <p>
-It is also possible to provide the configuration as a URL. This URL can be
-provided in several ways:
+It is possible to provide the configuration as a URL. This URL can be provided
+in several ways:
 <ul>
 <li>With the <code>links=&lt;URL&gt;</code> URL argument.
 <li>With the <code>links-override=&lt;URL&gt;</code> URL argument.
@@ -216,6 +216,27 @@ This is the order how the configuration is searched:
     is the page that is initially shown if displayed without arguments.
 </ol>
 </p>
+
+
+<h3>Examples</h3>
+
+<p>
+This section contains examples for different configuration sources and how to
+configure them:
+<ul>
+<li>From local cache (browser's LocalStorage):
+    <ul>
+    <li>URL arguments: none
+    </ul>
+<li>Use public URL when local cache is empty:
+    <ul>
+    <li>URL arguments: <code>?links=https://example.com/links.txt</code>
+    </ul>
+<li>Always use public URL:
+    <ul>
+    <li>URL arguments: <code>?links-override=https://example.com/links.txt</code>
+    </ul>
+</ul>
 
 
 <a name="syntax"></a>
@@ -456,9 +477,9 @@ specified:
 <li><dt>Tooltip</dt> (default: <i>Identifier</i>): This is the text to be
     displayd if the mouse is hovered over the button.
 <li><dt>Icon</dt> (default: <code>default</code> if SearchFunction exists,
-    <code>char:U+1F50D</code> (magnifying glass, &#x1F50D;) if not): This is
-    the specification of the icon to display. See the icon=URL of Links for the
-    syntax.
+    <code>char:&lt;U+1F50D&gt;</code> (magnifying glass, &#x1F50D;) if not):
+    This is the specification of the icon to display. See the icon=URL of Links
+    for the syntax.
 </ul>
 </p>
 
@@ -547,6 +568,31 @@ SearchFunction['random'] = {
 };
 !endscript
 </pre>
+</p>
+
+<p>
+Search buttons can be quite flexible. FOr example, the current Sprint Board
+on Azure DevOps  can be searched with the URL
+<code>https://dev.azure.com/&lt;Organization&gt;/&lt;Project&gt;/_sprints/taskboard/&lt;Team&gt;/&lt;Project&gt;/?text=&lt;Search-Terms&gt;</code>.
+Now, create a search button to search the current sprint board for
+MyOrganization, MyProject and MyTeam in a few steps:
+<pre>
+// Define search button with id MyTeam-Sprint
+!search MyTeam-Sprint | MyTeam | Current MyTeam Sprint | alt
+!script
+function devOpsSearchUrl(organization, project, team) {
+    // Create a template URL with a placeholder for the search input
+    let template_url = 'https://dev.azure.com/' + organization + '/' + project + '/_sprints/taskboard/' + team + '/' + project + '/?text=%urlinput';
+    // Return a search function based on this template
+    return getTemplateUrl(template_url);
+}
+// Attach the text search function to the myteam-sprint id
+SearchFunction['myteam-sprint'] = { 'text': devOpsSearchUrl('MyOrganization', 'MyProject', 'MyTeam') };
+!endscript
+</pre>
+Note that https://dev.azure.com does not have a favicon that can be used.
+Therefore, specify to use the alternate icon. Now the button gets the correct
+icon.
 </p>
 
 
