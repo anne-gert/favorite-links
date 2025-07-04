@@ -281,7 +281,7 @@ Each link can be a hyperlink, have an icon and/or a checkbox.
 <p>
 In addition to Links, the configuration also supports comments, different
 web-search functions and other directives, see <a
-href="help.html#line-syntax">Line Syntax</a> for further details.
+href="help.html#line-syntax">Line Syntax</a> for details.
 </p>
 
 <!-- End of text to be included in text block -->
@@ -337,9 +337,9 @@ Each line should be one of the following:
 </p>
 
 <p>
-<span class="important">Known Issue</span>: Once script is added, it can only
-be reset by completely reloading the page. Just commenting out the script in
-the settings and saving will not do the trick, because the previous script is
+<span class="important">Known Issue</span>: Once a !script block is added, it
+can only be reset by completely reloading the page. Just commenting out the
+script in the settings and saving will not unload the previous script, which is
 still present in memory.
 </p>
 
@@ -363,7 +363,7 @@ When this is saved, the background starts to blink erraticly. After reloading
 the page, it starts changing the color normally again.
 <br>
 The reason is that after saving the change, a <b>second</b> timer handler was
-set and both timers interferred. The reload discards both timers and a new
+set and both timers interferred. The reload discards both timers and set a new
 one in a clean page.
 </p>
 
@@ -619,13 +619,13 @@ icon.
 <h2>Themes</h2>
 
 <p>
-Themes are implemented in a very simple way. The colors that are used are
+Themes are implemented in a very basic way. The colors that are used are
 defined as CSS variables in a *-theme CSS class. Currently there is a
 <code>dark-theme</code> and and a <code>light-theme</code>.
 <br>
 The theme can be changed by using <code>!theme name</code> where name is the
 CSS class name of the theme or <code>auto</code> (the default)  in which case
-the browser preference setting is used.
+the browser's dark/light-mode preference setting is used.
 </p>
 
 <p>
@@ -673,6 +673,16 @@ Or you can go wild with:
 !style
 body {
     background-image: linear-gradient(120deg, red,orange,yellow,green,blue,indigo,violet,red,orange,yellow,green,blue,indigo,violet);
+}
+.dark-theme {
+    --background: #2E323B99;
+    --code-background: #28282899;
+    --block-background: #C9CDD099;
+}
+.light-theme {
+    --background: #E8F0F877;
+    --code-background: #C0C0C077;
+    --block-background: #D9DDE099;
 }
 !endstyle
 </pre>
