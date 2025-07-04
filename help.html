@@ -205,9 +205,12 @@ in several ways. These are the URL arguments that are used:
     URL is downloaded and its contents is used.
 <li><dt>links-override=</dt>: If <code>links-override=&lt;URL&gt;</code> is
     provided, that URL is downloaded and its contents is used.
-<li><dt>save=</dt>: This URL argument allows the contents to be saved online.
-    See <a href="#save-online">save online</a> for details. This is considered
-    an advanced feature.
+<li><dt>save=</dt>: If <code>save=&lt;config-name&gt;</code> is provided, that
+    config-name is a self-chosen configuration name that is stored in the
+    browser's local storage. The stored value allows the contents to be saved
+    online. The stored value can be modified in the Settings, see <a
+    href="#save-online">Save Online</a> for details. This is considered an
+    advanced feature.
 </ul>
 </p>
 
@@ -253,7 +256,11 @@ configure them:
     </ul>
 <li>With online save with save.php:
     <ul>
-    <li>URL arguments: <code>?links=https://example.com/links.txt&amp;save=save.php\password</code>
+    <li>URL arguments: <code>?links=https://example.com/links.txt&amp;save=conf</code>
+    <li>Settings:
+        <ul>
+	<li>Online Save 'conf': <code>save.php\password</code>
+	</ul>
     </ul>
 </ul>
 
@@ -705,10 +712,12 @@ body {
 <h2>Save Online</h2>
 
 <p>
-By specifying the <code>save=</code> URL argument, saving changed configuration
-to a server is enabled.  In this case the configuration is stored in the
-browser's local storage as well as the location specified by the
-<code>save=</code> value.
+By specifying the <code>save=&lt;config-name&gt;</code> URL argument, saving
+changed configuration to a server is enabled.  In this case the links
+configuration is stored in the browser's local storage as well as the location
+specified by the save-options indicated by config-name. The save-options can be
+changed under Settings for the currently selected config-name. Note that it is
+possible to have different configurations under different names.
 </p>
 
 
@@ -716,13 +725,13 @@ browser's local storage as well as the location specified by the
 <h3>Save to URL</h3>
 
 <p>
-The <code>save=</code> option can be used to save changed configuration to any
-URL with a POST or PUT request. By specifying the correct headers, this should
-include web forms, WebDAV, database backed storage, etc.
+The save-option can be used to save changed configuration to any URL with a
+POST or PUT request. By specifying the correct headers, this should include web
+forms, WebDAV, database backed storage, etc.
 </p>
 
 <p>
-Th general syntax is as follows: <code>save=method:url\header:value\...</code>
+The general syntax is as follows: <code>method:url\header:value\...</code>
 <br>
 With:
 <ul>
@@ -740,10 +749,10 @@ With:
 <p>
 Examples:
 <ul>
-<li>save=put
-<li>save=put:https://username:password@example.com/links.txt
-<li>save=put:https://storage.example.com/12345678-aaaa-bbbb-cccc-1234567890ab/links.txt
-<li>save=post:https://storage.example.com/webform.php\username:me\password:secret\name:links.txt
+<li>put
+<li>put:https://username:password@example.com/links.txt
+<li>put:https://storage.example.com/12345678-aaaa-bbbb-cccc-1234567890ab/links.txt
+<li>post:https://storage.example.com/webform.php\username:me\password:secret\name:links.txt
 </ul>
 </p>
 
@@ -760,7 +769,7 @@ header, filter out all non-ASCII characters, verify it is a .txt file and use
 that as the target file to save.
 </p>
 
-There exists also a special save syntax for this: <code>save=url\password\header:value\...</code>
+There exists also a special save syntax for this: <code>url\password\header:value\...</code>
 <br>
 In this case, the following is implied:
 <ul>
@@ -777,14 +786,14 @@ In this case, the following is implied:
 <p>
 Example:
 <ul>
-<li>save=save.php\password
+<li>save.php\password
 </ul>
 </p>
 
 <p>
-<span class="important">Note</span>: Since the <code>save=</code> is a URL
-argument and it can modify data on the server, it is recommended to use this
-only with https.
+<span class="important">Note</span>: Since saving will modify data on the
+server and will send access tokens, it is recommended to use this only with
+https.
 </p>
 
 

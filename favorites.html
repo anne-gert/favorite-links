@@ -311,12 +311,22 @@ body {
 	cursor: pointer;
 	padding: 0px 0.1em;
 }
+
+.settings-form {
+	overflow: hidden;
+	display: grid;
+	grid-template-rows: auto max-content;
+}
 .settings-form .panel {
+	height: 49em;
+	overflow: auto;
+}
+.settings-form .client {
 	width: 95%;
 }
 .settings-form .textbox {
 	width: 100%;
-	height: 47em;
+	height: 46em;
 	resize: both;
 	overflow: scroll;
 	color: var(--foreground); background: var(--background);
@@ -329,6 +339,19 @@ body {
 .settings-form .button {
 }
 
+.settings-form .options {
+	display: grid;
+	gap: 1em;
+	grid-template-columns: max-content auto;
+	padding: 1em 1em 1em 0.2em;
+}
+.input input {
+	width: 100%;
+}
+
+.hide-save-option .save-option {
+	display: none;
+}
 
 /****************************************************************************
  * blink animation
@@ -359,21 +382,33 @@ body {
 	display: block;
 }
 .settings-form.expanding {
-	animation: 700ms ease settings-form-slider;
+	animation: 700ms ease settings-form-grow;
 }
 .settings-form.collapsing {
-	animation: 700ms ease reverse settings-form-slider;
+	animation: 700ms ease reverse settings-form-grow;
 }
-@keyframes settings-form-slider {
+@keyframes settings-form-grow {
+	0% {
+		height: 0em;
+	}
+	100% {
+		height: 50em;
+	}
+}
+.settings-form.expanding .client {
+	animation: 700ms ease settings-form-scale;
+}
+.settings-form.collapsing .client {
+	animation: 700ms ease reverse settings-form-scale;
+}
+@keyframes settings-form-scale {
 	0% {
 		transform: scaleY(0);
 		transform-origin: top;
-		height: 0em;
 	}
 	100% {
 		transform: scaleY(1);
 		transform-origin: top;
-		height: 50em;
 	}
 }
 
@@ -647,6 +682,7 @@ These are some examples of the available features.
 const LSKey_Prefix = 'favlist_';
 const LSKey_Links = LSKey_Prefix + 'links';
 const LSKey_ItemExpandedPrefix = LSKey_Prefix + 'expanded_';
+const LSKey_SaveOptions_Prefix = LSKey_Prefix + 'save_';
 
 // }}}
 
@@ -656,6 +692,7 @@ const LSKey_ItemExpandedPrefix = LSKey_Prefix + 'expanded_';
 // Set by resolveLinks().
 var LinksUrl = null;
 var LinksPromise = null;
+var SaveConfigName = null;
 
 // This function tries to find the configuration for the Links.
 // It sets the global LinksPromise variable with a Promise that should resolve
@@ -670,6 +707,7 @@ var LinksPromise = null;
 function resolveLinks(skipLocalStorage = false) {
 	LinksUrl = null;
 	LinksPromise = null;
+	SaveConfigName = null;
 
 	// The general order is:
 	// 1) links-override=
@@ -708,7 +746,7 @@ function resolveLinks(skipLocalStorage = false) {
 
 	let params = new URLSearchParams(location.search);
 	let linksOverride = params.get('links-override');
-	let save = params.get('save');
+	SaveConfigName = params.get('save');
 	let links = params.get('links');
 	//console.log(params);
 
@@ -727,7 +765,7 @@ function resolveLinks(skipLocalStorage = false) {
 	// Derive linksText
 	let checkLocalStorage = () => {
 		if (skipLocalStorage) return null;  //ignore LocalStorage
-		let locStor = readLocalLinks();
+		let locStor = readLocalStorage(LSKey_Links);
 		if (locStor === false) return null;  //nothing in LocalStorage
 		// LocalStorage is available, return that
 		console.log('LinksPromise: Use links from the LocalStorage');
@@ -736,7 +774,7 @@ function resolveLinks(skipLocalStorage = false) {
 	let linksText = null;  //defaults to download LinksUrl
 	if (LinksUrl) {
 		// LinksUrl is set. Generally download it, except in 1 exception
-		if (!linksOverride && !save) linksText = checkLocalStorage();  //the exception
+		if (!linksOverride && !SaveConfigName) linksText = checkLocalStorage();  //the exception
 	} else {
 		// LinksUrl not set, linksText must be set here to display anything.
 		linksText = checkLocalStorage();
@@ -841,25 +879,25 @@ function resolveLinks(skipLocalStorage = false) {
 // downloading already.
 resolveLinks();
 
-// Read links settings from LocalStorage.
-// Return links or false in case of error or if it does not exist.
-function readLocalLinks() {
+// Read value from LocalStorage.
+// Return value or false in case of error or if it does not exist.
+function readLocalStorage(key) {
 	if (localStorage) {
-		let v = localStorage.getItem(LSKey_Links);
-		if (v) return v;
+		let v = localStorage.getItem(key);
+		if (v != null) return v;
 	}
 	return false;
 }
 
-// Store links in LocalStorage.
-// If value is null, empty or whitespace, delete value from LocalStorage.
+// Store value in LocalStorage.
+// If value is null, empty or whitespace, delete key from LocalStorage.
 // Return true if success, false if not saved.
-function _writeLocalLinks(value) {
+function writeLocalStorage(key, value) {
 	if (localStorage) {
 		if (value == null || value.match(/^\s*$/))
-			localStorage.removeItem(LSKey_Links);
+			localStorage.removeItem(key);
 		else
-			localStorage.setItem(LSKey_Links, value);
+			localStorage.setItem(key, value);
 		return true;
 	}
 	return false;
@@ -868,11 +906,16 @@ function _writeLocalLinks(value) {
 // Save links online by the method specified.
 // If the value is null, empty or whitespace, save an empty string.
 // Returns Promise of the upload or false if not saving.
-function _writeOnlineLinks(value) {
-	let params = new URLSearchParams(location.search);
-	let save = params.get('save');
-	if (!save) {
+function writeOnlineLinks(value) {
+	if (!SaveConfigName) {
 		console.log('No save=, skip saving');
+		return false;
+	}
+	let saveOptions = readLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName);
+	// Note: This value is not URL-encoded. If this is required, it should
+	// be done before the value is used in the context where that is needed.
+	if (saveOptions === false || saveOptions.match(/^\s*$/)) {
+		console.warn('Save Config \'' + SaveConfigName + '\' empty, skip saving');
 		return false;
 	}
 
@@ -882,7 +925,7 @@ function _writeOnlineLinks(value) {
 	}
 
 	// Split into parts
-	let parts = save.split('\\');
+	let parts = saveOptions.split('\\');
 
 	// The first part should specify the method and the URL
 	let method, saveUrl, special = false;
@@ -908,7 +951,7 @@ function _writeOnlineLinks(value) {
 			return false;
 		}
 	} else {
-		console.error('Incorrect method/url in \'' + save + '\'');
+		console.error('Incorrect method/url in \'' + saveOptions + '\'');
 		return false;
 	}
 
@@ -978,12 +1021,6 @@ function _writeOnlineLinks(value) {
 	});
 
 	return uploadPromise;
-}
-
-// Save links by calling _writeLocalLinks() and _saveOnlineLinks().
-function writeLinks(value) {
-	_writeLocalLinks(value);
-	_writeOnlineLinks(value);
 }
 
 // }}}
@@ -1675,7 +1712,8 @@ function outputItem(link, level, container, parentPath) {
 					newCheck = '[ ]';
 				}
 				Links = Links.replace(re, '$1' + newCheck);
-				writeLinks(Links);
+				writeLocalStorage(LSKey_Links, Links);
+				writeOnlineLinks(Links);
 				setTextClass('checked', checkbox.checked);
 			};
 			checkbox.checked = check;
@@ -2352,6 +2390,9 @@ function initSettingsPanel() {
 	let iconClear = document.getElementById('SettingsClearIcon');
 	let iconCancel = document.getElementById('SettingsCancelIcon');
 	let pnlSettings = document.getElementById('SettingsForm');
+	let pnlOptions = document.getElementById('SettingsOptions');
+	let lblSaveOptions = document.getElementById('SettingsSaveOptionsLabel');
+	let txtSaveOptions = document.getElementById('SettingsSaveOptionsText');
 	let txtSettings = document.getElementById('SettingsText');
 	let btnSave = document.getElementById('BtnSaveSettings');
 	let btnClear = document.getElementById('BtnClearSettings');
@@ -2410,14 +2451,21 @@ function initSettingsPanel() {
 			visible = false;
 		};
 		if (save) {
+			// Update SaveOptions
+			if (SaveConfigName) {
+				let saveOptions = txtSaveOptions.value;
+				writeLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName, saveOptions);
+			}
+			// Update Links and close panel
 			let saveLinks = Links;
 			if (save == 'clear' || txtSettings.value == '') {
 				console.log('Clear settings');
 				loadLinks(true, true)  //re-resolve Links
 				.then(() => {
 					// Links are correct
-					txtSettings.value = '';
-					writeLinks(null);  //remove previous stored Links
+					txtSettings.value = Links;
+					writeLocalStorage(LSKey_Links, Links);
+					// Just read from URL, don't call writeOnlineLinks().
 					// Close the panel
 					hide();
 				})
@@ -2446,7 +2494,8 @@ function initSettingsPanel() {
 					Links = txtSettings.value;
 					processLinks();  //Render Links
 					// Links are correct
-					writeLinks(Links);
+					writeLocalStorage(LSKey_Links, Links);
+					writeOnlineLinks(Links);
 					// Close the panel
 					hide();
 				} catch (error) {
@@ -2473,6 +2522,15 @@ function initSettingsPanel() {
 		}
 	};
 	// Set initial state
+	if (SaveConfigName) {
+		let saveOptions = readLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName);
+		if (saveOptions === false) saveOptions = '';
+		lblSaveOptions.textContent = 'Online Save \'' + SaveConfigName + '\'';
+		txtSaveOptions.value = saveOptions;
+		pnlOptions.classList.remove('hide-save-option');
+	} else {
+		pnlOptions.classList.add('hide-save-option');
+	}
 	if (visible) {
 		// showSettings() without animation
 		txtSettings.value = Links;
@@ -3032,11 +3090,17 @@ window.onload = init;
 
 <form id="SettingsForm" class="settings-form">
   <div class="panel">
-    <textarea id="SettingsText" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Settings" class="textbox"></textarea>
-    <div class="buttonbar">
-      <button id="BtnSaveSettings" class="button">Save</button>
-      <button id="BtnClearSettings" class="button">Clear</button>
-      <button id="BtnCancelSettings" class="button">Cancel</button>
+    <div class="client">
+      <textarea id="SettingsText" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Settings" class="textbox"></textarea>
+      <div id="SettingsOptions" class="options">
+        <div id="SettingsSaveOptionsLabel" class="save-option label">Save config-name:</div>
+        <div class="save-option input"><input id="SettingsSaveOptionsText" type="text"/></div>
+      </div>
+      <div class="buttonbar">
+        <button id="BtnSaveSettings" class="button">Save</button>
+        <button id="BtnClearSettings" class="button">Clear</button>
+        <button id="BtnCancelSettings" class="button">Cancel</button>
+      </div>
     </div>
   </div>
   <hr>
