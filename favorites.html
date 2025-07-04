@@ -1496,6 +1496,7 @@ function outputItem(link, level, container, parentPath) {
 		let _subContainer;
 		addItemContainer = function() {
 			_itemContainer = document.createElement('h2');
+			_itemContainer.className = 'section-name level1';
 			container.appendChild(_itemContainer);
 			return _itemContainer;
 		}
@@ -1512,17 +1513,20 @@ function outputItem(link, level, container, parentPath) {
 	} else if (level == 2) {
 		// Render Item as Block
 		//console.log('Render Block ' + name);
-		let _itemContainer;
-		let _subContainer;
-		addItemContainer = function() {
-			_itemContainer = document.createElement('div');
-			_itemContainer.className = 'block';
-			container.appendChild(_itemContainer);
+		let _blockContainer;
+		let getBlockContainer = function() {
+			if (_blockContainer) {
+				return _blockContainer;
+			}
+			// Create a new _blockContainer
+			_blockContainer = document.createElement('div');
+			_blockContainer.className = 'block';
+			container.appendChild(_blockContainer);
 			if (subItems != null) {
 				let expandIcon = document.createElement('span');  //container to display '-' or '+'
 				expandIcon.className = 'resize-icon';
 				expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
-				_itemContainer.appendChild(expandIcon);
+				_blockContainer.appendChild(expandIcon);
 				let isExpanded = true;  //true if block is expanded
 				let storageKey = LSKey_ItemExpandedPrefix + myPath;
 				if (localStorage) {
@@ -1536,19 +1540,19 @@ function outputItem(link, level, container, parentPath) {
 					console.log('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
 					if (isExpanded) {
 						// Expand this block
-						_itemContainer.classList.add('expanding');
-						_itemContainer.onanimationend = function() {
-							_itemContainer.classList.remove('collapsed');
-							_itemContainer.classList.remove('expanding');
+						_blockContainer.classList.add('expanding');
+						_blockContainer.onanimationend = function() {
+							_blockContainer.classList.remove('collapsed');
+							_blockContainer.classList.remove('expanding');
 						};
 						// Reflect action of resize-icon
 						expandIcon.title = 'Hide';
 					} else {
 						// Collapse this block
-						_itemContainer.classList.add('collapsing');
-						_itemContainer.onanimationend = function() {
-							_itemContainer.classList.add('collapsed');
-							_itemContainer.classList.remove('collapsing');
+						_blockContainer.classList.add('collapsing');
+						_blockContainer.onanimationend = function() {
+							_blockContainer.classList.add('collapsed');
+							_blockContainer.classList.remove('collapsing');
 						};
 						// Reflect action of resize-icon
 						expandIcon.title = 'Show';
@@ -1569,11 +1573,19 @@ function outputItem(link, level, container, parentPath) {
 					if (isExpanded) {
 						expandIcon.title = 'Hide';
 					} else {
-						_itemContainer.classList.add('collapsed');
+						_blockContainer.classList.add('collapsed');
 						expandIcon.title = 'Show';
 					}
 				}
 			}
+			return _blockContainer;
+		}
+		let _itemContainer;
+		let _subContainer;
+		addItemContainer = function() {
+			_itemContainer = document.createElement('span');
+			_itemContainer.className = 'block-name level2';
+			getBlockContainer().appendChild(_itemContainer);
 			return _itemContainer;
 		}
 		addSubContainer = function() {
@@ -1582,7 +1594,7 @@ function outputItem(link, level, container, parentPath) {
 			let sliderContainer = document.createElement('div');
 			sliderContainer.className = 'slider-container';
 			sliderContainer.appendChild(_subContainer);
-			_itemContainer.appendChild(sliderContainer);
+			getBlockContainer().appendChild(sliderContainer);
 			return _subContainer;
 		}
 	} else {
@@ -1600,7 +1612,7 @@ function outputItem(link, level, container, parentPath) {
 				groupContainer = container;  //there is no group, use same container
 			}
 			_itemContainer = document.createElement('div');
-			_itemContainer.className = 'item';
+			_itemContainer.className = 'item level' +  level;
 			groupContainer.appendChild(_itemContainer);
 			return _itemContainer;
 		}
@@ -1629,7 +1641,7 @@ function outputItem(link, level, container, parentPath) {
 		//                              In itemContainer if there is no linkContainer
 		//                 - text: name
 		//         - continued items
-		//         - items: Only if there are subItems
+		//     - subContainer: Only if there are subItems
 
 		// Declare textContainer to hold the name/label
 		let textContainer = null;
@@ -1641,6 +1653,7 @@ function outputItem(link, level, container, parentPath) {
 					textContainer.classList.remove(className);
 			}
 		};
+		let textContainer_maybe = itemContainer;  //null if we must create a separate one
 
 		// Create checkbox
 		let checkbox = null;
@@ -1666,42 +1679,7 @@ function outputItem(link, level, container, parentPath) {
 				setTextClass('checked', checkbox.checked);
 			};
 			checkbox.checked = check;
-		}
-
-		// Create icon_control
-		let icon_control = outputIcon(null, icon, url);
-
-		// Create textContainer to hold the name/label
-		if (name != null) {
-			let display_name = true;
-			if (name == '_') {
-				// Name indicates it should not be displayed.
-				// Do this only if this doesn't lead to
-				// unclickable links and the like.
-				if (icon_control.present) {
-					// There is an icon that is clickable too.
-					display_name = false;
-				} else if (url == null) {
-					// This item is not clickable anyway.
-					display_name = false;
-				} else {
-					// We cannot hide it, give it a better name
-					if (level == 1) name = 'Heading';
-					else if (level == 2) name = 'Block';
-					else name = 'Item';
-				}
-			}
-			if (display_name) {
-				textContainer = document.createElement('span');
-				textContainer.appendChild(document.createTextNode(name));
-				if (check != null) {
-					// This is a checkbox item, give the name the correct class
-					textContainer.className = 'checkbox-label';
-					setTextClass('checked', check);
-				} else {
-					textContainer.className = 'link-name';
-				}
-			}
+			textContainer_maybe = null;  //for styling purposes
 		}
 
 		// Create hyperlink
@@ -1714,6 +1692,34 @@ function outputItem(link, level, container, parentPath) {
 				hyperlink.target = target;
 			if (tooltip != null)
 				hyperlink.title = tooltip;
+			textContainer_maybe = hyperlink;  //hyperlink can serve as textContainer
+		}
+
+		// Create icon_control
+		let icon_control = outputIcon(null, icon, url);
+		if (icon_control.present) {
+			textContainer_maybe = null;  //for styling purposes
+		}
+
+		// Determine name/label to display
+		if (name != null) {
+			if (name == '_') {
+				// Name indicates it should not be displayed.
+				// Do this only if this doesn't lead to
+				// unclickable links and the like.
+				if (icon_control.present) {
+					// There is an icon that is clickable too.
+					name = null;
+				} else if (url == null) {
+					// This item is not clickable anyway.
+					name = null
+				} else {
+					// We cannot hide it, give it a better name
+					if (level == 1) name = 'Heading';
+					else if (level == 2) name = 'Block';
+					else name = 'Item';
+				}
+			}
 		}
 
 		// Add checkbox to the itemContainer
@@ -1736,9 +1742,24 @@ function outputItem(link, level, container, parentPath) {
 			linkContainer.appendChild(icon_control.element);
 		}
 
-		// Add textContainer to linkContainer
-		if (textContainer != null) {
-			linkContainer.appendChild(textContainer);
+		// Create a textContainer if necessary and add it to linkContainer
+		if (name != null) {
+			if (textContainer_maybe != null) {
+				// This control can serve as textContainer
+				textContainer = textContainer_maybe;
+			} else {
+				// Create a new control
+				textContainer = document.createElement('span');
+				linkContainer.appendChild(textContainer);
+			}
+			textContainer.appendChild(document.createTextNode(name));
+			if (check != null) {
+				// This is a checkbox item, give the name the correct class
+				setTextClass('checkbox-label', true);
+				setTextClass('checked', check);
+			} else {
+				setTextClass('link-name', true);
+			}
 		}
 
 		// If there is continuation, output those items in this itemContainer too
