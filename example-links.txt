@@ -38,7 +38,7 @@ Examples
 !icondef github     https://github.com
 
 // Search button definitions
-//      Identifier   | Label  | Tooltip | Icon
+//      Identifier   | Label  | Tooltip | Icon | URL-Template
 !search Duck Duck Go | Search |
 !search Wikipedia
 !search YouTube

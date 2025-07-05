@@ -492,13 +492,23 @@ specified:
 <ul>
 <li><dt>Identifier</dt> (mandatory): Unique name for this button definition.
 <li><dt>Label</dt> (default: <i>Identifier</i>): This is the text to be
-    displayed next to the icon on the button.
+    displayed next to the icon on the button. If '_' is specified, no label
+    will be displayed.
 <li><dt>Tooltip</dt> (default: <i>Identifier</i>): This is the text to be
-    displayd if the mouse is hovered over the button.
+    displayd if the mouse is hovered over the button. If '_' is specified, no
+    tooltip will be displayed.
 <li><dt>Icon</dt> (default: <code>default</code> if SearchFunction exists,
     <code>char:&lt;U+1F50D&gt;</code> (magnifying glass, &#x1F50D;) if not):
     This is the specification of the icon to display. See the icon=URL of Links
     for the syntax.
+<li><dt>URL-Template</dt>: If this is defined, this string is used as the
+    Search URL Function result. This template recogizes the following special
+    values:
+    <ul>
+    <li><dt>%urlinput</dt>: This will be filled with the URL-encoded search
+        string.
+    </ul>
+    If the URL-Template is not supplied, it is derived as described below.
 </ul>
 </p>
 
@@ -563,55 +573,57 @@ The <code>SearchFunction</code> has the following sub-keys:
 </p>
 
 <p>
+The JavaScript functions are available to create new SearchFunctions:
+<ul>
+<li><code>registerSearchTemplate(&lt;Identifier&gt;, &lt;URL-Template&gt;)</code>:
+    This function creates a Search URL Function, based on the specified
+    &lt;URL-Template&gt;. It then registers this function for the specified
+    Identifier.  This function is also used when the &lt;URL-Template&gt;
+    parameter of the <code>!search</code> command is used.
+<li><code>registerSearchFunction(&lt;Identifier&gt;, &lt;function&gt;)</code>:
+    This function registers a Search URL Function for the specified Identier.
+    This function receives the search text as input and should return a URL
+    as output.
+<li><code>getRegisteredSearchUrl(&lt;Identifier&gt;, &lt;search-text&gt;)</code>:
+    Returns the Text Search URL to search for search-text that is registered
+    for Identifier.
+</ul>
+</p>
+
+<p>
 Example on how to create a search button for Amazon:
 <pre>
-!search Amazon
-!script
-SearchFunction['amazon'] = { 'text': getTemplateUrl('https://www.amazon.com/s?k=%urlinput') };
-!endscript
+!search Amazon |||| https://www.amazon.com/s?k=%urlinput
 </pre>
 </p>
 
 <p>
-Silly example for a Random button:
-<pre>
-!search Random ||| html:&amp;#x2753;
-!script
-SearchFunction['xkcd'] = { 'text': () =&gt; 'https://c.xkcd.com/random/comic/' };
-SearchFunction['random'] = {
-    'text': input =&gt; {
-        let options = [ 'google', 'duck duck go', 'wikipedia', 'amazon', 'xkcd' ];
-        let r = Math.trunc(Math.random() * options.length);
-        return SearchFunction[options[r]]['text'](input);
-    }
-};
-!endscript
-</pre>
-</p>
-
-<p>
-Search buttons can be quite flexible. FOr example, the current Sprint Board
+Search buttons can be quite flexible. For example, the current Sprint Board
 on Azure DevOps  can be searched with the URL
 <code>https://dev.azure.com/&lt;Organization&gt;/&lt;Project&gt;/_sprints/taskboard/&lt;Team&gt;/&lt;Project&gt;/?text=&lt;Search-Terms&gt;</code>.
 Now, create a search button to search the current sprint board for
 MyOrganization, MyProject and MyTeam in a few steps:
 <pre>
-// Define search button with id MyTeam-Sprint
-!search MyTeam-Sprint | MyTeam | Current MyTeam Sprint | alt
-!script
-function devOpsSearchUrl(organization, project, team) {
-    // Create a template URL with a placeholder for the search input
-    let template_url = 'https://dev.azure.com/' + organization + '/' + project + '/_sprints/taskboard/' + team + '/' + project + '/?text=%urlinput';
-    // Return a search function based on this template
-    return getTemplateUrl(template_url);
-}
-// Attach the text search function to the myteam-sprint id
-SearchFunction['myteam-sprint'] = { 'text': devOpsSearchUrl('MyOrganization', 'MyProject', 'MyTeam') };
-!endscript
+!search MyTeam-Sprint | MyTeam | Current MyTeam Sprint | alt | https://dev.azure.com/MyOrganization/MyProject/_sprints/taskboard/MyTeam/MyProject/?text=%urlinput
 </pre>
 Note that https://dev.azure.com does not have a favicon that can be used.
 Therefore, specify to use the alternate icon. Now the button gets the correct
 icon.
+</p>
+
+<p>
+Silly example for a Random button:
+<pre>
+!search Random |_|| html:&amp;#x2753;
+!script
+registerSearchTemplate('xkcd', 'https://c.xkcd.com/random/comic/');
+registerSearchFunction('random', input =&gt; {
+    let options = [ 'google', 'duck duck go', 'wikipedia', 'amazon', 'xkcd' ];
+    let r = Math.trunc(Math.random() * options.length);
+    return getRegisteredSearchUrl(options[r], input);
+});
+!endscript
+</pre>
 </p>
 
 

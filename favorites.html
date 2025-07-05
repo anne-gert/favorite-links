@@ -636,7 +636,7 @@ These are some examples of the available features.
 !icondef github     https://github.com
 
 // Search button definitions
-//      Identifier   | Label  | Tooltip | Icon
+//      Identifier   | Label  | Tooltip | Icon | URL-Template
 !search Duck Duck Go | Search |
 !search Wikipedia
 !search YouTube
@@ -2083,6 +2083,38 @@ var SearchFunction = {
 	},
 };
 
+// This function adds the function to SearchFunction for this identifier.
+// searchFunction should have the text as input and return a results URL.
+// This function is available for use in the configuration.
+function registerSearchFunction(identifier, searchFunction, what = 'text') {
+	let id = identifier.toLowerCase();
+	if (!(id in SearchFunction)) {
+		SearchFunction[id] = {};
+	}
+	SearchFunction[id][what] = searchFunction;
+}
+
+// This function adds the urlTemplate to SearchFunction for this identifier.
+// See getTemplateUrl() for templateUrl.
+// This function is available for use in the configuration.
+function registerSearchTemplate(identifier, urlTemplate, what = 'text') {
+	let searchFunction = getTemplateUrl(urlTemplate);
+	registerSearchFunction(identifier, searchFunction, what);
+}
+
+// This function finds the registered searchFunction for this identifier.
+// It then calls it with the searchText and returns the URL.
+// Returns null if not found.
+// This function is available for use in the configuration.
+function getRegisteredSearchUrl(identifier, searchText, what = 'text') {
+	let id = identifier.toLowerCase();
+	if (id in SearchFunction && what in SearchFunction[id]) {
+		return SearchFunction[id][what](searchText);
+	} else {
+		return null;
+	}
+}
+
 // Return a URL to handle the address (ie beautify it to go to it).
 function getWithSchemaUrl(address) {
 	let url = address;
@@ -2213,11 +2245,13 @@ function addSearchButton(container, search_box, button_id, label_text, tooltip, 
 		if (icon.element != null) btn.appendChild(icon.element);
 
 		// Add link text
-		let label = document.createElement('span');
-		label.className = 'label';
-		let textNode = document.createTextNode(label_text);
-		label.appendChild(textNode);
-		btn.appendChild(label);
+		if (label_text != null) {
+			let label = document.createElement('span');
+			label.className = 'label';
+			let textNode = document.createTextNode(label_text);
+			label.appendChild(textNode);
+			btn.appendChild(label);
+		}
 
 		// Add the button to the container
 		container.appendChild(btn);
@@ -2230,10 +2264,18 @@ function addSearchButtons(searchBox, container) {
 		let def = SearchButtonDefs[i];
 		let f = 0;
 
-		// Determine Identifier
 		let id = def[f++];
 		if (!id) continue;  //id is mandatory, ignore this entry if absent
 		let key = id.toLowerCase();  //lower case version
+		let label = def[f++];
+		let tooltip = def[f++];
+		let icon = def[f++];
+		let urlTemplate = def[f++];
+
+		// Register UrlTemplate (if specified)
+		if (urlTemplate) {
+			registerSearchTemplate(key, urlTemplate);
+		}
 
 		// Determine referenced Search URL Functions
 		let getSearchUrl = null, getDomainSearchUrl = null;
@@ -2244,13 +2286,20 @@ function addSearchButtons(searchBox, container) {
 		}
 
 		// Determine Label
-		let label = def[f++] || id;
+		if (!label) {
+			label = id;
+		} else if (label == '_') {
+			label = null;
+		}
 
 		// Determine Tooltip
-		let tooltip = def[f++] || id;
+		if (!tooltip) {
+			tooltip = id;
+		} else if (tooltip == '_') {
+			tooltip = null;
+		}
 
 		// Determine Icon
-		let icon = def[f++];
 		if (!icon) {
 			if (getSearchUrl) {
 				// Search URL function is defined. This is
@@ -2280,6 +2329,7 @@ function addSearchButtons(searchBox, container) {
 		console.log('addSearchButtons: Label=\'' + label + '\'');
 		console.log('addSearchButtons: Tooltip=\'' + tooltip + '\'');
 		console.log('addSearchButtons: Icon=\'' + icon + '\'');
+		console.log('addSearchButtons: UrlTemplate=\'' + urlTemplate + '\'');
 		console.log('addSearchButtons: getSearchUrl=\'' + getSearchUrl + '\'');
 		console.log('addSearchButtons: getDomainSearchUrl=\'' + getDomainSearchUrl + '\'');
 		//console.log(SearchFunction);
