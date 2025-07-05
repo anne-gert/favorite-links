@@ -203,8 +203,16 @@ in several ways. These are the URL arguments that are used:
 <ul>
 <li><dt>links=</dt>: If <code>links=&lt;URL&gt;</code> is provided, that
     URL is downloaded and its contents is used.
+    If <code>links=&lt;config-name&gt;</code> is provided, that config-name
+    is a self-chosen configuration name that is stored in the browser's local
+    storage. The stored value can be modified in the Settings.
+    Using a config-name is preferred when there are credentials in the URL.
 <li><dt>links-override=</dt>: If <code>links-override=&lt;URL&gt;</code> is
     provided, that URL is downloaded and its contents is used.
+    If <code>links-override=&lt;config-name&gt;</code> is provided, that config-name
+    is a self-chosen configuration name that is stored in the browser's local
+    storage. The stored value can be modified in the Settings.
+    Using a config-name is preferred when there are credentials in the URL.
 <li><dt>save=</dt>: If <code>save=&lt;config-name&gt;</code> is provided, that
     config-name is a self-chosen configuration name that is stored in the
     browser's local storage. The stored value allows the contents to be saved
@@ -260,6 +268,19 @@ configure them:
     <li>Settings:
         <ul>
 	<li>Online Save 'conf': <code>save.php\password</code>
+	</ul>
+    </ul>
+<li>With online save to NextCloud:
+    <ul>
+    <li>URL arguments: <code>links=config:my-nextcloud-links&amp;save=my-nextcloud</code>
+    <li>Settings:
+        <ul>
+	<li>Config 'my-nextcloud-links': <code>https://&lt;user&gt;:&lt;password&gt;@my-nextcloud.example.com/remote.php/dav/files/&lt;user&gt;/links.txt</code>
+	    <br>
+	    See URL in NextCloud -&gt; File Settings -&gt; WebDAV URL.
+	<li>Online Save 'my-nextcloud': <code>put</code>
+	    <br>
+	    URL not needed, because it is the same as links=.
 	</ul>
     </ul>
 </ul>
