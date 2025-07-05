@@ -2545,6 +2545,17 @@ function initSettingsPanel() {
 			if (visible) hideSettings(false);
 		};
 	}
+	// Bind entire Settings panel
+	if (pnlSettings) {
+		pnlSettings.onkeydown = function(e) {
+			//console.log('KeyCode=' + e.keyCode);
+			if (e.ctrlKey && e.key == 's') {
+				if (visible) hideSettings(true);
+				return false;  //stop default button action
+			}
+			return true;
+		};
+	}
 }
 
 // Assume the ctl is an input control.
