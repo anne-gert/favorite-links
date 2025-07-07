@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<title>Favorites and ToDo - External Files</title>
+
+<style>
+/* CSS styles {{{ */
+
+/****************************************************************************
+ * Global definitions
+ ****************************************************************************/
+
+/* Color palette - dark theme */
+.dark-theme {
+	--foreground: #DDDDDD;
+	--background: #2E323B;
+	--accent-color: #50A0EE;
+	--block-foreground: #000000;
+	--block-background: #C9CDD0;
+	--block-border: #EEEEEE;
+	--selection-foreground: #000000;
+	--selection-background: #DDDDFF;
+	--code-foreground: var(--foreground);
+	--code-background: #282828;
+	--link-color: #6666FF;
+	--disabled-color: #888888;
+	--error-foreground: #FF6600;
+	--error-background: #FFD8C0;
+	--error-border: var(--error-foreground);
+}
+
+/* Color palette - light theme */
+.light-theme {
+	--foreground: #444444;
+	--background: #E8F0F8;
+	--accent-color: #4444EE;
+	--block-foreground: #222222;
+	--block-background: #D9DDE0;
+	--block-border: #666666;
+	--selection-foreground: #FFFFFF;
+	--selection-background: #000099;
+	--code-foreground: var(--foreground);
+	--code-background: #C0C0C0;
+	--link-color: #2222AA;
+	--disabled-color: #888888;
+	--error-foreground: #FFBB88;
+	--error-background: #FFEEDD;
+	--error-border: var(--error-foreground);
+}
+
+:root {
+	/* Define variables that will be used on visible elements */
+	--font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
+	--font-size: 100%
+	/* Set default font and size */
+	font-family: var(--font-family);
+	font-size: 12pt;  /* absolute, so --font-size can be relative too */
+}
+
+body, input, textarea, button {
+	font-family: var(--font-family);
+	font-size: var(--font-size);
+}
+
+body {
+	color: var(--accent-color); background: var(--background);
+}
+::selection {
+	color: var(--selection-foreground); background: var(--selection-background);
+}
+
+
+/****************************************************************************
+ * Shared styles for displaying text-blocks
+ * These syles are shared between all pages
+ ****************************************************************************/
+
+.text-block {
+	color: var(--foreground); background: var(--background);
+}
+.text-block h1, .text-block h2, .text-block h3, .text-block dt {
+	color: var(--accent-color);
+}
+.text-block code, .text-block pre {
+	color: var(--code-foreground); background: var(--code-background);
+}
+.text-block code {
+	padding: 0.1em 0.4em;
+}
+.text-block pre {
+	padding: 0.6em 1em;
+	margin: 0.5em 4em;
+	overflow: scroll;
+}
+.text-block dt {
+	display: inline;
+}
+.text-block a {
+	color: var(--link-color);
+	text-decoration: none;
+}
+.text-block a:hover {
+	text-decoration: underline;
+}
+.text-block .important {
+	color: var(--error-foreground);
+}
+
+/* }}} */
+</style>
+
+</head>
+
+<body class="text-block dark-theme">
+
+
+<h1>Favorites and ToDo - Online Configuration</h1>
+
+<p>
+Generally, the configuration is stored in the browser's local storage.
+That local storage, however, is per domain, so if the page is opened from a different
+domain, a different configuration might be present in the local storage.
+</p>
+
+<p>
+It is possible to provide the configuration as a URL. This URL can be provided
+in several ways. These are the URL arguments that are used:
+<ul>
+<li><dt>links=</dt>: If <code>links=&lt;URL&gt;</code> is provided, that
+    URL is downloaded and its contents is used.
+    If <code>links=config:&lt;config-name&gt;</code> is provided, that
+    config-name is a self-chosen configuration name that is stored in the
+    browser's local storage. The stored value can be modified in the Settings.
+    Using a config-name is preferred when there are credentials in the URL.
+<li><dt>links-override=</dt>: If <code>links-override=&lt;URL&gt;</code> is
+    provided, that URL is downloaded and its contents is used.
+    If <code>links-override=config:&lt;config-name&gt;</code> is provided, that
+    config-name is a self-chosen configuration name that is stored in the
+    browser's local storage. The stored value can be modified in the Settings.
+    Using a config-name is preferred when there are credentials in the URL.
+<li><dt>save=</dt>: If <code>save=&lt;config-name&gt;</code> is provided, that
+    config-name is a self-chosen configuration name that is stored in the
+    browser's local storage. The stored value allows the contents to be saved
+    online. The stored value can be modified in the Settings, see <a
+    href="#save-online">Save Online</a> for details. This is considered an
+    advanced feature.
+</ul>
+</p>
+
+<p>
+<span class="important">Known Issue</span>: If the configuration is loaded
+and/or saved from a different domain with an absolute URL, that URL is subject
+to Cross-Origin Resource Sharing (CORS) rules, see <a
+href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS">MDN</a>
+for details. In short, this means that the server where links.txt is hosted
+should provide an appropriate <code>Access-Control-Allow-Origin</code> header.
+</p>
+
+<p>
+This is the order how the configuration is normally searched:
+<ol>
+<li>links-override=
+<li>Browser's local storage
+<li>links=
+<li>Use fixed default configuration with examples
+</ol>
+</p>
+
+<p>
+This is the order how the configuration is searched when <code>save=</code> is
+used:
+<ol>
+<li>links-override=
+<li>links=
+<li>Browser's local storage
+<li>Use fixed default configuration with examples
+</ol>
+</p>
+
+
+<h2>Examples</h2>
+
+<p>
+This section contains examples for different configuration sources and how to
+configure them:
+<ul>
+<li>From local cache (browser's local storage):
+    <ul>
+    <li>URL arguments: none
+    </ul>
+<li>Read-only public URL when local cache is empty:
+    <ul>
+    <li>URL arguments: <code>?links=https://example.com/links.txt</code>
+    </ul>
+<li>Always read-only public URL:
+    <ul>
+    <li>URL arguments: <code>?links-override=https://example.com/links.txt</code>
+    </ul>
+<li>Read-only private URL:
+    <ul>
+    <li>URL arguments: <code>?links=config:links</code>
+    <li>Settings:
+        <ul>
+	<li>Config 'links': <code>https://user:password@example.com/links.txt</code>
+        </ul>
+    </ul>
+<li>Public URL with online save with save.php:
+    <ul>
+    <li>URL arguments: <code>?links=https://example.com/links.txt&amp;save=conf</code>
+    <li>Settings:
+        <ul>
+	<li>Online Save 'conf': <code>save.php\password</code>
+	</ul>
+    </ul>
+<li>With online save to NextCloud (WebDAV):
+    <ul>
+    <li>URL arguments: <code>links=config:my-nextcloud-links&amp;save=my-nextcloud</code>
+    <li>Settings:
+        <ul>
+	<li>Config 'my-nextcloud-links': <code>https://user:password@my-nextcloud.example.com/remote.php/dav/files/user/links.txt</code>
+	    <br>
+	    See URL in NextCloud -&gt; File Settings -&gt; WebDAV URL.
+	<li>Online Save 'my-nextcloud': <code>put</code>
+	    <br>
+	    URL can be omitted, because it is the same as links=.
+	</ul>
+    </ul>
+</ul>
+
+
+<a name="save-online"></a>
+<h2>Save Online</h2>
+
+<p>
+By specifying the <code>save=&lt;config-name&gt;</code> URL argument, saving
+changed configuration to a server is enabled.  In this case the links
+configuration is stored in the browser's local storage as well as the location
+specified by the save-options indicated by config-name. The save-options can be
+changed under Settings for the currently selected config-name. Note that it is
+possible to have different configurations under different names.
+</p>
+
+
+<a name="save-to-url"></a>
+<h3>Save to URL</h3>
+
+<p>
+The save-option can be used to save changed configuration to any URL with a
+POST or PUT request. By specifying the correct headers, this should include web
+forms, WebDAV, database backed storage, etc.
+</p>
+
+<p>
+The general syntax is as follows: <code>method:url\header:value\...</code>
+<br>
+With:
+<ul>
+<li><dt>method</dt>: <code>put</code> or <code>post</code>. If this is missing,
+    the <a href="#special-save">special save syntax</a> is used, see below.
+<li><dt>url</dt> (optional): URL to send to. Defaults to URL used to read (from
+    <code>links=</code> or <code>links-override=</code>). If neither of those
+    are specified, no online save will be done. If a relative URL is used, it
+    is taken to be with respect to the URL read from.
+<li><dt>header:value</dt> (optional): Zero or more additional headers to send.
+    This may include credentials.
+</ul>
+</p>
+
+<p>
+Examples:
+<ul>
+<li>put
+<li>put:https://username:password@example.com/links.txt
+<li>put:https://storage.example.com/12345678-aaaa-bbbb-cccc-1234567890ab/links.txt
+<li>post:https://storage.example.com/webform.php\username:me\password:secret\name:links.txt
+</ul>
+</p>
+
+
+<a name="special-save"></a>
+<h3>Special Save Syntax</h3>
+
+<p>
+For ease of use, this repository also contains a little save.php script. This
+can be put in the same directory as the links.txt file on a PHP enabled server.
+When it is posted to, it first checks the token in the x-token header and the
+size of the content. If that is ok, it will take the filename in the x-name
+header, filter out all non-ASCII characters, verify it is a .txt file and use
+that as the target file to save.
+</p>
+
+There exists also a special save syntax for this: <code>url\password\header:value\...</code>
+<br>
+In this case, the following is implied:
+<ul>
+<li>The method is <code>post</code>.
+<li>The URL is typically just <code>save.php</code>, because it is in the same
+    directory as the <code>links=</code> or <code>links-override=</code> URL.
+<li>A header <code>x-token:password</code> is added.
+<li>A header <code>x-name:URL</code> of <code>links=</code> or
+    <code>links-override=</code> is added.
+<li>Typically, no other headers are needed.
+</ul>
+</p>
+
+<p>
+Example:
+<ul>
+<li>save.php\password
+</ul>
+</p>
+
+<p>
+<span class="important">Note</span>: Since saving will modify data on the
+server and will send access tokens, it is recommended to use this only with
+https.
+</p>
+
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker: -->
+
