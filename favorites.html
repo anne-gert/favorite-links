@@ -705,8 +705,11 @@ const LSKey_LoadOptions_Prefix = LSKey_Prefix + 'load_';
 // Global variables to hold the URL and Promise for the Links.
 // Set by resolveLinks().
 var LinksConfigName = null;  //name of the config to load LinksUrl from (links=config:...)
+var LinksOptions = null;  //value of links= or LocalStorage for LinksConfigName
 var LinksOverrideConfigName = null;  //name of the config to load LinksUrl from (links-override=config:...)
+var LinksOverrideOptions = null;  //value of links-override= or LocalStorage for LinksOverrideConfigName
 var SaveConfigName = null;  //name of the config to get the SaveOptions from (save=...)
+var SaveOptions = null;  //value of LocalStorage for SaveConfigName
 var LinksUrl = null;  //download URL (links= or links-override=)
 var LinksPromise = null;
 
@@ -722,8 +725,11 @@ var LinksPromise = null;
 // relative URL. Download it and use its contents for the Links variable.
 function resolveLinks(skipLocalStorage = false) {
 	LinksConfigName = null;
+	LinksOptions = null;
 	LinksOverrideConfigName = null;
+	LinksOverrideOptions = null;
 	SaveConfigName = null;
+	SaveOptions = null;
 	LinksUrl = null;
 	LinksPromise = null;
 
@@ -763,36 +769,54 @@ function resolveLinks(skipLocalStorage = false) {
 	// - Otherwise LinksUrl should be set, download that.
 
 	let params = new URLSearchParams(location.search);
-	let linksOverride = params.get('links-override');
+	LinksOverrideOptions = params.get('links-override');
 	SaveConfigName = params.get('save');
-	let links = params.get('links');
+	LinksOptions = params.get('links');
 	//console.log(params);
 
-	// Resolve the links= and links-override= config names
-	if (linksOverride) {
-		let m = linksOverride.match(/^config:(\S+)$/);
+	// Resolve the links=, links-override= and save= config names
+	if (LinksOverrideOptions) {
+		let m = LinksOverrideOptions.match(/^config:(\S+)$/);
 		if (m) {
 			// This is a config name, read that
 			LinksOverrideConfigName = m[1];
-			linksOverride = readLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName);
+			LinksOverrideOptions = readLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName);
+			// Note: This value is not URL-encoded. If this is required, it should
+			// be done before the value is used in the context where that is needed.
+			if (LinksOverrideOptions === false || LinksOverrideOptions.match(/^\s*$/)) {
+				LInksOverrideOptions = '';
+			}
 		}
 	}
-	if (links) {
-		let m = links.match(/^config:(\S+)$/);
+	if (LinksOptions) {
+		let m = LinksOptions.match(/^config:(\S+)$/);
 		if (m) {
 			// This is a config name, read that
 			LinksConfigName = m[1];
-			links = readLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName);
+			LinksOptions = readLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName);
+			// Note: This value is not URL-encoded. If this is required, it should
+			// be done before the value is used in the context where that is needed.
+			if (LinksOptions === false || LinksOptions.match(/^\s*$/)) {
+				LinksOptions = '';
+			}
+		}
+	}
+	if (SaveConfigName) {
+		SaveOptions = readLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName);
+		// Note: This value is not URL-encoded. If this is required, it should
+		// be done before the value is used in the context where that is needed.
+		if (SaveOptions === false || SaveOptions.match(/^\s*$/)) {
+			SaveOptions = '';
 		}
 	}
 
 	// Derive LinksUrl: The first of links-override= or links=
-	if (linksOverride) {
+	if (LinksOverrideOptions) {
 		console.log('LinksUrl: Use links-override= URL argument');
-		LinksUrl = linksOverride;
-	} else if (links) {
+		LinksUrl = LinksOverrideOptions;
+	} else if (LinksOptions) {
 		console.log('LinksUrl: Use links= URL argument');
-		LinksUrl = links;
+		LinksUrl = LinksOptions;
 	} else {
 		console.log('LinksUrl: No URL specified');
 		LinksUrl = null;
@@ -810,7 +834,7 @@ function resolveLinks(skipLocalStorage = false) {
 	let linksText = null;  //defaults to download LinksUrl
 	if (LinksUrl) {
 		// LinksUrl is set. Generally download it, except in 1 exception
-		if (!linksOverride && !SaveConfigName) linksText = checkLocalStorage();  //the exception
+		if (!LinksOverrideOptions && !SaveConfigName) linksText = checkLocalStorage();  //the exception
 	} else {
 		// LinksUrl not set, linksText must be set here to display anything.
 		linksText = checkLocalStorage();
@@ -947,10 +971,7 @@ function writeOnlineLinks(value) {
 		console.log('No save=, skip saving');
 		return false;
 	}
-	let saveOptions = readLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName);
-	// Note: This value is not URL-encoded. If this is required, it should
-	// be done before the value is used in the context where that is needed.
-	if (saveOptions === false || saveOptions.match(/^\s*$/)) {
+	if (SaveOptions.match(/^\s*$/)) {
 		console.warn('Save Config \'' + SaveConfigName + '\' empty, skip saving');
 		return false;
 	}
@@ -961,7 +982,7 @@ function writeOnlineLinks(value) {
 	}
 
 	// Split into parts
-	let parts = saveOptions.split('\\');
+	let parts = SaveOptions.split('\\');
 
 	// The first part should specify the method and the URL
 	let method, saveUrl, special = false;
@@ -987,7 +1008,7 @@ function writeOnlineLinks(value) {
 			return false;
 		}
 	} else {
-		console.error('Incorrect method/url in \'' + saveOptions + '\'');
+		console.error('Incorrect method/url in \'' + SaveOptions + '\'');
 		return false;
 	}
 
@@ -2493,16 +2514,16 @@ function initSettingsPanel() {
 		if (save) {
 			// Update Options
 			if (LinksOverrideConfigName) {
-				let options = txtLoad1Options.value;
-				writeLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName, options);
+				LinksOverrideOptions = txtLoad1Options.value;
+				writeLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName, LinksOverrideOptions);
 			}
 			if (LinksConfigName && LinksConfigName != LinksOverrideConfigName) {
-				let options = txtLoad2Options.value;
-				writeLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName, options);
+				LinksOptions = txtLoad2Options.value;
+				writeLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName, LinksOptions);
 			}
 			if (SaveConfigName) {
-				let options = txtSaveOptions.value;
-				writeLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName, options);
+				SaveOptions = txtSaveOptions.value;
+				writeLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName, SaveOptions);
 			}
 			// Update Links and close panel
 			let saveLinks = Links;
@@ -2571,28 +2592,22 @@ function initSettingsPanel() {
 	};
 	// Set initial state
 	if (LinksOverrideConfigName) {
-		let options = readLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName);
-		if (options === false) options = '';
 		lblLoad1Options.textContent = 'Config \'' + LinksOverrideConfigName + '\'';
-		txtLoad1Options.value = options;
+		txtLoad1Options.value = LinksOverrideOptions;
 		pnlOptions.classList.remove('hide-load1-option');
 	} else {
 		pnlOptions.classList.add('hide-load1-option');
 	}
 	if (LinksConfigName && LinksConfigName != LinksOverrideConfigName) {
-		let options = readLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName);
-		if (options === false) options = '';
 		lblLoad2Options.textContent = 'Config \'' + LinksConfigName + '\'';
-		txtLoad2Options.value = options;
+		txtLoad2Options.value = LinksOptions;
 		pnlOptions.classList.remove('hide-load2-option');
 	} else {
 		pnlOptions.classList.add('hide-load2-option');
 	}
 	if (SaveConfigName) {
-		let options = readLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName);
-		if (options === false) options = '';
 		lblSaveOptions.textContent = 'Online Save \'' + SaveConfigName + '\'';
-		txtSaveOptions.value = options;
+		txtSaveOptions.value = SaveOptions;
 		pnlOptions.classList.remove('hide-save-option');
 	} else {
 		pnlOptions.classList.add('hide-save-option');
