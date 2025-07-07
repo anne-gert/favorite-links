@@ -342,8 +342,9 @@ Each line should be one of the following:
       base font-size to use. All CSS length quantities can be used, e.g.
       '10pt' or '120%'. This feature is experimental.
   <li><dt>Search Buttons</dt>: The line <code>!search identifier | label |
-      tooltip | icon</code> defines a search button to be displayed next to the
-      search box.  See <a href="#search-functions">below</a> for more details.
+      tooltip | icon | url-template</code> defines a search button to be
+      displayed next to the search box.  See <a
+      href="#search-functions">below</a> for more details.
   <li><dt>Icon Definitions</dt>: The line <code>!icondef name
       replacement</code> defines an icon. If a link uses
       <code>icon=name</code>, it will be replaced by whatever is defined for
@@ -513,10 +514,10 @@ Below is an example of lines specifying a Link.
 <h2>New Search Function</h2>
 
 <p>
-The line <code>!search identifier | label | tooltip | icon</code> defines a
-search button to be displayed next to the search box. The fields are separated
-by <code>|</code> with whitespace allowed.  These are the fields to be
-specified:
+The line <code>!search identifier | label | tooltip | icon |
+url-template</code> defines a search button to be displayed next to the search
+box. The fields are separated by <code>|</code> with whitespace allowed.  These
+are the fields to be specified:
 <ul>
 <li><dt>Identifier</dt> (mandatory): Unique name for this button definition.
 <li><dt>Label</dt> (default: <i>Identifier</i>): This is the text to be
@@ -629,8 +630,8 @@ Example on how to create a search button for Amazon:
 Search buttons can be quite flexible. For example, the current Sprint Board
 on Azure DevOps  can be searched with the URL
 <code>https://dev.azure.com/&lt;Organization&gt;/&lt;Project&gt;/_sprints/taskboard/&lt;Team&gt;/&lt;Project&gt;/?text=&lt;Search-Terms&gt;</code>.
-Now, create a search button to search the current sprint board for
-MyOrganization, MyProject and MyTeam in a few steps:
+Now, create a search button to search the current sprint board of MyProject for
+MyTeam within MyOrganization in a few steps:
 <pre>
 !search MyTeam-Sprint | MyTeam | Current MyTeam Sprint | alt | https://dev.azure.com/MyOrganization/MyProject/_sprints/taskboard/MyTeam/MyProject/?text=%urlinput
 </pre>
