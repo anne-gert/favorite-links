@@ -2720,11 +2720,7 @@ function initSettingsPanel() {
 	if (pnlSettings) {
 		pnlSettings.onkeydown = function(e) {
 			//console.log('KeyCode=' + e.keyCode);
-			if (e.keyCode == 27) {
-				// This is the Esc key
-				if (visible) hideSettings(false);
-				return false;  //stop default button action
-			} else if (e.ctrlKey && e.key == 's') {
+			if (e.ctrlKey && e.key == 's') {
 				if (visible) hideSettings(true);
 				return false;  //stop default button action
 			}
@@ -2732,18 +2728,18 @@ function initSettingsPanel() {
 		};
 	}
 	// Bind entire document
-	window.addEventListener('keydown', function(e) {
-		//console.log('KeyCode=' + e.keyCode);
-		if (e.keyCode == 27) {
-			// This is the Esc key
-			if (visible) {  //only if Settings visible
-				hideSettings(false);
-				e.preventDefault();
-				return false;  //stop default button action
-			}
-		}
-		return true;
-	});
+	//window.addEventListener('keydown', function(e) {
+	//	//console.log('KeyCode=' + e.keyCode);
+	//	if (e.keyCode == 27) {
+	//		// This is the Esc key
+	//		if (visible) {  //only if Settings visible
+	//			hideSettings(false);
+	//			e.preventDefault();
+	//			return false;  //stop default button action
+	//		}
+	//	}
+	//	return true;
+	//});
 }
 
 // Assume the ctl is an input control.
@@ -3213,7 +3209,7 @@ window.onload = init;
 <div id="SettingsIconBarOpen">
   <span id="SettingsSaveIcon" class="settings-icon" title="Save (Ctrl-S)">[OK]</span>
   <span id="SettingsClearIcon" class="settings-icon" title="Clear">[_]</span>
-  <span id="SettingsCancelIcon" class="settings-icon" title="Cancel (Esc)">[X]</span>
+  <span id="SettingsCancelIcon" class="settings-icon" title="Cancel">[X]</span>
 </div>
 
 </span>
