@@ -554,8 +554,7 @@ const UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK = '\u{1F5AB}';  //black&white 3½" fl
 const UNICODE_SOFT_SHELL_FLOPPY_DISK = '\u{1F5AB}';  //black&white 5¼" floppy disk
 
 // DefaultLinks is a textual part with a copy of example-links.txt at the end.
-const DefaultLinks = `
-// For the syntax description, see help.html.
+const DefaultLinks = `// For the syntax description, see help.html.
 
 !title Example Favorites
 
@@ -710,6 +709,7 @@ var LinksOverrideConfigName = null;  //name of the config to load LinksUrl from 
 var LinksOverrideOptions = null;  //value of links-override= or LocalStorage for LinksOverrideConfigName
 var SaveConfigName = null;  //name of the config to get the SaveOptions from (save=...)
 var SaveOptions = null;  //value of LocalStorage for SaveConfigName
+var SaveOptionsDisabled = null;  //set to string with the reason why saving is disabled
 var LinksUrl = null;  //download URL (links= or links-override=)
 var LinksPromise = null;
 
@@ -730,6 +730,7 @@ function resolveLinks(skipLocalStorage = false) {
 	LinksOverrideOptions = null;
 	SaveConfigName = null;
 	SaveOptions = null;
+	SaveOptionsDisabled = null;
 	LinksUrl = null;
 	LinksPromise = null;
 
@@ -916,8 +917,28 @@ function resolveLinks(skipLocalStorage = false) {
 						resolveFunc(xhr.responseText);
 					} else {
 						// Failed
-						console.log('LinksPromise: Download failed, use standard example links');
-						resolveFunc(DefaultLinks);
+						if (SaveOptions) {
+							// If SaveOptions set, this download is either for links-override= or links=.
+							// If this download failed, do not revert to other URL to avoid confusion.
+							// Therefore revert to LocalStorage (if set) or DefaultLinks otherwise.
+							// Also disable SaveOptions to not accidentally overwrite the file.
+							let locStor = checkLocalStorage();
+							if (locStor !== null) {
+								console.log('LinksPromise: Download failed and SaveOptions set, use LocalStorage links and disable SaveOptions');
+								resolveFunc(locStor);
+							} else {
+								console.log('LinksPromise: Download failed and SaveOptions set, use DefaultLinks and disable SaveOptions');
+								resolveFunc(DefaultLinks);
+							}
+							SaveOptionsDisabled = 'Saving disabled because downloading \'' + url + '\' failed';
+						} else {
+							// If SaveOptions not set, this download was for links-override=.
+							// If this download failed, do not revert to other options, since 'override' is
+							// taken to mean to ignore that.
+							// Therefore, go directly to DefaultLinks.
+							console.log('LinksPromise: Download failed and no SaveOptions, use DefaultLinks');
+							resolveFunc(DefaultLinks);
+						}
 					}
 				}
 			};
@@ -973,6 +994,10 @@ function writeOnlineLinks(value) {
 	}
 	if (SaveOptions.match(/^\s*$/)) {
 		console.warn('Save Config \'' + SaveConfigName + '\' empty, skip saving');
+		return false;
+	}
+	if (SaveOptionsDisabled) {
+		console.warn('Save Config \'' + SaveConfigName + '\' disabled, skip saving');
 		return false;
 	}
 
@@ -2468,7 +2493,36 @@ function initSettingsPanel() {
 	// Set show/hide animations
 	let visible = false;
 	showSettings = function() {
+		// Update the contents
 		txtSettings.value = Links;
+		if (LinksOverrideConfigName) {
+			lblLoad1Options.textContent = 'Config \'' + LinksOverrideConfigName + '\'';
+			txtLoad1Options.value = LinksOverrideOptions;
+			pnlOptions.classList.remove('hide-load1-option');
+		} else {
+			pnlOptions.classList.add('hide-load1-option');
+		}
+		if (LinksConfigName && LinksConfigName != LinksOverrideConfigName) {
+			lblLoad2Options.textContent = 'Config \'' + LinksConfigName + '\'';
+			txtLoad2Options.value = LinksOptions;
+			pnlOptions.classList.remove('hide-load2-option');
+		} else {
+			pnlOptions.classList.add('hide-load2-option');
+		}
+		if (SaveConfigName) {
+			lblSaveOptions.textContent = 'Online Save \'' + SaveConfigName + '\'';
+			txtSaveOptions.value = SaveOptions;
+			if (SaveOptionsDisabled) {
+				txtSaveOptions.disabled = true;
+				txtSaveOptions.title = SaveOptionsDisabled;  //the text to explain
+			} else {
+				txtSaveOptions.disabled = false;
+				txtSaveOptions.title = '';
+			}
+			pnlOptions.classList.remove('hide-save-option');
+		} else {
+			pnlOptions.classList.add('hide-save-option');
+		}
 		// Slide panel to visible
 		pnlSettings.classList.add('expanding');
 		pnlSettings.classList.add('show');
@@ -2521,7 +2575,7 @@ function initSettingsPanel() {
 				LinksOptions = txtLoad2Options.value;
 				writeLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName, LinksOptions);
 			}
-			if (SaveConfigName) {
+			if (SaveConfigName && !SaveOptionsDisabled) {
 				SaveOptions = txtSaveOptions.value;
 				writeLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName, SaveOptions);
 			}
@@ -2591,30 +2645,8 @@ function initSettingsPanel() {
 		}
 	};
 	// Set initial state
-	if (LinksOverrideConfigName) {
-		lblLoad1Options.textContent = 'Config \'' + LinksOverrideConfigName + '\'';
-		txtLoad1Options.value = LinksOverrideOptions;
-		pnlOptions.classList.remove('hide-load1-option');
-	} else {
-		pnlOptions.classList.add('hide-load1-option');
-	}
-	if (LinksConfigName && LinksConfigName != LinksOverrideConfigName) {
-		lblLoad2Options.textContent = 'Config \'' + LinksConfigName + '\'';
-		txtLoad2Options.value = LinksOptions;
-		pnlOptions.classList.remove('hide-load2-option');
-	} else {
-		pnlOptions.classList.add('hide-load2-option');
-	}
-	if (SaveConfigName) {
-		lblSaveOptions.textContent = 'Online Save \'' + SaveConfigName + '\'';
-		txtSaveOptions.value = SaveOptions;
-		pnlOptions.classList.remove('hide-save-option');
-	} else {
-		pnlOptions.classList.add('hide-save-option');
-	}
 	if (visible) {
 		// showSettings() without animation
-		txtSettings.value = Links;
 		pnlSettings.classList.add('show');
 		iconBarClosed.classList.add('hidden');
 		iconBarOpen.classList.remove('hidden');
