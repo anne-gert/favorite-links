@@ -341,9 +341,9 @@ body {
 }
 .settings-form .buttonbar {
 	text-align: right;
-	display: none;  /* use icons instead */
 }
 .settings-form .button {
+	margin: 0.3em;
 }
 
 .settings-form .options {
@@ -354,16 +354,6 @@ body {
 }
 .input input {
 	width: 100%;
-}
-
-.hide-load1-option .load1-option {
-	display: none;
-}
-.hide-load2-option .load2-option {
-	display: none;
-}
-.hide-save-option .save-option {
-	display: none;
 }
 
 /****************************************************************************
@@ -2463,71 +2453,224 @@ function addSearchButtons(searchBox, container) {
 
 // Edit Settings {{{
 
-let showSettings = null;  // will be set later
+var showSettingsPanel = null;  // will be set later
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
-	let iconOpen = document.getElementById('SettingsIcon');
-	let iconSave = document.getElementById('SettingsSaveIcon');
-	let iconClear = document.getElementById('SettingsClearIcon');
-	let iconCancel = document.getElementById('SettingsCancelIcon');
-	let pnlSettings = document.getElementById('SettingsForm');
-	let pnlOptions = document.getElementById('SettingsOptions');
-	let lblLoad1Options = document.getElementById('SettingsLoad1OptionsLabel');
-	let txtLoad1Options = document.getElementById('SettingsLoad1OptionsText');
-	let lblLoad2Options = document.getElementById('SettingsLoad2OptionsLabel');
-	let txtLoad2Options = document.getElementById('SettingsLoad2OptionsText');
-	let lblSaveOptions = document.getElementById('SettingsSaveOptionsLabel');
-	let txtSaveOptions = document.getElementById('SettingsSaveOptionsText');
-	let txtSettings = document.getElementById('SettingsText');
-	let btnSave = document.getElementById('BtnSaveSettings');
-	let btnClear = document.getElementById('BtnClearSettings');
-	let btnCancel = document.getElementById('BtnCancelSettings');
+	// Assign iconBarClosed, iconBarOpen and settingsPanel variables
 	let iconBarClosed = document.getElementById('SettingsIconBarClosed');  //iconbar for closed status
 	let iconBarOpen = document.getElementById('SettingsIconBarOpen');  //iconbar for open status
-	// Set characters in icons
-	setIfSupported(iconOpen, 'textContent', UNICODE_GEARS);
-	setIfSupported(iconSave, 'textContent', UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK);
-	setIfSupported(iconClear, 'textContent', UNICODE_EMPTY_DOCUMENT);
-	setIfSupported(iconCancel, 'textContent', UNICODE_CANCELLATION);
-	// Set show/hide animations
+	let settingsPanel = null;
+
+	// Status
 	let visible = false;
-	showSettings = function() {
-		// Update the contents
-		txtSettings.value = Links;
-		if (LinksOverrideConfigName) {
-			lblLoad1Options.textContent = 'Config \'' + LinksOverrideConfigName + '\'';
-			txtLoad1Options.value = LinksOverrideOptions;
-			pnlOptions.classList.remove('hide-load1-option');
-		} else {
-			pnlOptions.classList.add('hide-load1-option');
+
+	// Other global variables for Settings (will be assigned in createSettings())
+	let settingsText;
+	let optionEntries = [];
+
+	// Create the minimal hooks and defer rest at first showing
+	showSettingsPanel = showSettings;  //expose function
+	// Create iconOpen
+	let iconOpen = document.createElement('span');
+	setUnicodeText(iconOpen, UNICODE_GEARS, '[Settings]');
+	iconOpen.title = 'Settings';
+	iconOpen.className = 'settings-icon';
+	iconOpen.onclick = showSettings;
+	iconBarClosed.appendChild(iconOpen);
+
+	// Create rest of the Settings panel. This is called at first showing.
+	function createSettings() {
+		// Get and configure settingsPanel
+		settingsPanel = document.getElementById('SettingsForm');
+		if (settingsPanel) {
+			settingsPanel.onkeydown = function(e) {
+				//console.log('KeyCode=' + e.keyCode);
+				if (e.ctrlKey && e.key == 's') {
+					if (visible) hideSettings(true);
+					return false;  //stop default button action
+				}
+				return true;
+			};
 		}
-		if (LinksConfigName && LinksConfigName != LinksOverrideConfigName) {
-			lblLoad2Options.textContent = 'Config \'' + LinksConfigName + '\'';
-			txtLoad2Options.value = LinksOptions;
-			pnlOptions.classList.remove('hide-load2-option');
+		// Bind entire document
+		//window.addEventListener('keydown', function(e) {
+		//	//console.log('KeyCode=' + e.keyCode);
+		//	if (e.keyCode == 27) {
+		//		// This is the Esc key
+		//		if (visible) {  //only if Settings visible
+		//			hideSettings(false);
+		//			e.preventDefault();
+		//			return false;  //stop default button action
+		//		}
+		//	}
+		//	return true;
+		//});
+
+		// Get settingsArea
+		let settingsArea = document.getElementById('SettingsArea');
+
+		// Create settingsText
+		settingsText = document.createElement('textarea');
+		settingsText.wrap = 'off';
+		settingsText.autocomplete = 'off';
+		settingsText.autocorrect = false;
+		settingsText.autocapitalize = 'off';
+		settingsText.spellcheck = false;
+		settingsText.placeholder = 'Settings';
+		settingsText.className = 'textbox';
+		settingsText.onkeydown = function(e) {
+			//console.log('KeyCode=' + e.keyCode);
+			if (e.keyCode == 9) {
+				// This is the TAB key -> Insert 4 spaces
+				textInsert(this, () => ' '.repeat(4));
+				return false;  //stop further handling
+			} else if (e.keyCode == 13) {
+				// This is the Enter key -> Copy indentation from current line
+				textInsert(this, (before, mid, after) => {
+					let m = before.match(/(?:^|\r|\n)([ \t]*)[^\r\n]*$/);  //match: 'linebreak whitespace line end'
+					return '\n' + m[1];  //insert linebreak plus matched whitespace
+				});
+				return false;  //stop further handling
+			}
+			return true;
+		};
+		settingsArea.appendChild(settingsText);
+
+		// Create iconSave
+		let iconSave = document.createElement('span');
+		iconSave.title = 'Save (Ctrl-S)';
+		setUnicodeText(iconSave, UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK, '[OK]');
+		iconSave.className = 'settings-icon';
+		iconSave.onclick = () => hideSettings(true);
+		iconBarOpen.appendChild(iconSave);
+		// Create iconClear
+		let iconClear = document.createElement('span');
+		iconClear.title = 'Clear';
+		setUnicodeText(iconClear, UNICODE_EMPTY_DOCUMENT, '[_]');
+		iconClear.className = 'settings-icon';
+		iconClear.onclick = () => hideSettings('clear');
+		iconBarOpen.appendChild(iconClear);
+		// Create iconCancel
+		let iconCancel = document.createElement('span');
+		iconCancel.title = 'Cancel';
+		setUnicodeText(iconCancel, UNICODE_CANCELLATION, '[X]');
+		iconCancel.className = 'settings-icon';
+		iconCancel.onclick = () => hideSettings(false);
+		iconBarOpen.appendChild(iconCancel);
+
+		//// Create buttonBar
+		//let buttonBar = document.createElement('div');
+		//buttonBar.className = 'buttonbar';
+		//settingsArea.appendChild(buttonBar);
+		//
+		//// Create btnSave
+		//let btnSave = document.createElement('button');
+		//btnSave.textContent = 'Save';
+		//btnSave.className = 'button';
+		//btnSave.onclick = () => { hideSettings(true); return false }
+		//buttonBar.appendChild(btnSave);
+		//// Create btnClear
+		//let btnClear = document.createElement('button');
+		//btnClear.textContent = 'Clear';
+		//btnClear.className = 'button';
+		//btnClear.onclick = () => { hideSettings('clear'); return false }
+		//buttonBar.appendChild(btnClear);
+		//// Create btnCancel
+		//let btnCancel = document.createElement('button');
+		//btnCancel.textContent = 'Cancel';
+		//btnCancel.className = 'button';
+		//btnCancel.onclick = () => { hideSettings(false); return false }
+		//buttonBar.appendChild(btnCancel);
+
+		// Create optionsPanel
+		let optionsPanel = document.createElement('div');
+		optionsPanel.className = 'options';
+		settingsArea.appendChild(optionsPanel);
+
+		// Create optionEntries
+		function createOption(labelText, getData, saveData) {
+			let label = document.createElement('div');
+			label.className = 'label';
+			label.appendChild(document.createTextNode(labelText));
+			optionsPanel.appendChild(label);
+			let container = document.createElement('div');
+			container.className = 'input';
+			let entry = document.createElement('input');
+			entry.type = 'text';
+			container.appendChild(entry);
+			optionsPanel.appendChild(container);
+			let option = {
+				showData : () => entry.value = getData(),
+				saveData : () => saveData(entry.value),
+				entry    : entry,
+			};
+			optionEntries.push(option);
+			return option;
+		}
+		if (LinksOverrideConfigName && LinksConfigName == LinksOverrideConfigName) {
+			// One entry for both LinksOverrideOptions and LinksOptions
+			createOption('Config \'' + LinksOverrideConfigName + '\'',
+				() => LinksOverrideOptions,
+				(value) => {
+					LinksOptions = LinksOverrideOptions = value;
+					writeLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName, value);
+				});
 		} else {
-			pnlOptions.classList.add('hide-load2-option');
+			if (LinksOverrideConfigName) {
+				// Entry for LinksOverrideOptions
+				createOption('Config \'' + LinksOverrideConfigName + '\'',
+					() => LinksOverrideOptions,
+					(value) => {
+						LinksOverrideOptions = value;
+						writeLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName, value);
+					});
+			}
+			if (LinksConfigName) {
+				// Entry for LinksOptions
+				createOption('Config \'' + LinksConfigName + '\'',
+					() => LinksOptions,
+					(value) => {
+						LinksOptions = value;
+						writeLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName, value);
+					});
+			}
 		}
 		if (SaveConfigName) {
-			lblSaveOptions.textContent = 'Online Save \'' + SaveConfigName + '\'';
-			txtSaveOptions.value = SaveOptions;
+			// Entry for SaveOptions
+			let option = createOption('Online Save \'' + SaveConfigName + '\'',
+				() => SaveOptions,
+				(value) => {
+					if (!SaveOptionsDisabled) {
+						SaveOptions = value;
+						writeLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName, value);
+					}
+				});
 			if (SaveOptionsDisabled) {
-				txtSaveOptions.disabled = true;
-				txtSaveOptions.title = SaveOptionsDisabled;  //the text to explain
+				option.entry.disabled = true;
+				option.entry.title = SaveOptionsDisabled;  //the text with reason
 			} else {
-				txtSaveOptions.disabled = false;
-				txtSaveOptions.title = '';
+				option.entry.disabled = false;
+				option.entry.title = '';
 			}
-			pnlOptions.classList.remove('hide-save-option');
-		} else {
-			pnlOptions.classList.add('hide-save-option');
+		}
+	}
+
+	// Show the Settings panel.
+	function showSettings() {
+		if (visible) return;  //do nothing if already visible
+		// Create panel at first showing
+		if (settingsPanel == null) createSettings();
+		// Update the contents
+		settingsText.value = Links;
+		for (let i = 0; i < optionEntries.length; ++i) {
+			optionEntries[i].showData();
 		}
 		// Slide panel to visible
-		pnlSettings.classList.add('expanding');
-		pnlSettings.classList.add('show');
-		pnlSettings.onanimationend = function() {
-			pnlSettings.classList.remove('expanding');
+		settingsPanel.classList.add('expanding');
+		settingsPanel.classList.add('show');
+		settingsPanel.onanimationend = function() {
+			settingsPanel.classList.remove('expanding');
 		};
 		// Slide iconBarClosed out and iconBarOpen in
 		let going = iconBarClosed, coming = iconBarOpen;
@@ -2543,13 +2686,16 @@ function initSettingsPanel() {
 		};
 		visible = true;
 	};
-	let hideSettings = function(save) {
+
+	// Hide (Save or Cancel) Settings panel.
+	function hideSettings(save) {
+		if (!visible) return;  //do nothing if already hidden
 		let hide = () => {
 			// slide panel to hidden
-			pnlSettings.classList.add('collapsing');
-			pnlSettings.onanimationend = function() {
-				pnlSettings.classList.remove('show');
-				pnlSettings.classList.remove('collapsing');
+			settingsPanel.classList.add('collapsing');
+			settingsPanel.onanimationend = function() {
+				settingsPanel.classList.remove('show');
+				settingsPanel.classList.remove('collapsing');
 			};
 			// Slide iconBarOpen out and iconBarClosed in
 			let going = iconBarOpen, coming = iconBarClosed;
@@ -2567,26 +2713,17 @@ function initSettingsPanel() {
 		};
 		if (save) {
 			// Update Options
-			if (LinksOverrideConfigName) {
-				LinksOverrideOptions = txtLoad1Options.value;
-				writeLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName, LinksOverrideOptions);
-			}
-			if (LinksConfigName && LinksConfigName != LinksOverrideConfigName) {
-				LinksOptions = txtLoad2Options.value;
-				writeLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName, LinksOptions);
-			}
-			if (SaveConfigName && !SaveOptionsDisabled) {
-				SaveOptions = txtSaveOptions.value;
-				writeLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName, SaveOptions);
+			for (let i = 0; i < optionEntries.length; ++i) {
+				optionEntries[i].saveData();
 			}
 			// Update Links and close panel
 			let saveLinks = Links;
-			if (save == 'clear' || txtSettings.value == '') {
+			if (save == 'clear' || settingsText.value == '') {
 				console.log('Clear settings');
 				loadLinks(true, true)  //re-resolve Links
 				.then(() => {
 					// Links are correct
-					txtSettings.value = Links;
+					settingsText.value = Links;
 					writeLocalStorage(LSKey_Links, Links);
 					// Just read from URL, don't call writeOnlineLinks().
 					// Close the panel
@@ -2596,9 +2733,9 @@ function initSettingsPanel() {
 					// There was an error
 					// Always log for debugging
 					console.error(error);
-					// Put newly read value in txtSettings to correct.
+					// Put newly read value in settingsText to correct.
 					// Restore old value in Links in case of cancel.
-					txtSettings.value = Links;
+					settingsText.value = Links;
 					Links = saveLinks;
 					if (error instanceof UserInputError) {
 						// It is a UserInputError, show a dialog,
@@ -2614,7 +2751,7 @@ function initSettingsPanel() {
 			} else {
 				console.log('Save settings');
 				try {
-					Links = txtSettings.value;
+					Links = settingsText.value;
 					processLinks();  //Render Links
 					// Links are correct
 					writeLocalStorage(LSKey_Links, Links);
@@ -2634,7 +2771,7 @@ function initSettingsPanel() {
 						// It is another error, discard it, because
 						// it has already been logged.
 					}
-					// Leave the value in txtSettings to correct.
+					// Leave the value in settingsText to correct.
 					// Restore old value in Links in case of cancel.
 					Links = saveLinks;
 				}
@@ -2644,102 +2781,6 @@ function initSettingsPanel() {
 			hide();
 		}
 	};
-	// Set initial state
-	if (visible) {
-		// showSettings() without animation
-		pnlSettings.classList.add('show');
-		iconBarClosed.classList.add('hidden');
-		iconBarOpen.classList.remove('hidden');
-	} else {
-		// hideSettings() without animation
-		pnlSettings.classList.remove('show');
-		iconBarClosed.classList.remove('hidden');
-		iconBarOpen.classList.add('hidden');
-	}
-	// Bind iconOpen
-	if (iconOpen && pnlSettings) {
-		iconOpen.onclick = function() {
-			if (visible) hideSettings(false); else showSettings();
-		};
-	}
-	// Initialize special behavior in the text panel
-	if (txtSettings) {
-		txtSettings.onkeydown = function(e) {
-			//console.log('KeyCode=' + e.keyCode);
-			if (e.keyCode == 9) {
-				// This is the TAB key -> Insert 4 spaces
-				textInsert(this, () => ' '.repeat(4));
-				return false;  //stop further handling
-			} else if (e.keyCode == 13) {
-				// This is the Enter key -> Copy indentation from current line
-				textInsert(this, (before, mid, after) => {
-					let m = before.match(/(?:^|\r|\n)([ \t]*)[^\r\n]*$/);  //match: 'linebreak whitespace line end'
-					return '\n' + m[1];  //insert linebreak plus matched whitespace
-				});
-				return false;  //stop further handling
-			}
-			return true;
-		};
-	}
-	// Bind buttons (in case those are used)
-	if (btnSave) {
-		btnSave.onclick = function() {
-			if (visible) hideSettings(true);
-			return false;  //stop default button action
-		};
-	}
-	if (btnClear) {
-		btnClear.onclick = function() {
-			if (visible) hideSettings('clear');
-			return false;  //stop default button action
-		};
-	}
-	if (btnCancel) {
-		btnCancel.onclick = function() {
-			if (visible) hideSettings(false);
-			return false;  //stop default button action
-		};
-	}
-	// Bind icons (in case those are used)
-	if (iconSave) {
-		iconSave.onclick = function() {
-			if (visible) hideSettings(true);
-		};
-	}
-	if (iconClear) {
-		iconClear.onclick = function() {
-			if (visible) hideSettings('clear');
-		};
-	}
-	if (iconCancel) {
-		iconCancel.onclick = function() {
-			if (visible) hideSettings(false);
-		};
-	}
-	// Bind entire Settings panel
-	if (pnlSettings) {
-		pnlSettings.onkeydown = function(e) {
-			//console.log('KeyCode=' + e.keyCode);
-			if (e.ctrlKey && e.key == 's') {
-				if (visible) hideSettings(true);
-				return false;  //stop default button action
-			}
-			return true;
-		};
-	}
-	// Bind entire document
-	//window.addEventListener('keydown', function(e) {
-	//	//console.log('KeyCode=' + e.keyCode);
-	//	if (e.keyCode == 27) {
-	//		// This is the Esc key
-	//		if (visible) {  //only if Settings visible
-	//			hideSettings(false);
-	//			e.preventDefault();
-	//			return false;  //stop default button action
-	//		}
-	//	}
-	//	return true;
-	//});
 }
 
 // Assume the ctl is an input control.
@@ -2926,7 +2967,7 @@ function characterIsSupported(character, font = null, recursion = false) {
 // Helper function.
 // If character is supported by the control, set the property with the
 // specified name. Use the control's fontFamily if available.
-function setIfSupported(control, property, character) {
+function setIfSupported(control, character, property = 'textContent') {
 	let style = getComputedStyle(control);
 	let font = style ? style.fontFamily : null;
 	if (!font) font = null;
@@ -2935,6 +2976,12 @@ function setIfSupported(control, property, character) {
 		control[property] = character;
 	}
 	return supported;
+}
+
+// If the control's font supports the (unicode) character in the textContent,
+// otherwise use altText.
+function setUnicodeText(control, unicodeCharacter, altText) {
+	if (!setIfSupported(control, unicodeCharacter)) control[property] = altText;
 }
 
 // The input is direct content or an array with blocks that contain lines and
@@ -3182,7 +3229,7 @@ function init() {
 			window.alert('Error when loading settings: ' +
 				error.message +
 				'\n\nPlease correct or cancel.');
-			showSettings();
+			showSettingsPanel();
 		} else {
 			// It is another error, discard it, because
 			// it has already been logged.
@@ -3201,37 +3248,13 @@ window.onload = init;
 <h1 id="Title">Favorites</h1>
 
 <span id="SettingsIconBar" class="settings-iconbar">
-
-<div id="SettingsIconBarClosed">
-  <span id="SettingsIcon" class="settings-icon" title="Settings">[Settings]</span>
-</div>
-
-<div id="SettingsIconBarOpen">
-  <span id="SettingsSaveIcon" class="settings-icon" title="Save (Ctrl-S)">[OK]</span>
-  <span id="SettingsClearIcon" class="settings-icon" title="Clear">[_]</span>
-  <span id="SettingsCancelIcon" class="settings-icon" title="Cancel">[X]</span>
-</div>
-
+<div id="SettingsIconBarClosed"></div>
+<div id="SettingsIconBarOpen" class="hidden"></div>
 </span>
 
 <form id="SettingsForm" class="settings-form">
   <div class="panel">
-    <div class="client">
-      <textarea id="SettingsText" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Settings" class="textbox"></textarea>
-      <div id="SettingsOptions" class="options">
-        <div id="SettingsLoad1OptionsLabel" class="load1-option label">Config config-name:</div>
-        <div class="load1-option input"><input id="SettingsLoad1OptionsText" type="text"/></div>
-        <div id="SettingsLoad2OptionsLabel" class="load2-option label">Config config-name:</div>
-        <div class="load2-option input"><input id="SettingsLoad2OptionsText" type="text"/></div>
-        <div id="SettingsSaveOptionsLabel" class="save-option label">Save config-name:</div>
-        <div class="save-option input"><input id="SettingsSaveOptionsText" type="text"/></div>
-      </div>
-      <div class="buttonbar">
-        <button id="BtnSaveSettings" class="button">Save</button>
-        <button id="BtnClearSettings" class="button">Clear</button>
-        <button id="BtnCancelSettings" class="button">Cancel</button>
-      </div>
-    </div>
+    <div id="SettingsArea" class="client"></div>
   </div>
   <hr>
 </form>
