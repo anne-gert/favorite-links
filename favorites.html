@@ -202,9 +202,9 @@ body {
 	display: inline-block;
 	vertical-align: top;
 	border: .15em solid var(--block-border);
-	border-radius: .5em;
+	border-radius: 0.5em;
 	padding: 1em;
-	margin: .5em;
+	margin: 0.5em;
 	color: var(--block-foreground); background: var(--block-background);
 }
 .items {
@@ -452,9 +452,21 @@ body {
 	grid-template-rows: 1fr;
 	grid-template-columns: 1fr;
 }
-.slider-container > .items {  /* the first level of items in the container */
+.slider-container > * {  /* the slider-container items */
 	overflow: hidden;
 	white-space: nowrap;
+	/* For the grow animation, the grid-item must have overflow:hidden,
+	   otherwise the container's size is not shrunk.
+	   In this setup, the size of the container and its single item is
+	   always the same. For Firefox on Linux, there is a quirk where the
+	   width of the container is about 1em smaller than the container and
+	   because of the overflow:hidden, this part is removed.
+	   It works to add 1em padding to the item and compensate this with
+	   -1em margin, so that the total width is the same.
+	   This behavior can be made visible by adding 1px borders to
+	   .slider-container and its items. */
+	padding-right: 1em;
+	margin-right: -1em;
 }
 .collapsing .slider-container {
 	animation:
