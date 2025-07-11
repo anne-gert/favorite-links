@@ -1942,10 +1942,22 @@ function outputItems(links, level, container, parentPath = '') {
 function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 	// By default, construct icon_url from target_url
 	if ((icon_url == null || icon_url == 'default') && target_url != null) {
-		icon_url = getDefaultIconUrl(target_url);
+		// Check if the target domain is in IconDefs
+		let found = null;
+		let m = target_url.match(/^\w+:\/\/([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+)/);
+		if (m) {
+			let domain = m[1];
+			let replacement = resolveIconDefs(domain);
+			if (replacement != domain) found = replacement;
+		}
+		// If not found, use the default URL
+		if (found == null) {
+			found = getDefaultIconUrl(target_url);
+		}
+		icon_url = found;
 	}
 
-	// Resolve the IconDefs
+	// See if icon_url is an IconDef and resolve it
 	if (icon_url != null) {
 		icon_url = resolveIconDefs(icon_url);
 	}

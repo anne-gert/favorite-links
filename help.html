@@ -346,7 +346,8 @@ Each Link is specified on a single line as follows:
   <li><dt>icon=URL</dt>: URL of the icon to use.
       <ul>
 	<li>If the value <code>default</code> is used or no icon is given, the
-	    URL domain + <code>favicon.ico</code> is used.
+	    URL domain + <code>favicon.ico</code> is used. If the URL domain
+	    is the name of an !icondef, that value is used.
 	<li>If the value <code>none</code> is used, no image is rendered.
 	<li>If the value <code>empty</code> is used, an empty image is
 	    rendered.
@@ -392,8 +393,12 @@ The elements may be specified in any order on the line.
 <a name="link-examples"></a>
 <h4>Example Links</h4>
 
-<P>
+<p>
 Below is an example of lines specifying a Link.
+</p>
+
+<p>
+Different combinations of links and names.
 <pre>
   Example                              : Just a string 'Example' without link
   http://example.com                   : Link with name http://example.com and icon http://example.com/favicon.ico
@@ -401,20 +406,41 @@ Below is an example of lines specifying a Link.
   Example icon=none http://example.com : Same link, but no Icon
   Example:3                            : Show 'Example:3', linking to the URL Example:3, because it also matches schema:location
   Example:3 url=                       : Show 'Example:3' without link
+</pre>
+Submenus and indentation levels.
+<pre>
   Submenu http://example.com           : Item 'Submenu' that is a link and has sub-Items.
     ...
   Submenu                              : Submenu without link
     ...
   http://example.com                   : Submenu with link that is used as name too
     ...
+</pre>
+Hidden names.
+<pre>
   _                                    : Will not be displayed
   _ http://example.com                 : Will display a clickable icon
   _ icon=none http://example.com       : Will display 'Heading' that is clickable
     _ icon=empty http://example.com    : Will display 'Block' that is clickable
       _ icon=empty http://example.com  : Will display 'Item' that is clickable
+</pre>
+Checkboxes.
+<pre>
   [ ]                                  : Displays a checkbox without label
   [] _                                 : Same thing
   [x] http://example.com               : Display checkbox with link
+</pre>
+Specifying icons.
+<pre>
+  !icondef www.example.com https://static.example.com/assets/icon1.png
+  !icondef icon2 https://static.example.com/assets/icon2.png
+  !icondef iconToo icon2
+  http://example.com                   : Uses icon http://example.com/favicon.ico (default)
+  http://www.example.com               : Uses icon icon1.png from !icondef above (implicit)
+  icon=icon2 http://www.example.com    : Uses icon icon2.png from !icondef above (explicit)
+  icon=iconToo http://www.example.com  : Uses icon icon2.png from !icondef above (expliciti, recursive)
+  icon=alt http://example.com          : Use alternate
+  icon=alt:google http://example.com   : Use alternate from Google
 </pre>
 </p>
 
