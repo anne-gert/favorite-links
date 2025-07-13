@@ -652,14 +652,14 @@ These are some examples of the available features.
 
     Search
         DuckDuckGo https://duckduckgo.com
-        Google Maps icon=alt https://maps.google.com
+        Google Maps https://maps.google.com
         Wikipedia https://www.wikipedia.org
         YouTube https://www.youtube.com
     Source
         GitHub favorite-links https://github.com/anne-gert/favorite-links
-            Use favorites.html icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
-            Example Links override icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links-override=example-links.txt
-            Help icon=github https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/help.html
+            Use favorites.html https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
+            Example Links override https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links-override=example-links.txt
+            Help https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/help.html
         Firefox
             Home page settings icon=firefox target=manual about:preferences#home
             Plugins
@@ -681,15 +681,17 @@ These are some examples of the available features.
         LinkedIn https://www.linkedin.com/
 
 // Icon definitions
-!icondef firefox    https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
-!icondef github     https://github.com
+!icondef maps.google.com        alt
+!icondef html-preview.github.io github
+!icondef firefox                https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
+!icondef github                 https://github.com
 
 // Search button definitions
 //      Identifier   | Label  | Tooltip | Icon | URL-Template
 !search Duck Duck Go | Search |
 !search Wikipedia
 !search YouTube
-!search Google Maps  | Maps   |         | alt
+!search Google Maps  | Maps
 `;
 
 // LocalStorage keys.
