@@ -2507,18 +2507,73 @@ function initSettingsPanel() {
 
 	// Create rest of the Settings panel. This is called at first showing.
 	function createSettings() {
-		// Get and configure settingsPanel
+		// First get the panels from the DOM and ensure they're found
 		settingsPanel = document.getElementById('SettingsForm');
-		if (settingsPanel) {
-			settingsPanel.onkeydown = function(e) {
-				//console.log('KeyCode=' + e.keyCode);
-				if (e.ctrlKey && e.key == 's') {
-					if (visible) hideSettings(true);
-					return false;  //stop default button action
-				}
-				return true;
-			};
-		}
+		if (!settingsPanel) return false;
+		let settingsArea = document.getElementById('SettingsArea');
+		if (!settingsArea) return false;
+
+		// Now create the basic buttons to at least be able to close
+		// the panel. Keep the buttons basic to not end up in a
+		// exception, breaking the buttons to close.
+
+		// Create iconSave
+		let iconSave = document.createElement('span');
+		iconSave.title = 'Save (Ctrl-S)';
+		iconSave.className = 'settings-icon';
+		iconSave.onclick = () => hideSettings(true);
+		iconBarOpen.appendChild(iconSave);
+		// Create iconClear
+		let iconClear = document.createElement('span');
+		iconClear.title = 'Clear';
+		iconClear.className = 'settings-icon';
+		iconClear.onclick = () => hideSettings('clear');
+		iconBarOpen.appendChild(iconClear);
+		// Create iconCancel
+		let iconCancel = document.createElement('span');
+		iconCancel.title = 'Cancel';
+		iconCancel.className = 'settings-icon';
+		iconCancel.onclick = () => hideSettings(false);
+		iconBarOpen.appendChild(iconCancel);
+
+		setUnicodeText(iconSave, UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK, '[OK]');
+		setUnicodeText(iconClear, UNICODE_EMPTY_DOCUMENT, '[_]');
+		setUnicodeText(iconCancel, UNICODE_CANCELLATION, '[X]');
+
+		//// Create buttonBar
+		//let buttonBar = document.createElement('div');
+		//buttonBar.className = 'buttonbar';
+		//settingsArea.appendChild(buttonBar);
+		//
+		//// Create btnSave
+		//let btnSave = document.createElement('button');
+		//btnSave.textContent = 'Save';
+		//btnSave.className = 'button';
+		//btnSave.onclick = () => { hideSettings(true); return false }
+		//buttonBar.appendChild(btnSave);
+		//// Create btnClear
+		//let btnClear = document.createElement('button');
+		//btnClear.textContent = 'Clear';
+		//btnClear.className = 'button';
+		//btnClear.onclick = () => { hideSettings('clear'); return false }
+		//buttonBar.appendChild(btnClear);
+		//// Create btnCancel
+		//let btnCancel = document.createElement('button');
+		//btnCancel.textContent = 'Cancel';
+		//btnCancel.className = 'button';
+		//btnCancel.onclick = () => { hideSettings(false); return false }
+		//buttonBar.appendChild(btnCancel);
+
+
+		// Configure settingsPanel
+		settingsPanel.onkeydown = function(e) {
+			//console.log('KeyCode=' + e.keyCode);
+			if (e.ctrlKey && e.key == 's') {
+				if (visible) hideSettings(true);
+				return false;  //stop default button action
+			}
+			return true;
+		};
 		// Bind entire document
 		//window.addEventListener('keydown', function(e) {
 		//	//console.log('KeyCode=' + e.keyCode);
@@ -2532,9 +2587,6 @@ function initSettingsPanel() {
 		//	}
 		//	return true;
 		//});
-
-		// Get settingsArea
-		let settingsArea = document.getElementById('SettingsArea');
 
 		// Create settingsText
 		settingsText = document.createElement('textarea');
@@ -2562,52 +2614,6 @@ function initSettingsPanel() {
 			return true;
 		};
 		settingsArea.appendChild(settingsText);
-
-		// Create iconSave
-		let iconSave = document.createElement('span');
-		iconSave.title = 'Save (Ctrl-S)';
-		setUnicodeText(iconSave, UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK, '[OK]');
-		iconSave.className = 'settings-icon';
-		iconSave.onclick = () => hideSettings(true);
-		iconBarOpen.appendChild(iconSave);
-		// Create iconClear
-		let iconClear = document.createElement('span');
-		iconClear.title = 'Clear';
-		setUnicodeText(iconClear, UNICODE_EMPTY_DOCUMENT, '[_]');
-		iconClear.className = 'settings-icon';
-		iconClear.onclick = () => hideSettings('clear');
-		iconBarOpen.appendChild(iconClear);
-		// Create iconCancel
-		let iconCancel = document.createElement('span');
-		iconCancel.title = 'Cancel';
-		setUnicodeText(iconCancel, UNICODE_CANCELLATION, '[X]');
-		iconCancel.className = 'settings-icon';
-		iconCancel.onclick = () => hideSettings(false);
-		iconBarOpen.appendChild(iconCancel);
-
-		//// Create buttonBar
-		//let buttonBar = document.createElement('div');
-		//buttonBar.className = 'buttonbar';
-		//settingsArea.appendChild(buttonBar);
-		//
-		//// Create btnSave
-		//let btnSave = document.createElement('button');
-		//btnSave.textContent = 'Save';
-		//btnSave.className = 'button';
-		//btnSave.onclick = () => { hideSettings(true); return false }
-		//buttonBar.appendChild(btnSave);
-		//// Create btnClear
-		//let btnClear = document.createElement('button');
-		//btnClear.textContent = 'Clear';
-		//btnClear.className = 'button';
-		//btnClear.onclick = () => { hideSettings('clear'); return false }
-		//buttonBar.appendChild(btnClear);
-		//// Create btnCancel
-		//let btnCancel = document.createElement('button');
-		//btnCancel.textContent = 'Cancel';
-		//btnCancel.className = 'button';
-		//btnCancel.onclick = () => { hideSettings(false); return false }
-		//buttonBar.appendChild(btnCancel);
 
 		// Create optionsPanel
 		let optionsPanel = document.createElement('div');
@@ -2680,13 +2686,21 @@ function initSettingsPanel() {
 				option.entry.title = '';
 			}
 		}
+		return true;
 	}
 
 	// Show the Settings panel.
 	function showSettings() {
 		if (visible) return;  //do nothing if already visible
 		// Create panel at first showing
-		if (settingsPanel == null) createSettings();
+		if (settingsPanel == null) {
+			// Panel not yet initialized, create it
+			if (!createSettings()) {
+				// Creating panel failed, disable button and return
+				iconBarClosed.classList.add('hidden');
+				return;
+			}
+		}
 		// Update the contents
 		settingsText.value = Links;
 		for (let i = 0; i < optionEntries.length; ++i) {
@@ -3007,7 +3021,7 @@ function setIfSupported(control, character, property = 'textContent') {
 // If the control's font supports the (unicode) character in the textContent,
 // otherwise use altText.
 function setUnicodeText(control, unicodeCharacter, altText) {
-	if (!setIfSupported(control, unicodeCharacter)) control[property] = altText;
+	if (!setIfSupported(control, unicodeCharacter)) control['textContent'] = altText;
 }
 
 // The input is direct content or an array with blocks that contain lines and
