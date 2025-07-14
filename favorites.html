@@ -540,20 +540,41 @@ body {
 <script>
 // Some constants {{{
 
+// Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
+// Unicode Block: Arrows
+const UNICODE_LEFTWARDS_ARROW_WITH_HOOK = '\u{21A9}';  //a 'swoosh' arrow
+const UNICODE_RIGHTWARDS_ARROW_WITH_HOOK = '\u{21AA}';  //a 'swoosh' arrow
+const UNICODE_ANTICLOCKWISE_TOP_SEMICIRCLE_ARROW = '\u{21B6}';  //a 180 degree arc
+const UNICODE_CLOCKWISE_TOP_SEMICIRCLE_ARROW = '\u{21B7}';  //a 180 degree arc
+const UNICODE_ANTICLOCKWISE_OPEN_CIRCLE_ARROW = '\u{21BA}';  //a 270 degree arc
+const UNICODE_CLOCKWISE_OPEN_CIRCLE_ARROW = '\u{21BB}';  //a 270 degree arc
+// Unicode Block: Geometric Shapes
 const UNICODE_BLACK_DOWN_POINTING_TRIANGLE = '\u{25BC}';
 const UNICODE_BLACK_RIGHT_POINTING_TRIANGLE = '\u{25B6}';
-const UNICODE_LEFT_POINTING_MAGNIFYING_GLASS = '\u{1F50D}';
-const UNICODE_RIGHT_POINTING_MAGNIFYING_GLASS = '\u{1F50E}';
+// Unicode Block: Miscellaneous Symbols
 const UNICODE_GEARS = '\u{2699}';  //gears wheel
-const UNICODE_EMPTY_DOCUMENT = '\u{1F5CB}';
+// Unicode Block: Dingbats
 const UNICODE_CHECK_MARK = '\u{2713}';
 const UNICODE_HEAVY_CHECK_MARK = '\u{2714}';
-const UNICODE_LIGHT_CHECK_MARK = '\u{1F5F8}';
-const UNICODE_CANCELLATION = '\u{1F5D9}';  //cross
+const UNICODE_CROSS_MARK = '\u{274C}';  //cross
+// Unicode Block: Variation Selectors
+const UNICODE_VARIATION_SELECTOR_15 = '\u{FE0E}';  //suffix to use text-character, rather than (colored) image
+// Unicode Block: Specials
+const UNICODE_REPLACEMENT_CHARACTER = '\u{FFFD}';  //character used for non-mappable characters
+const UNICODE_NOT_A_CHARACTER_1 = '\u{FFFE}';  //character without representation
+const UNICODE_NOT_A_CHARACTER_2 = '\u{FFFF}';  //character without representation
+
+// Unicode Plane: Supplementary Multilingual Plane (U+10000 - U+1FFFF)
+// Unicode Block: Miscellaneous Symbols and Pictographs
+const UNICODE_LEFT_POINTING_MAGNIFYING_GLASS = '\u{1F50D}';
+const UNICODE_RIGHT_POINTING_MAGNIFYING_GLASS = '\u{1F50E}';
 const UNICODE_FLOPPY_DISK = '\u{1F4BE}';  //colored floppy disk
 const UNICODE_BLACK_HARD_SHELL_FLOPPY_DISK = '\u{1F5AA}';  //black&white 3½" floppy disk
 const UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK = '\u{1F5AB}';  //black&white 3½" floppy disk
-const UNICODE_SOFT_SHELL_FLOPPY_DISK = '\u{1F5AB}';  //black&white 5¼" floppy disk
+const UNICODE_SOFT_SHELL_FLOPPY_DISK = '\u{1F5AC}';  //black&white 5¼" floppy disk
+const UNICODE_EMPTY_DOCUMENT = '\u{1F5CB}';
+const UNICODE_CANCELLATION = '\u{1F5D9}';  //cross
+const UNICODE_LIGHT_CHECK_MARK = '\u{1F5F8}';
 
 // DefaultLinks is a textual part with a copy of example-links.txt at the end.
 const DefaultLinks = `// For the syntax description, see help.html.
@@ -2536,9 +2557,9 @@ function initSettingsPanel() {
 		iconCancel.onclick = () => hideSettings(false);
 		iconBarOpen.appendChild(iconCancel);
 
-		setUnicodeText(iconSave, UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK, '[OK]');
-		setUnicodeText(iconClear, UNICODE_EMPTY_DOCUMENT, '[_]');
-		setUnicodeText(iconCancel, UNICODE_CANCELLATION, '[X]');
+		setUnicodeText(iconSave, UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK, UNICODE_CHECK_MARK, '[OK]');
+		setUnicodeText(iconClear, UNICODE_EMPTY_DOCUMENT, UNICODE_CLOCKWISE_OPEN_CIRCLE_ARROW, 'C');
+		setUnicodeText(iconCancel, UNICODE_CANCELLATION, UNICODE_CROSS_MARK + UNICODE_VARIATION_SELECTOR_15, 'X');
 
 		//// Create buttonBar
 		//let buttonBar = document.createElement('div');
@@ -2967,7 +2988,7 @@ function characterIsSupported(character, font = null, recursion = false) {
 	testContext.font = referenceContext.font = '100px ' + font;
 	testContext.fillStyle = referenceContext.fillStyle = 'black';
 	testContext.fillText(character, 0, 100);
-	referenceContext.fillText('\uffff', 0, 100);
+	referenceContext.fillText(UNICODE_NOT_A_CHARACTER_2, 0, 100);
 
 	// Firefox renders unsupported characters by placing their character
 	// code inside the rectangle making each unsupported character look
@@ -2978,7 +2999,7 @@ function characterIsSupported(character, font = null, recursion = false) {
 	// positives.  We check for Firefox and browers that behave similarly
 	// by checking if U+FFFE is supported, since U+FFFE is, just like
 	// U+FFFF, guaranteed not to be supported.
-	if (!recursion && characterIsSupported('\ufffe', font, true)) {
+	if (!recursion && characterIsSupported(UNICODE_NOT_A_CHARACTER_1, font, true)) {
 		let fillStyle = Transparent ? 'rgba(0, 0, 0, 0.6)' : 'black';
 		testContext.fillStyle = referenceContext.fillStyle = fillStyle;
 		testContext.fillRect(5, 5, 90, 90);
@@ -3018,10 +3039,24 @@ function setIfSupported(control, character, property = 'textContent') {
 	return supported;
 }
 
-// If the control's font supports the (unicode) character in the textContent,
-// otherwise use altText.
-function setUnicodeText(control, unicodeCharacter, altText) {
-	if (!setIfSupported(control, unicodeCharacter)) control['textContent'] = altText;
+// If the control's font supports any of the (unicode) characters, set it in
+// the textContent, otherwise use altText.
+// This function may test multiple characters and uses the first one that is
+// supported. Often Supplementary Multilingual Plane codepoints (U+10000 and
+// above) are less supported than lower ones (Basic Multilangual Plan).
+// Therefore, try to end with a lower codepoint.
+function setUnicodeText(control, unicodeCharacter, /* more unicodeCharacters, */ altText) {
+	//console.log('setUnicodeText', arguments);
+	for (let i = 1; i < arguments.length - 1; ++i) {
+		let ch = arguments[i];
+		if (setIfSupported(control, ch)) {
+			console.log('setUnicodeText: character #' + i + ' supported: \'' + ch + '\'');
+			return;
+		}
+	}
+	// If we get here, none matched. Now set the altText.
+	altText = arguments[arguments.length - 1];  //the last argument
+	control['textContent'] = altText;
 }
 
 // The input is direct content or an array with blocks that contain lines and
