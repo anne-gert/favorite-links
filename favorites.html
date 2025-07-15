@@ -26,6 +26,7 @@ For syntax description of Links, see help.html
 	--foreground: #DDDDDD;
 	--background: #2E323B;
 	--accent-color: #50A0EE;
+	--glow-color: #FFFF66;
 	--block-foreground: #000000;
 	--block-background: #C9CDD0;
 	--block-border: #EEEEEE;
@@ -45,6 +46,7 @@ For syntax description of Links, see help.html
 	--foreground: #444444;
 	--background: #E8F0F8;
 	--accent-color: #4444EE;
+	--glow-color: #0000FF;
 	--block-foreground: #222222;
 	--block-background: #D9DDE0;
 	--block-border: #666666;
@@ -317,6 +319,13 @@ body {
 	font-size: 200%;
 	cursor: pointer;
 	padding: 0px 0.1em;
+	transition: filter 0.15s;
+}
+.settings-icon:hover {
+	filter: saturate(4) drop-shadow(0px 0px 0.3em var(--glow-color));
+}
+.settings-icon:active {
+	filter: drop-shadow(0px 0px 0px #000000) invert(60%) brightness(1.4);
 }
 
 .settings-form {
