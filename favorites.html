@@ -1824,7 +1824,7 @@ function outputItem(link, level, container, parentPath) {
 			checkbox.type = 'checkbox';
 			checkbox.className = 'todo-checkbox';
 			checkbox.onchange = function() {
-				let re = new RegExp('(^(?:[^\\n]*\\n){' + link.lineNum + '}\\s*)\\[.?\\]');
+				let re = new RegExp('(^(?:[^\\n]*\\n){' + (link.lineNum - 1) + '}\\s*)\\[.?\\]');
 				let newCheck;
 				if (checkbox.checked) {
 					// Change checkbox to checked
@@ -1835,9 +1835,14 @@ function outputItem(link, level, container, parentPath) {
 					console.log('Uncheck checkbox on line ' + link.lineNum);
 					newCheck = '[ ]';
 				}
-				Links = Links.replace(re, '$1' + newCheck);
-				writeLocalStorage(LSKey_Links, Links);
-				writeOnlineLinks(Links);
+				let newLinks = Links.replace(re, '$1' + newCheck);
+				if (newLinks != Links) {
+					Links = newLinks;
+					writeLocalStorage(LSKey_Links, Links);
+					writeOnlineLinks(Links);
+				} else {
+					console.error('RegExp did not change Links: ', re);
+				}
 				setTextClass('checked', checkbox.checked);
 			};
 			checkbox.checked = check;
