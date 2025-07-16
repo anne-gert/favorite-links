@@ -324,7 +324,7 @@ body {
 	height: 1.5em;
 	/* Default transform-origin is the center of the bounding box. With
 	   this height, this center matches the caracter center. */
-	transition: transform 0.3s;
+	transition: transform 0.3s ease-out;
 }
 .settings-icon:hover {
 	transform: scale(1.3);
@@ -333,7 +333,7 @@ body {
 	transform: scale(1);
 	/* After activation, do the transition quickly, so that it better
 	   combines with the following buttonbar animation. */
-	transition: transform 0.1s;
+	transition: transform 0.1s ease-out;
 }
 
 .settings-form {
