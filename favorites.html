@@ -741,7 +741,150 @@ const LSKey_LoadOptions_Prefix = LSKey_Prefix + 'load_';
 
 // }}}
 
-// Loading Links {{{
+// Utility Functions {{{
+
+// Add extra logging function.
+// To make important steps stand out more.
+console.important = (message) => {
+	console.log('%c' + message, 'color:cyan;font-weight:bold');
+}
+
+// Add extra logging function.
+// To make distinction between log links and less important debug messages.
+console.debug = (message) => {
+	console.log('%c' + message, 'color:#666666;font-weight:bold');
+}
+
+// Add extra logging function. For temporary use only.
+// To make logging during development easier to find.
+console.devlog = (message) => {
+	console.log('%c' + message, 'color:black;background-color:#008888');
+}
+
+// Constructor function to construct a Promise in a pending state with
+// additional functions resolve(value) and reject(error) to settle it.
+function PendingPromise()
+{
+	let resolve, reject;
+	let result = new Promise((resolveFunc, rejectFunc) => {  //Promise in pending state
+		// Expose callbacks to be called later
+		resolve = resolveFunc;
+		reject = rejectFunc;
+	});
+	result['resolve'] = resolve;
+	result['reject'] = reject;
+	return result;
+}
+
+// Function to detect if a unicode character is supported by the specified font.
+// - character: Character to test.
+// - font: Font to test. Defaults to font as specified for the body.
+// - recursion is for internal use.
+// Return true if supported, false if not.
+function characterIsSupported(character, font = null, recursion = false) {
+	// This function is copied from https://stackoverflow.com/questions/1911000/detecting-individual-unicode-character-support-with-javascript
+
+	// This function creates a referenceCanvas with the character U+FFFF,
+	// which does not have a representation.
+	// It then creates the testCanvas with the character to test.
+	// The final test is to see if both canvases are the same (by testing
+	// the contents of the BASE64 data: URL). If they are the same, the
+	// test character cannot be represented either.
+
+	if (font === null) font = getComputedStyle(document.body).fontFamily;
+
+	const Debug = false;
+	const Transparent = false;
+
+	// Create the canvases
+	let testCanvas = document.createElement('canvas');
+	let referenceCanvas = document.createElement('canvas');
+	testCanvas.width = referenceCanvas.width = testCanvas.height = referenceCanvas.height = 100;
+	if (Debug) {
+		testCanvas.style.backgroundColor = referenceCanvas.style.backgroundColor = 'magenta';
+		testCanvas.style.margin = referenceCanvas.style.margin = '10px';
+	}
+
+	// Render the characters
+	let testContext = testCanvas.getContext('2d');
+	let referenceContext = referenceCanvas.getContext('2d');
+	testContext.font = referenceContext.font = '100px ' + font;
+	testContext.fillStyle = referenceContext.fillStyle = 'black';
+	testContext.fillText(character, 0, 100);
+	referenceContext.fillText(UNICODE_NOT_A_CHARACTER_2, 0, 100);
+
+	// Firefox renders unsupported characters by placing their character
+	// code inside the rectangle making each unsupported character look
+	// different.  As a workaround, in Firefox, we hide the inside of the
+	// character by placing a black rectangle on top of it.
+	// The rectangle we use to hide the inside has an offset of 10px so it
+	// can still see part of the character, reducing the risk of false
+	// positives.  We check for Firefox and browers that behave similarly
+	// by checking if U+FFFE is supported, since U+FFFE is, just like
+	// U+FFFF, guaranteed not to be supported.
+	if (!recursion && characterIsSupported(UNICODE_NOT_A_CHARACTER_1, font, true)) {
+		let fillStyle = Transparent ? 'rgba(0, 0, 0, 0.6)' : 'black';
+		testContext.fillStyle = referenceContext.fillStyle = fillStyle;
+		testContext.fillRect(5, 5, 90, 90);
+		referenceContext.fillRect(5, 5, 90, 90);
+	}
+
+	// Check if the canvases are identical
+	let displayedSame = testCanvas.toDataURL() == referenceCanvas.toDataURL();
+
+	// Output images at the end of the body for debugging
+	if (Debug) {
+		var div = document.createElement('div');
+		document.body.appendChild(div);
+		div.appendChild(document.createTextNode('Character U+' +
+			character.charCodeAt(0).toString(16).toUpperCase() +
+			', recursion=' + recursion));
+		div.appendChild(referenceCanvas);
+		div.appendChild(testCanvas);
+		div.appendChild(document.createTextNode(displayedSame ? ' => Not supported' : ' => Unique'));
+	}
+
+	// Character is not supported if it looks the same as the reference
+	return !displayedSame;
+}
+
+// Helper function.
+// If character is supported by the control, set the property with the
+// specified name. Use the control's fontFamily if available.
+function setIfSupported(control, character, property = 'textContent') {
+	let style = getComputedStyle(control);
+	let font = style ? style.fontFamily : null;
+	if (!font) font = null;
+	let supported = characterIsSupported(character, font);
+	if (supported) {
+		control[property] = character;
+	}
+	return supported;
+}
+
+// If the control's font supports any of the (unicode) characters, set it in
+// the textContent, otherwise use altText.
+// This function may test multiple characters and uses the first one that is
+// supported. Often Supplementary Multilingual Plane codepoints (U+10000 and
+// above) are less supported than lower ones (Basic Multilangual Plan).
+// Therefore, try to end with a lower codepoint.
+function setUnicodeText(control, unicodeCharacter, /* more unicodeCharacters, */ altText) {
+	//console.log('setUnicodeText', arguments);
+	for (let i = 1; i < arguments.length - 1; ++i) {
+		let ch = arguments[i];
+		if (setIfSupported(control, ch)) {
+			console.log('setUnicodeText: character #' + i + ' supported: \'' + ch + '\'');
+			return;
+		}
+	}
+	// If we get here, none matched. Now set the altText.
+	altText = arguments[arguments.length - 1];  //the last argument
+	control['textContent'] = altText;
+}
+
+// }}}
+
+// Resolving Links {{{
 
 // Global variables to hold the URL and Promise for the Links.
 // Set by resolveLinks().
@@ -767,6 +910,8 @@ var LinksPromise = null;
 // If this search results in a URL to download, it may be an absolute or
 // relative URL. Download it and use its contents for the Links variable.
 function resolveLinks(skipLocalStorage = false) {
+	console.important('Resolving Links source...');
+
 	LinksConfigName = null;
 	LinksOptions = null;
 	LinksOverrideConfigName = null;
@@ -1132,7 +1277,7 @@ function writeOnlineLinks(value) {
 		saveUrlAbs = new URL(saveUrl, window.location).href;
 	}
 
-	console.log((special ? 'Special ' : '') + method + ' ' + value.length + ' characters to ' + saveUrlAbs);
+	console.important('Uploading to URL ' + saveUrlAbs + ': ' + (special ? 'Special ' : '') + method + ' ' + value.length + ' characters');
 
 	// The other parts are additional headers
 	let headers = [];
@@ -1206,6 +1351,8 @@ var ScriptBlocks = null;  //array of !script...!endscript blocks
 
 // Parse the string in Links and fills the global variables above.
 function parseLinks() {
+	console.important('Parsing Links...');
+
 	// Parse the input lines and construct a list of objects
 	let allLinks = [];  //specified Link objects
 	PageTitle = null;
@@ -1734,12 +1881,12 @@ function outputItem(link, level, container, parentPath) {
 				if (localStorage) {
 					// LocalStorage is available, use persistent value
 					let v = localStorage.getItem(storageKey);
-					console.log('Preset isExpanded for \'' + myPath + '\' to ' + v);
+					console.debug('Preset isExpanded for \'' + myPath + '\' to ' + v);
 					if (v == 'false')
 						isExpanded = false;
 				}
 				let displayExpandState = function() {
-					console.log('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
+					console.debug('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
 					if (isExpanded) {
 						// Expand this block
 						_blockContainer.classList.add('expanding');
@@ -1762,7 +1909,7 @@ function outputItem(link, level, container, parentPath) {
 				};
 				expandIcon.onclick = function() {
 					isExpanded = !isExpanded;
-					console.log('Set isExpanded for \'' + name + '\' to ' + isExpanded);
+					console.debug('Set isExpanded for \'' + name + '\' to ' + isExpanded);
 					if (localStorage) {
 						// LocalStorage is available, persist it
 						localStorage.setItem(storageKey, isExpanded);
@@ -2054,9 +2201,9 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 	// Render icon_url
 	let m;  //for regex matches
 	if (icon_url == null) {
-		console.log('Loading icon for target \'' + target_url + '\': null');
+		console.debug('Loading icon for target \'' + target_url + '\': null');
 	} else if (icon_url == 'none') {
-		console.log('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
+		console.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
 	} else if (m = icon_url.match(/^html:(.+)/i)) {
 		let html = m[1];
 		// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
@@ -2069,7 +2216,7 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 		icon_element = iconDiv;
 		icon_present = true;
 	} else {
-		console.log('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
+		console.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
 		let img = document.createElement('img');
 		icon_present = true;
 		if (icon_url == 'empty') {
@@ -2546,13 +2693,13 @@ function addSearchButtons(searchBox, container) {
 
 		// Log the fields
 		console.log('addSearchButtons: Identifier=\'' + id + '\'');
-		console.log('addSearchButtons: Label=\'' + label + '\'');
-		console.log('addSearchButtons: Tooltip=\'' + tooltip + '\'');
-		console.log('addSearchButtons: Icon=\'' + icon + '\'');
-		console.log('addSearchButtons: UrlTemplate=\'' + urlTemplate + '\'');
-		console.log('addSearchButtons: getSearchUrl=\'' + getSearchUrl + '\'');
-		console.log('addSearchButtons: getDomainSearchUrl=\'' + getDomainSearchUrl + '\'');
-		//console.log(SearchFunction);
+		console.debug('addSearchButtons: Label=\'' + label + '\'');
+		console.debug('addSearchButtons: Tooltip=\'' + tooltip + '\'');
+		console.debug('addSearchButtons: Icon=\'' + icon + '\'');
+		console.debug('addSearchButtons: UrlTemplate=\'' + urlTemplate + '\'');
+		console.debug('addSearchButtons: getSearchUrl=\'' + getSearchUrl + '\'');
+		console.debug('addSearchButtons: getDomainSearchUrl=\'' + getDomainSearchUrl + '\'');
+		//console.debug(SearchFunction);
 
 		// Create the button
 		addSearchButton(container, searchBox, id, label, tooltip, icon, getSearchUrl, getDomainSearchUrl);
@@ -2567,6 +2714,8 @@ var showSettingsPanel = null;  // will be set later
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
+	console.important('Initialize Settings panel...');
+
 	// Assign iconBarClosed, iconBarOpen and settingsPanel variables
 	let iconBarClosed = document.getElementById('SettingsIconBarClosed');  //iconbar for closed status
 	let iconBarOpen = document.getElementById('SettingsIconBarOpen');  //iconbar for open status
@@ -3016,112 +3165,6 @@ function initMonitorPreferColorScheme(enable) {
 
 // Initialization {{{
 
-// Function to detect if a unicode character is supported by the specified font.
-// - character: Character to test.
-// - font: Font to test. Defaults to font as specified for the body.
-// - recursion is for internal use.
-// Return true if supported, false if not.
-function characterIsSupported(character, font = null, recursion = false) {
-	// This function is copied from https://stackoverflow.com/questions/1911000/detecting-individual-unicode-character-support-with-javascript
-
-	// This function creates a referenceCanvas with the character U+FFFF,
-	// which does not have a representation.
-	// It then creates the testCanvas with the character to test.
-	// The final test is to see if both canvases are the same (by testing
-	// the contents of the BASE64 data: URL). If they are the same, the
-	// test character cannot be represented either.
-
-	if (font === null) font = getComputedStyle(document.body).fontFamily;
-
-	const Debug = false;
-	const Transparent = false;
-
-	// Create the canvases
-	let testCanvas = document.createElement('canvas');
-	let referenceCanvas = document.createElement('canvas');
-	testCanvas.width = referenceCanvas.width = testCanvas.height = referenceCanvas.height = 100;
-	if (Debug) {
-		testCanvas.style.backgroundColor = referenceCanvas.style.backgroundColor = 'magenta';
-		testCanvas.style.margin = referenceCanvas.style.margin = '10px';
-	}
-
-	// Render the characters
-	let testContext = testCanvas.getContext('2d');
-	let referenceContext = referenceCanvas.getContext('2d');
-	testContext.font = referenceContext.font = '100px ' + font;
-	testContext.fillStyle = referenceContext.fillStyle = 'black';
-	testContext.fillText(character, 0, 100);
-	referenceContext.fillText(UNICODE_NOT_A_CHARACTER_2, 0, 100);
-
-	// Firefox renders unsupported characters by placing their character
-	// code inside the rectangle making each unsupported character look
-	// different.  As a workaround, in Firefox, we hide the inside of the
-	// character by placing a black rectangle on top of it.
-	// The rectangle we use to hide the inside has an offset of 10px so it
-	// can still see part of the character, reducing the risk of false
-	// positives.  We check for Firefox and browers that behave similarly
-	// by checking if U+FFFE is supported, since U+FFFE is, just like
-	// U+FFFF, guaranteed not to be supported.
-	if (!recursion && characterIsSupported(UNICODE_NOT_A_CHARACTER_1, font, true)) {
-		let fillStyle = Transparent ? 'rgba(0, 0, 0, 0.6)' : 'black';
-		testContext.fillStyle = referenceContext.fillStyle = fillStyle;
-		testContext.fillRect(5, 5, 90, 90);
-		referenceContext.fillRect(5, 5, 90, 90);
-	}
-
-	// Check if the canvases are identical
-	let displayedSame = testCanvas.toDataURL() == referenceCanvas.toDataURL();
-
-	// Output images at the end of the body for debugging
-	if (Debug) {
-		var div = document.createElement('div');
-		document.body.appendChild(div);
-		div.appendChild(document.createTextNode('Character U+' +
-			character.charCodeAt(0).toString(16).toUpperCase() +
-			', recursion=' + recursion));
-		div.appendChild(referenceCanvas);
-		div.appendChild(testCanvas);
-		div.appendChild(document.createTextNode(displayedSame ? ' => Not supported' : ' => Unique'));
-	}
-
-	// Character is not supported if it looks the same as the reference
-	return !displayedSame;
-}
-
-// Helper function.
-// If character is supported by the control, set the property with the
-// specified name. Use the control's fontFamily if available.
-function setIfSupported(control, character, property = 'textContent') {
-	let style = getComputedStyle(control);
-	let font = style ? style.fontFamily : null;
-	if (!font) font = null;
-	let supported = characterIsSupported(character, font);
-	if (supported) {
-		control[property] = character;
-	}
-	return supported;
-}
-
-// If the control's font supports any of the (unicode) characters, set it in
-// the textContent, otherwise use altText.
-// This function may test multiple characters and uses the first one that is
-// supported. Often Supplementary Multilingual Plane codepoints (U+10000 and
-// above) are less supported than lower ones (Basic Multilangual Plan).
-// Therefore, try to end with a lower codepoint.
-function setUnicodeText(control, unicodeCharacter, /* more unicodeCharacters, */ altText) {
-	//console.log('setUnicodeText', arguments);
-	for (let i = 1; i < arguments.length - 1; ++i) {
-		let ch = arguments[i];
-		if (setIfSupported(control, ch)) {
-			console.log('setUnicodeText: character #' + i + ' supported: \'' + ch + '\'');
-			return;
-		}
-	}
-	// If we get here, none matched. Now set the altText.
-	altText = arguments[arguments.length - 1];  //the last argument
-	control['textContent'] = altText;
-}
-
 // The input is direct content or an array with blocks that contain lines and
 // a starting line number. If blocks==null, nothing is done.
 // The blocks are used to create a single content string. applyFunc is caled
@@ -3242,6 +3285,8 @@ function processLinks() {
 	// Parse Links
 	parseLinks();
 
+	console.important('Render styles, scripts, title, etc');
+
 	// First handle scripts and styles (to catch errors quickly)
 	try {
 		setStyleBlocks(StyleBlocks);
@@ -3264,11 +3309,13 @@ function processLinks() {
 	setFontSize(FontSize);
 
 	// Render links
+	console.important('Render Links...');
 	let container = document.getElementById('LinksBox');
 	container.textContent = '';
 	outputItems(RootLinks, 1, container);
 
 	// Fill SearchForm
+	console.important('Render SearchButtons...');
 	// Use a static input field, so that the browser retains its contents
 	// after going back to this page.
 	if (SearchButtonDefs != null && SearchButtonDefs.length > 0) {
@@ -3293,21 +3340,6 @@ function processLinks() {
 			searchForm.style.display = 'none';
 		}
 	}
-}
-
-// Constructor function to construct a Promise in a pending state with
-// additional functions resolve(value) and reject(error) to settle it.
-function PendingPromise()
-{
-	let resolve, reject;
-	let result = new Promise((resolveFunc, rejectFunc) => {  //Promise in pending state
-		// Expose callbacks to be called later
-		resolve = resolveFunc;
-		reject = rejectFunc;
-	});
-	result['resolve'] = resolve;
-	result['reject'] = reject;
-	return result;
 }
 
 // Load the Links and render them.
