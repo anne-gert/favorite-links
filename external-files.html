@@ -135,20 +135,22 @@ with <a href="#load-options"><i>load-options</i></a> and saving is done with <a
 href="#save-options"><i>save-options</i></a>. The following URL arguments are
 used for passing these options:
 <ul>
-<li><dt>links=</dt>: The <i>load-options</i> can be specified with
-    <code>links=&lt;load-options&gt;</code> or with
-    <code>links=config:&lt;config-name&gt;</code>, where <i>config-name</i> is
-    a self-chosen configuration name that is stored in the browser's local
-    storage.  The stored value is the <i>load-options</i> and can be modified
-    in the Settings.  Using a config-name is preferred when there are
-    credentials in the <i>load-options</i>.
+<li><dt>links=</dt>: The <i>load-options</i> can be specified in two ways:
+    <ul>
+    <li><code>links=&lt;load-options&gt;</code>: Pass the <i>load-options</i>
+        on the URL directly.
+    <li><code>links=&lt;config-name&gt;</code>: Pass a self-chosen
+	configuration name that is used to store both the <i>load-options</i>
+	and <i>save-options</i> in the browser's local storage.
+	The configuration name should not contain any spaces, slash (/),
+	backslash (\) or period (.).
+	The <i>load-options</i> and <i>save-options</i> can be modified in the
+	Settings.
+	Using a config-name is preferred when there are credentials in the
+	<i>load-options</i> or when <i>save-options</i> are used.
+    </ul>
 <li><dt>links-override=</dt>: This can also be used to specify
-    <i>load-options</i>, the same way as with links=.
-<li><dt>save=</dt>: The <i>save-options</i> can be specified with
-    <code>save=&lt;config-name&gt;</code>, where config-name is a self-chosen
-    configuration name that is stored in the browser's local storage. The
-    stored value is the <i>save-options</i> and can be modified in the
-    Settings.
+    <i>load-options</i> and <i>save-options</i> in the same way as with links=.
 </ul>
 See below for some complete <a href="#examples">examples</a>.
 </p>
@@ -168,8 +170,8 @@ If no <i>load-options</i> have been specified, the order is:
 </p>
 
 <p>
-If <i>load-options</i> have been specified, but no <i>save-options</i>, the
-order is:
+If <i>load-options</i> have been specified, but no <i>save-options</i> or
+<i>save-options</i> have been left empty, the order is:
 <ol>
 <li>links-override=
 <li>Browser's local storage
@@ -200,8 +202,8 @@ Load-options can be specified in any of these forms:
 <ul>
 <li><code>links=&lt;load-options&gt;</code> 
 <li><code>links-override=&lt;load-options&gt;</code>
-<li><code>links=config:&lt;config-name&gt;</code>
-<li><code>links-override=config:&lt;config-name&gt;</code>
+<li><code>links=&lt;config-name&gt;</code>
+<li><code>links-override=&lt;config-name&gt;</code>
 </ul>
 In the latter cases, config-name is a self-chosen name and the contents of the
 load-options can be managed under Settings.
@@ -257,12 +259,7 @@ Some examples are:
 
 <p>
 Save-options can only be specified in a config-name because they will generally
-contain some sort of credentials. The way to specify save-options is:
-<ul>
-<li><code>save=&lt;config-name&gt;</code>
-</ul>
-Config-name is a self-chosen name and the contents of the save-options can be
-managed under Settings.
+contain some sort of credentials.
 </p>
 
 <p>
@@ -293,9 +290,10 @@ The syntax of the <i>save-options</i> with data.php is: <code>url\password\heade
 <br>
 With:
 <ul>
-<li><dt>url</dt> (mandatory): The URL of the <a
+<li><dt>url</dt> (optional): The URL of the <a
     href="#data-php"><code>data.php</code></a> script. The used method will
     always be POST.
+    If this is empty, the URL from the load-options is used.
     If a relative URL is used, it is taken to be with respect to the URL in the
     <i>load-options</i>.
 <li><dt>token</dt> (optional): If the <i>url</i> needs credentials in the form
@@ -306,12 +304,17 @@ With:
 <li>name (from <i>load-options</i>): This name is sent as a
     <code>x-name:name</code> header.
 </ul>
+Note that if the URL is not specified, the <code>\</code>-separator should be
+kept to not confuse the password with the URL. If the password is also empty,
+only a single <code>\</code> remains as <i>save-option</i>. This is to
+distinguish from an empty setting, where saving is disabled altogether.
 </p>
 
 <p>
 Example:
 <ul>
 <li>data.php\my-token
+<li>\my-token
 </ul>
 </p>
 
@@ -453,28 +456,35 @@ upload.
     <ul>
     <li>URL arguments: <code>?links-override=https://example.com/links.txt</code>
     </ul>
-<li>Read-only URL with login:
+<li>Read-only relative URL (note the name is a URL, because it contains a '.'):
     <ul>
-    <li>URL arguments: <code>?links=config:links</code>
+    <li>URL arguments: <code>?links=links.txt</code>
+    </ul>
+<li>Read-only URL with login (note the name is interpreted as a config-name):
+    <ul>
+    <li>URL arguments: <code>?links=links</code>
     <li>Settings:
         <ul>
 	<li>Config 'links': <code>https://user:password@example.com/links.txt</code>
+	<li>Online Save 'links': &lt;empty&gt;
         </ul>
     </ul>
 <li>Read-only URL with login with data.php:
     <ul>
-    <li>URL arguments: <code>?links=config:links</code>
+    <li>URL arguments: <code>?links=links</code>
     <li>Settings:
         <ul>
 	<li>Config 'links': <code>https://example.com/data.php\links.txt\token</code>
+	<li>Online Save 'links': &lt;empty&gt;
         </ul>
     </ul>
-<li>Read-only URL on a different domain (remember CORS):
+<li>Read-only URL on a different domain (data.php supports CORS):
     <ul>
-    <li>URL arguments: <code>?links=config:links</code>
+    <li>URL arguments: <code>?links=links</code>
     <li>Settings:
         <ul>
 	<li>Config 'links': <code>https://other.example.com/data.php\links.txt</code>
+	<li>Online Save 'links': &lt;empty&gt;
         </ul>
     </ul>
 </ul>
@@ -485,20 +495,20 @@ upload.
 <ul>
 <li>URL with online save with data.php:
     <ul>
-    <li>URL arguments: <code>?links=config:links&amp;save=conf</code>
+    <li>URL arguments: <code>?links=links</code>
     <li>Settings:
         <ul>
 	<li>Config 'links': <code>data.php\links.txt</code>
-	<li>Online Save 'conf': <code>data.php\token</code>
+	<li>Online Save 'links': <code>\token</code>
 	</ul>
     </ul>
-<li>URL with online save with data.php on other domain:
+<li>URL with online save with data.php on other domain (data.php supports CORS):
     <ul>
-    <li>URL arguments: <code>?links=config:links&amp;save=conf</code>
+    <li>URL arguments: <code>?links=links</code>
     <li>Settings:
         <ul>
 	<li>Config 'links': <code>https://other.example.com/data.php\links.txt</code>
-	<li>Online Save 'conf': <code>data.php\token</code>
+	<li>Online Save 'links': <code>\token</code>
 	</ul>
     </ul>
 </ul>
