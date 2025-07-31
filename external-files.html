@@ -427,12 +427,24 @@ same directory as where data.php is.
 
 <p>
 This section contains examples for different configuration sources and how to
-configure them:
+configure them. The examples are grouped by no download, only download or also
+upload.
+</p>
+
+
+<h3>No download - Links from local storage only</h3>
+
 <ul>
 <li>From local cache (browser's local storage):
     <ul>
     <li>URL arguments: none
     </ul>
+</ul>
+
+
+<h3>Download links - Changes are not written back</h3>
+
+<ul>
 <li>Read-only public URL when local cache is empty:
     <ul>
     <li>URL arguments: <code>?links=https://example.com/links.txt</code>
@@ -441,7 +453,7 @@ configure them:
     <ul>
     <li>URL arguments: <code>?links-override=https://example.com/links.txt</code>
     </ul>
-<li>Read-only private URL:
+<li>Read-only URL with login:
     <ul>
     <li>URL arguments: <code>?links=config:links</code>
     <li>Settings:
@@ -449,7 +461,7 @@ configure them:
 	<li>Config 'links': <code>https://user:password@example.com/links.txt</code>
         </ul>
     </ul>
-<li>Read-only private URL with data.php:
+<li>Read-only URL with login with data.php:
     <ul>
     <li>URL arguments: <code>?links=config:links</code>
     <li>Settings:
@@ -462,15 +474,30 @@ configure them:
     <li>URL arguments: <code>?links=config:links</code>
     <li>Settings:
         <ul>
-	<li>Config 'links': <code>https://storage.example.com/data.php\links.txt</code>
+	<li>Config 'links': <code>https://other.example.com/data.php\links.txt</code>
         </ul>
     </ul>
+</ul>
+
+
+<h3>Online links - Changes are updated online</h3>
+
+<ul>
 <li>URL with online save with data.php:
     <ul>
     <li>URL arguments: <code>?links=config:links&amp;save=conf</code>
     <li>Settings:
         <ul>
 	<li>Config 'links': <code>data.php\links.txt</code>
+	<li>Online Save 'conf': <code>data.php\token</code>
+	</ul>
+    </ul>
+<li>URL with online save with data.php on other domain:
+    <ul>
+    <li>URL arguments: <code>?links=config:links&amp;save=conf</code>
+    <li>Settings:
+        <ul>
+	<li>Config 'links': <code>https://other.example.com/data.php\links.txt</code>
 	<li>Online Save 'conf': <code>data.php\token</code>
 	</ul>
     </ul>

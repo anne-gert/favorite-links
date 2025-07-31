@@ -886,252 +886,558 @@ function setUnicodeText(control, unicodeCharacter, /* more unicodeCharacters, */
 
 // Resolving Links {{{
 
-// Global variables to hold the URL and Promise for the Links.
-// Set by resolveLinks().
-var LinksConfigName = null;  //name of the config to load LinksOptions from (links=config:...)
-var LinksOptions = null;  //value of links= or LocalStorage for LinksConfigName
-var LinksOverrideConfigName = null;  //name of the config to load LinksOverrideOptions from (links-override=config:...)
-var LinksOverrideOptions = null;  //value of links-override= or LocalStorage for LinksOverrideConfigName
-var SaveConfigName = null;  //name of the config to get the SaveOptions from (save=...)
-var SaveOptions = null;  //value of LocalStorage for SaveConfigName
-var SaveOptionsDisabled = null;  //set to string with the reason why saving is disabled
-var LinksUrl = null;  //URL of the Links (from links= or links-override=)
-var LinksName = null;  //name of the Links (from links= or links-override=)
-var LinksPromise = null;
+// Global object to hold the Load- and SaveOptions for the Links.
+const UrlResolver = CreateUrlResolver();
 
-// This function tries to find the configuration for the Links.
-// It sets the global LinksPromise variable with a Promise that should resolve
-// to the Links contents..
-// It also returns this Promise for chaining.
-//
-// The contents of Links can be obtained from links-override=, links=,
-// LocalStorage or DefaultLinks. See the table in the function for the details.
-//
-// If this search results in a URL to download, it may be an absolute or
-// relative URL. Download it and use its contents for the Links variable.
-function resolveLinks(skipLocalStorage = false) {
+// This function retrieves the parameters, parses them and determines which
+// URLs to use for loading and saving.
+// It returns a UrlResolver object with LoadOptions, SaveOptions and URLs.
+function CreateUrlResolver() {
 	console.important('Resolving Links source...');
 
-	LinksConfigName = null;
-	LinksOptions = null;
-	LinksOverrideConfigName = null;
-	LinksOverrideOptions = null;
-	SaveConfigName = null;
-	SaveOptions = null;
-	SaveOptionsDisabled = null;
-	LinksUrl = null;
-	LinksName = null;
-	LinksPromise = null;
+	// Parse links=, links-override= and save= and set internal variables
+	// loadOptions, loadOverrideOptions and saveOptions.
+	// Return an object to access these.
 
-	// The general order is:
+	// The normal order of sources is:
 	// 1) links-override=
-	// 2) LocalStorage if skipLocalStorage==false
+	// 2) LocalStorage
 	// 3) links=
 	//
-	// If save= is set, the order of LocalStorage and links= is swapped,
-	// resulting in a modified table:
+	// If saveOptions is set, the order of LocalStorage and links= is
+	// swapped, resulting in a modified table:
 	// 1) links-override=
 	// 2) links=
-	// 3) LocalStorage if skipLocalStorage==false
-	//
-	// We now need to find 2 things:
-	// - Source to use for links, which can be a URL or a stored string.
-	// - URL, that may not actually be used, because the string is stored
-	//   in LocalStorage.
-	// Below are 2 tables to derive these values.
-	//
-	// Derive LinksUrl:
-	// - LinksUrl should always be the first of links-override= or links=
-	//   or null if neither is set.
-	//
-	// Derive LinksName:
-	// - This is the name part of LinksUrl.
-	//
-	// Derive linksText:
-	// - If LinksUrl is set, the contents should generally be downloaded.
-	//   There is 1 exception if we're in read-only mode in which case
-	//   LocalStorage is used before links=. This can be expressed as
-	//   LinksUrl set AND save= not set AND LocalStorage set AND not
-	//   skipped. In that case, use LocalStorage. Otherwise set to null
-	//   to indicate LinksUrl should be downloaded.
-	// - If LocalStorage is set and not skipped, use that.
-	// - Otherwise, use DefaultLinks.
-	//
-	// Derive LinksPromise:
-	// - If linksText is set, use that.
-	// - Otherwise LinksUrl should be set, download that.
+	// 3) LocalStorage
 
 	let params = new URLSearchParams(location.search);
-	LinksOverrideOptions = params.get('links-override');
-	SaveConfigName = params.get('save');
-	LinksOptions = params.get('links');
+	let loadOverrideArg = params.get('links-override');
+	let loadArg = params.get('links');
+	let saveArg = params.get('save');
 	//console.log(params);
+	const reConfigName = /^([^\s\/\\.]+)$/;  //config-name is non-emtpy and contains no space, '/', '\' or '.'
 
-	// Resolve the links=, links-override= and save= config names
-	if (LinksOverrideOptions) {
-		let m = LinksOverrideOptions.match(/^config:(\S+)$/);
+	// Resolve the config names
+	let loadOverrideConfigName = null;
+	if (loadOverrideArg) {
+		let m = loadOverrideArg.match(reConfigName);
 		if (m) {
-			// This is a config name, read that
-			LinksOverrideConfigName = m[1];
-			LinksOverrideOptions = readLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName);
-			// Note: This value is not URL-encoded. If this is required, it should
-			// be done before the value is used in the context where that is needed.
-			if (LinksOverrideOptions === false || LinksOverrideOptions.match(/^\s*$/)) {
-				LinksOverrideOptions = '';
-			}
+			// This is a config name
+			loadOverrideConfigName = m[1];
+			console.debug('Found loadOverrideConfigName=' + loadOverrideConfigName);
+			// Use the same config name for save unless already set
+			if (saveArg == null) saveArg = loadOverrideConfigName;
 		}
 	}
-	if (LinksOptions) {
-		let m = LinksOptions.match(/^config:(\S+)$/);
+	let loadConfigName = null;
+	if (loadArg) {
+		let m = loadArg.match(reConfigName);
 		if (m) {
-			// This is a config name, read that
-			LinksConfigName = m[1];
-			LinksOptions = readLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName);
-			// Note: This value is not URL-encoded. If this is required, it should
-			// be done before the value is used in the context where that is needed.
-			if (LinksOptions === false || LinksOptions.match(/^\s*$/)) {
-				LinksOptions = '';
-			}
+			// This is a config name
+			loadConfigName = m[1];
+			console.debug('Found loadConfigName=' + loadConfigName);
+			// Use the same config name for save unless already set
+			if (saveArg == null) saveArg = loadConfigName;
 		}
 	}
-	if (SaveConfigName) {
-		SaveOptions = readLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName);
-		// Note: This value is not URL-encoded. If this is required, it should
-		// be done before the value is used in the context where that is needed.
-		if (SaveOptions === false || SaveOptions.match(/^\s*$/)) {
-			SaveOptions = '';
+	let saveConfigName = null;
+	if (saveArg) {
+		let m = saveArg.match(reConfigName);
+		if (m) {
+			// This is a config name
+			saveConfigName = m[1];
+			console.debug('Found saveConfigName=' + saveConfigName);
 		}
 	}
 
-	// Derive LinksUrl: The first of links-override= or links=
-	if (LinksOverrideOptions) {
-		console.log('LinksUrl: Use links-override= URL argument');
-		LinksUrl = LinksOverrideOptions;
-	} else if (LinksOptions) {
-		console.log('LinksUrl: Use links= URL argument');
-		LinksUrl = LinksOptions;
-	} else {
-		console.log('LinksUrl: No URL specified');
-		LinksUrl = null;
-	}
-
-	// Derive linksToken and LinksName
-	let headers = [];
-	if (LinksUrl != null) {
-		let parts = LinksUrl.split('\\');
-		//console.log(parts);
-		LinksUrl = parts.shift();
-		// The other parts are additional headers in either value or
-		// name:value format
-		let implicitNames = [ 'x-name', 'x-token' ];
-		for (let i = 0; i < parts.length; ++i) {
-			let name_value = parts[i].match(/^([^:]+)?:(.+)$/);
-			if (name_value) {
-				// This is a name:value header
-				headers.push(name_value.slice(1,3));
+	// Get the options
+	let _loadOverrideOptions = null;
+	function getLoadOverrideOptions() {
+		if (_loadOverrideOptions == null) {
+			if (loadOverrideConfigName != null) {
+				// Read from config
+				_loadOverrideOptions = readLocalStorage(LSKey_LoadOptions_Prefix + loadOverrideConfigName);
+				// Note: This value is not URL-encoded. If this is required, it should
+				// be done before the value is used in the context where that is needed.
+				if (_loadOverrideOptions === false || _loadOverrideOptions.match(/^\s*$/)) {
+					_loadOverrideOptions = '';
+				}
+			} else if (loadOverrideArg != null) {
+				_loadOverrideOptions = loadOverrideArg;
 			} else {
-				// A header with an implicit name
-				if (implicitNames.length > 0) {
-					let name = implicitNames.shift();
-					headers.push([ name, parts[i] ]);
-					if (name == 'x-name') LinksName = parts[i];
+				_loadOverrideOptions = '';
+			}
+		}
+		return _loadOverrideOptions;
+	}
+	function setLoadOverrideOptions(value) {
+		_loadOverrideOptions = value;
+		resetDownloadUrl();
+	}
+
+	let _loadOptions = null;
+	function getLoadOptions() {
+		if (_loadOptions == null) {
+			if (loadConfigName != null) {
+				// Read from config
+				_loadOptions = readLocalStorage(LSKey_LoadOptions_Prefix + loadConfigName);
+				// Note: This value is not URL-encoded. If this is required, it should
+				// be done before the value is used in the context where that is needed.
+				if (_loadOptions === false || _loadOptions.match(/^\s*$/)) {
+					_loadOptions = '';
+				}
+			} else if (loadArg != null) {
+				_loadOptions = loadArg;
+			} else {
+				_loadOptions = '';
+			}
+		}
+		return _loadOptions;
+	}
+	function setLoadOptions(value) {
+		_loadOptions = value;
+		resetDownloadUrl();
+	}
+
+	let _saveOptions = null;
+	function getSaveOptions() {
+		if (_saveOptions == null) {
+			if (saveConfigName != null) {
+				// Read from config
+				_saveOptions = readLocalStorage(LSKey_SaveOptions_Prefix + saveConfigName);
+				// Note: This value is not URL-encoded. If this is required, it should
+				// be done before the value is used in the context where that is needed.
+				if (_saveOptions === false || _saveOptions.match(/^\s*$/)) {
+					_saveOptions = '';
+				}
+			} else if (saveArg != null) {
+				_saveOptions = saveArg;
+			} else {
+				_saveOptions = '';
+			}
+		}
+		return _saveOptions;
+	}
+	function setSaveOptions(value) {
+		_saveOptions = value;
+		resetDownloadUrl();
+		resetUploadUrl();
+	}
+
+	// Variables and access methods for the download URL
+	let _preliminaryLinks = null;
+	function getPreliminaryLinks() {
+		if (_preliminaryLinks == null) calcDownloadUrl();
+		return _preliminaryLinks;
+	}
+	let _loadUrl = null;
+	function getDownloadUrl() {
+		if (_loadUrl == null) calcDownloadUrl();
+		return _loadUrl;
+	}
+	let _fallbackLinks = null;
+	function getFallbackLinks() {
+		if (_fallbackLinks == null) calcDownloadUrl();
+		return _fallbackLinks;
+	}
+	let _loadName = null;
+	function getLoadName() {
+		if (_loadName == null) calcDownloadUrl();
+		return _loadName;
+	}
+	let _downloadHeaders = null;
+	function getDownloadHeaders() {
+		if (_downloadHeaders == null) calcDownloadUrl();
+		return _downloadHeaders;
+	}
+
+	// Reset the download URL variables, so that it gets recalculated when needed
+	function resetDownloadUrl() {
+		_preliminaryLinks = _loadUrl = _fallbackLinks = _loadName = _downloadHeaders = null;
+		resetUploadUrl();
+	}
+
+	// Calculate the download URL values
+	function calcDownloadUrl() {
+		// Get Links from LocalStorage
+		let localLinks = readLocalStorage(LSKey_Links);
+		let localLinksMsg = 'none';
+		if (localLinks === false) {  //nothing in LocalStorage
+			localLinks = null;
+			localLinksMsg = 'LocalStorage(empty)';
+		} else {
+			localLinksMsg = 'LocalStorage';
+		}
+
+		// Derive _preliminaryLinks: Generally LocalStorage if available,
+		// because it might be equal to the downloaded Links in which case
+		// rendering doesn't need to be restarted.
+		// If localLinks==null, don't do preliminary render.
+		_preliminaryLinks = localLinks;
+		let preliminaryLinksMsg = localLinksMsg;
+
+		// Derive _loadUrl: The first of loadOverrideOptions or loadOptions
+		// Derive _fallbackLinks: The final links text, unless download was successful
+		_loadUrl;
+		let loadUrlMsg;
+		_fallbackLinks;
+		let fallbackLinksMsg;
+		if (localLinks != null) {
+			_fallbackLinks = null;
+			fallbackLinksMsg = 'same as preliminaryLinks (LocalStorage)';
+		} else {
+			_fallbackLinks = DefaultLinks;
+			fallbackLinksMsg = 'default';
+		}
+		let loadOverrideOptions = getLoadOverrideOptions();
+		let loadOptions = getLoadOptions();
+		let saveOptions = getSaveOptions();
+		if (loadOverrideOptions) {
+			// Source selection: override - default  (do not consider LoadOptions or LocalStorage)
+			console.log('loadOverrideOptions set');
+			_preliminaryLinks = null;
+			preliminaryLinksMsg = 'none';
+			// Note: The override might be te same as localLinks, in which case
+			// preliminary-render would have helped.
+			_loadUrl = loadOverrideOptions;
+			loadUrlMsg = 'loadOverrideOptions';
+			_fallbackLinks = DefaultLinks;
+			fallbackLinksMsg = 'default';
+		} else if (loadOptions) {
+			if (saveOptions) {
+				// Source selection: links - local - default  (LoadOptions before LocalStorage, because saveOptions is set)
+				console.log('Both loadOptions and saveOptions set');
+				_loadUrl = loadOptions;
+				loadUrlMsg = 'loadOptions';
+			} else {
+				// Source selection: local - links - default
+				console.log('loadOptions without saveOptions set');
+				if (localLinks != null) {
+					// The first option is LocalStorage and that is set.
+					// No need to download
+					_loadUrl = null;
+					loadUrlMsg = 'none';
 				} else {
-					console.error('Too many implicit headers in ' + LinksUrl);
-					// Just discard this header
+					// No LocalStorage set, we need download
+					_loadUrl = loadOptions;
+					loadUrlMsg = 'loadOptions';
+				}
+			}
+		} else {
+			// Source selection: local - default
+			console.log('Both loadOverrideOptions and loadOptions not set');
+			_loadUrl = null;
+			loadUrlMsg = 'none';
+		}
+		console.log('preliminaryLinks: Use ' + preliminaryLinksMsg);
+		console.log('loadUrl: Use ' + loadUrlMsg);
+		console.log('fallbackLinks: Use ' + fallbackLinksMsg);
+
+		// Derive loadToken and loadName
+		_loadName = null;
+		_downloadHeaders = [];
+		if (_loadUrl != null) {
+			let parts = _loadUrl.split('\\');
+			//console.log(parts);
+			_loadUrl = parts.shift();
+			// The other parts are additional headers in either value or
+			// name:value format
+			let implicitNames = [ 'x-name', 'x-token' ];
+			for (let i = 0; i < parts.length; ++i) {
+				let name_value = parts[i].match(/^([^:]+)?:(.+)$/);
+				if (name_value) {
+					// This is a name:value header
+					_downloadHeaders.push(name_value.slice(1,3));
+				} else {
+					// A header with an implicit name
+					if (implicitNames.length > 0) {
+						let name = implicitNames.shift();
+						_downloadHeaders.push([ name, parts[i] ]);
+						if (name == 'x-name') _loadName = parts[i];
+					} else {
+						console.error('Too many implicit headers in ' + _loadUrl);
+						// Just discard this header
+					}
 				}
 			}
 		}
-	}
-	if (LinksName == null) {
-		// No name found, now take the name of the URL
-		LinksName = LinksUrl.replace(/[?#].*$/, '').replace(/^[^\/]*/, '');
-	}
-	//console.log('LinksName=', LinksName);
-	//console.log('HTTP headers=', headers);
-
-	// Derive linksText
-	let checkLocalStorage = () => {
-		if (skipLocalStorage) return null;  //ignore LocalStorage
-		let locStor = readLocalStorage(LSKey_Links);
-		if (locStor === false) return null;  //nothing in LocalStorage
-		// LocalStorage is available, return that
-		console.log('LinksPromise: Use links from the LocalStorage');
-		return locStor;
-	}
-	let linksText = null;  //defaults to download LinksUrl
-	if (LinksUrl) {
-		// LinksUrl is set. Generally download it, except in 1 exception
-		if (!LinksOverrideOptions && !SaveConfigName) linksText = checkLocalStorage();  //the exception
-	} else {
-		// LinksUrl not set, linksText must be set here to display anything.
-		linksText = checkLocalStorage();
-		if (linksText == null) {
-			// Nothing in LocalStorage, use DefaultLinks
-			console.log('LinksPromise: Use standard example links');
-			linksText = DefaultLinks;
+		if (_loadName == null && _loadUrl != null) {
+			// No name found, now take the name from the URL
+			_loadName = _loadUrl.replace(/[?#].*$/, '').replace(/^[^\/]*/, '');
 		}
-	}
+		//console.log('_loadName=', _loadName);
+		//console.log('HTTP headers=', _downloadHeaders);
 
-	// Here, either or both of LinksUrl or linksText must be set.
-
-	// If no text found yet, there must be a URL, resolve it
-	if (linksText == null) {
-		// links is a URL
-		let matchTargetUrl = LinksUrl.match(/^\s*((https?:\/\/)?(.*?))\s*$/i);  //always matches
-		//console.log(matchTargetUrl);
-		// Captured:
-		// 1: url
-		// 2: protocol
-		// 3: domain + path + rest
-		let url = matchTargetUrl[1];
-		if (!matchTargetUrl[2]) {
-			// URL is relative, check if we need to adjust it
-			let matchBaseUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
-			//console.log(matchBaseUrl);
+		// If _loadUrl set, check special cases
+		if (_loadUrl != null) {
+			let matchTargetUrl = _loadUrl.match(/^\s*((https?:\/\/)?(.*?))\s*$/i);  //always matches
+			//console.log(matchTargetUrl);
 			// Captured:
-			// 1: protocol
-			// 2: host ('html-preview.github.io')
-			// 3: path without query string or fragment
-			if (matchBaseUrl) {
-				// The current URL is html-preview.github.io (or similar)
-				// This should have a url= parameter that contains the real location
-				let referredUrl = params.get('url');
-				//console.log(referredUrl);
-				let matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
-				//console.log(matchReferredUrl);
+			// 1: url
+			// 2: protocol
+			// 3: domain + path + rest
+			_loadUrl = matchTargetUrl[1];  //trim whitespace
+			if (!matchTargetUrl[2]) {
+				// URL is relative, check if we need to adjust it
+				let matchBaseUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
+				//console.log(matchBaseUrl);
 				// Captured:
 				// 1: protocol
-				// 2: host ('github.com')
+				// 2: host ('html-preview.github.io')
 				// 3: path without query string or fragment
-				if (matchReferredUrl) {
-					// The referred URL is on github.com
-
-					// We are now in a situation where this page is hosted
-					// on GitHub and links tries to point to a file on
-					// there as well.
-					// If you have a normal link to github.com, you get the
-					// file inside the environment. If you use
-					// raw.githubusercontent.com, you get the content of the
-					// file, but with Content-Type=text/plain. When
-					// html-preview.github.io is used, it uses
-					// raw-githubcontent.com and serves it with
-					// Content-Type=text/html.
-					console.log('Fix links= relative URL for GitHub');
-					// To make this relative link work, it should be grafted
-					// onto githubusercontent.
-					let matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
-					//console.log(matchReferredPath);
+				if (matchBaseUrl) {
+					// The current URL is html-preview.github.io (or similar)
+					// This should have a url= parameter that contains the real location
+					let referredUrl = params.get('url');
+					//console.log(referredUrl);
+					let matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
+					//console.log(matchReferredUrl);
 					// Captured:
-					// 1: directory
-					// 2: filename (everything after last '/')
-					url = matchReferredUrl[1] + 'raw.githubusercontent.com' + matchReferredPath[1] + matchTargetUrl[3];
+					// 1: protocol
+					// 2: host ('github.com')
+					// 3: path without query string or fragment
+					if (matchReferredUrl) {
+						// The referred URL is on github.com
+
+						// We are now in a situation where this page is hosted
+						// on GitHub and links tries to point to a file on
+						// there as well.
+						// If you have a normal link to github.com, you get the
+						// file inside the environment. If you use
+						// raw.githubusercontent.com, you get the content of the
+						// file, but with Content-Type=text/plain. When
+						// html-preview.github.io is used, it uses
+						// raw-githubcontent.com and serves it with
+						// Content-Type=text/html.
+						console.log('Fix _loadUrl relative URL for GitHub');
+						// To make this relative link work, it should be grafted
+						// onto githubusercontent.
+						let matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
+						//console.log(matchReferredPath);
+						// Captured:
+						// 1: directory
+						// 2: filename (everything after last '/')
+						_loadUrl = matchReferredUrl[1] + 'raw.githubusercontent.com' + matchReferredPath[1] + matchTargetUrl[3];
+					}
 				}
 			}
 		}
+	}
 
-		// Derive LinksPromise: Download the URL
-		console.log('LinksPromise: Download URL \'' + url + '\'');
-		LinksPromise = new Promise((resolveFunc, rejectFunc) => {
+	// Variables and access methods for the upload URL
+	let _uploadUrl = null;
+	function getUploadUrl() {
+		if (_uploadUrl == null) calcUploadUrl();
+		return _uploadUrl;
+	}
+	let _uploadMethod = null;
+	function getUploadMethod() {
+		if (_uploadMethod == null) calcUploadUrl();
+		return _uploadMethod;
+	}
+	let _uploadHeaders = null;
+	function getUploadHeaders() {
+		if (_uploadHeaders == null) calcUploadUrl();
+		return _uploadHeaders;
+	}
+
+	// Reset the upload URL variables, so that it gets recalculated when needed
+	function resetUploadUrl() {
+		_uploadUrl = _uploadMethod = _uploadHeaders = null;
+	}
+	function noUploadUrl() {
+		_uploadUrl = '';
+		_uploadMethod = '';
+		_uploadHeaders = [];
+	}
+
+	// Calculate the upload URL values
+	function calcUploadUrl() {
+		let saveOptions = getSaveOptions();
+		if (saveOptions.match(/^\s*$/)) {
+			console.log('SaveOptions empty, no UploadUrl');
+			noUploadUrl();
+			return;
+		}
+		let uploadDisabled = getSaveOptionsDisabled();
+		if (uploadDisabled) {
+			console.log('SaveOptions disabled, no UploadUrl');
+			noUploadUrl();
+			return;
+		}
+		let downloadUrl = getDownloadUrl();
+
+		// Split into parts
+		let parts = saveOptions.split('\\');
+
+		// The first part should specify the method and the URL
+		let saveUrl, special = false;
+		let method_url = parts.shift().match(/^(?:(put|post):)?(.*)$/i);
+		if (method_url) {
+			if (method_url[1]) {
+				// This is the standard syntax method:url
+				_uploadMethod = method_url[1].toUpperCase();
+			} else {
+				// This is the special save syntax
+				_uploadMethod = 'POST';
+				special = true;
+			}
+			if (method_url[2]) {
+				// A URL has been specified
+				saveUrl = method_url[2];
+			} else if (downloadUrl) {
+				// No URL has been specified, use the URL for reading
+				saveUrl = downloadUrl;
+			} else {
+				// No URL to use
+				console.error('Cannot find read nor write url');
+				noUploadUrl();
+				return;
+			}
+		} else {
+			console.error('Incorrect method/url in \'' + saveOptions + '\'');
+			noUploadUrl();
+			return;
+		}
+
+		// Derive absolute URL to save
+		if (downloadUrl) {
+			// downloadUrl may be relative to this script and saveUrl may be relative to downloadUrl
+			let loadUrlAbs = new URL(downloadUrl, window.location).href;
+			_uploadUrl = new URL(saveUrl, loadUrlAbs).href;
+		} else {
+			// No downloadUrl known, assume base of saveUrl is this script
+			_uploadUrl = new URL(saveUrl, window.location).href;
+		}
+
+		// The other parts are additional headers
+		_uploadHeaders = [];
+		if (special) {
+			// For the special syntax, the next part is the token
+			if (parts.length > 0) {
+				_uploadHeaders.push([ 'x-token', parts.shift() ]);
+			}
+			// Create the x-name header
+			let loadName = getLoadName();
+			if (loadName) {
+				_uploadHeaders.push([ 'x-name', loadName ]);
+			} else {
+				console.error('Special save cannot find loadName for x-name');
+				noUploadUrl();
+				return;
+			}
+		}
+		// The other parts are additional headers in name:value format
+		for (let i = 0; i < parts.length; ++i) {
+			let name_value = parts[i].match(/([^:]+):(.+)/);
+			if (name_value) {
+				_uploadHeaders.push(name_value.slice(1,3));
+			} else {
+				console.warn('Expected header: ' + parts[i]);
+			}
+		}
+
+		//console.log('Request headers: ', _uploadHeaders);
+	}
+
+	// Handling of SaveOptionsDisabled
+	let _saveOptionsDisabled = null;  //set to string with the reason why saving is disabled
+	function getSaveOptionsDisabled() {
+		return _saveOptionsDisabled;
+	}
+	function setSaveOptionsDisabled(value) {
+		_saveOptionsDisabled = value;
+		resetUploadUrl();
+	}
+
+	// Return the object with the appropriate functions
+	return {
+		// Fields to manage LoadOptions
+		'getLoadConfigName' : () => loadConfigName,
+		'getLoadOptions' : getLoadOptions,
+		'setLoadOptions' : setLoadOptions,
+
+		// Fields to manage LoadOptions override
+		'getLoadOverrideConfigName' : () => loadOverrideConfigName,
+		'getLoadOverrideOptions' : getLoadOverrideOptions,
+		'setLoadOverrideOptions' : setLoadOverrideOptions,
+
+		// Fields to manage SaveOptions
+		'getSaveConfigName' : () => saveConfigName,
+		'getSaveOptions' : getSaveOptions,
+		'setSaveOptions' : setSaveOptions,
+
+		// Fields for downloading Links
+		'getDownloadUrl' : getDownloadUrl,
+		'getDownloadHeaders' : getDownloadHeaders,
+		'getLoadName' : getLoadName,
+
+		// Fields for uploading Links
+		'getUploadUrl' : getUploadUrl,
+		'getUploadMethod' : getUploadMethod,
+		'getUploadHeaders' : getUploadHeaders,
+		'getUploadDisabled' : getSaveOptionsDisabled,
+		'setUploadDisabled' : setSaveOptionsDisabled,
+
+		// Fields for preliminary Links
+		'getPreliminaryLinks' : getPreliminaryLinks,
+
+		// Fields for fallback Links
+		'getFallbackLinks' : getFallbackLinks,
+	};
+}
+
+// }}}
+
+// Loading/Saving Links {{{
+
+// This function uses the UrlResolver object to find the correct URL to download.
+// It starts the download and returns a Promise.
+// The Promise resolves normally if the download finished successfully. Otherwise
+// the Promise is rejected.
+function downloadLinks() {
+	let url = UrlResolver.getDownloadUrl();
+	if (url == null) return null;
+	let headers = UrlResolver.getDownloadHeaders();
+
+	UrlResolver.setUploadDisabled(null);
+	console.important('Downloading URL \'' + url + '\'');
+	let dowloadPromise;
+	if (window.fetch) {
+		//console.devlog('Using fetch() to download');
+		let hdrs = new Headers();
+		for (let i = 0; i < headers.length; ++i) {
+			hdrs.append(headers[i][0], headers[i][1]);
+		}
+		dowloadPromise = new PendingPromise();
+		let status;
+		fetch(url, { 'headers' : hdrs })
+		.then(response => {
+			//console.devlog('downloadLinks: Request sent');
+			status = response.status;
+			return response.text();
+		})
+		.then(text => {
+			//console.devlog('downloadLinks: Response received');
+			if (status == 200) {
+				// Success
+				console.log('downloadLinks: Download successful');
+				dowloadPromise.resolve(text);
+			} else {
+				// Failed
+				console.error('downloadLinks: Download failed');
+				// If the download failed, disable
+				// saveOptions to not accidentally
+				// overwrite the file.
+				UrlResolver.setUploadDisabled('Saving disabled because downloading \'' + url + '\' failed');
+				dowloadPromise.reject(false);
+			}
+
+		})
+		.catch(error => dowloadPromise.reject(error));
+	} else {
+		//console.devlog('Using XMLHttpRequest to download');
+		dowloadPromise = new Promise((resolveFunc, rejectFunc) => {
 			let xhr = new XMLHttpRequest();
 			xhr.open('GET', url);
 			for (let i = 0; i < headers.length; ++i) {
@@ -1142,52 +1448,75 @@ function resolveLinks(skipLocalStorage = false) {
 					// Request has been handled
 					if (this.status == 200) {
 						// Success
-						console.log('LinksPromise: Download successful');
+						console.log('downloadLinks: Download successful');
 						resolveFunc(xhr.responseText);
 					} else {
 						// Failed
-						if (SaveOptions) {
-							// If SaveOptions set, this download is either for links-override= or links=.
-							// If this download failed, do not revert to other URL to avoid confusion.
-							// Therefore revert to LocalStorage (if set) or DefaultLinks otherwise.
-							// Also disable SaveOptions to not accidentally overwrite the file.
-							let locStor = checkLocalStorage();
-							if (locStor !== null) {
-								console.log('LinksPromise: Download failed and SaveOptions set, use LocalStorage links and disable SaveOptions');
-								resolveFunc(locStor);
-							} else {
-								console.log('LinksPromise: Download failed and SaveOptions set, use DefaultLinks and disable SaveOptions');
-								resolveFunc(DefaultLinks);
-							}
-							SaveOptionsDisabled = 'Saving disabled because downloading \'' + url + '\' failed';
-						} else {
-							// If SaveOptions not set, this download was for links-override=.
-							// If this download failed, do not revert to other options, since 'override' is
-							// taken to mean to ignore that.
-							// Therefore, go directly to DefaultLinks.
-							console.log('LinksPromise: Download failed and no SaveOptions, use DefaultLinks');
-							resolveFunc(DefaultLinks);
-						}
+						console.error('downloadLinks: Download failed');
+						// If the download failed, disable
+						// saveOptions to not accidentally
+						// overwrite the file.
+						UrlResolver.setUploadDisabled('Saving disabled because downloading \'' + url + '\' failed');
+						rejectFunc(false);
 					}
 				}
 			};
 			xhr.send();  //send the request
 		});
-	} else {
-		// Derive LinksPromise: Return linksText
-		LinksPromise = Promise.resolve(linksText);
 	}
 
-	// Here LinkPromise has been set to the links contents.
-	// Also LinksUrl and LinksName have been set to the URL/Name used or that would have been used.
-
-	// Return the Promise too (for chaining)
-	return LinksPromise;
+	return dowloadPromise;
 }
 
-// The resolveLinks() should be called as soon as possible to start the
-// downloading already.
-resolveLinks();
+// Save links online by the method specified.
+// If the value is null, empty or whitespace, save an empty string.
+// Returns Promise of the upload or false if not saving.
+function uploadLinks(value) {
+	let url = UrlResolver.getUploadUrl();
+	if (!url) {
+		console.warn('No UploadUrl, skip saving');
+		return false;
+	}
+	let method = UrlResolver.getUploadMethod();
+	if (!method) {
+		console.warn('No UploadMethod, skip saving');
+		return false;
+	}
+	let headers = UrlResolver.getUploadHeaders();
+
+	// If value is null or whitespace, send an empty string
+	if (value == null || value.match(/^\s*$/)) {
+		value = '';
+	}
+
+	console.important('Uploading to URL ' + url + ': ' + method + ' ' + value.length + ' characters');
+
+	// Create the Promise for uploading
+	let uploadPromise = new Promise((resolveFunc, rejectFunc) => {
+		let xhr = new XMLHttpRequest();
+		xhr.open(method, url);
+		for (let i = 0; i < headers.length; ++i) {
+			xhr.setRequestHeader(headers[i][0], headers[i][1]);
+		}
+		xhr.onreadystatechange = function() {
+			if (this.readyState == 4) {
+				// Request has been handled
+				if (this.status == 200) {
+					// Success
+					console.log('Uploaded links successfully');
+					resolveFunc(this.status);
+				} else {
+					// Failed
+					console.log('Failed to upload Links, good luck next time (' + this.status + ')');
+					resolveFunc(this.status);  //do not see this as a fail
+				}
+			}
+		};
+		xhr.send(value);  //send the request
+	});
+
+	return uploadPromise;
+}
 
 // Read value from LocalStorage.
 // Return value or false in case of error or if it does not exist.
@@ -1211,126 +1540,6 @@ function writeLocalStorage(key, value) {
 		return true;
 	}
 	return false;
-}
-
-// Save links online by the method specified.
-// If the value is null, empty or whitespace, save an empty string.
-// Returns Promise of the upload or false if not saving.
-function writeOnlineLinks(value) {
-	if (!SaveConfigName) {
-		console.log('No save=, skip saving');
-		return false;
-	}
-	if (SaveOptions.match(/^\s*$/)) {
-		console.warn('Save Config \'' + SaveConfigName + '\' empty, skip saving');
-		return false;
-	}
-	if (SaveOptionsDisabled) {
-		console.warn('Save Config \'' + SaveConfigName + '\' disabled, skip saving');
-		return false;
-	}
-
-	// If value is null or whitespace, send an empty string
-	if (value == null || value.match(/^\s*$/)) {
-		value = '';
-	}
-
-	// Split into parts
-	let parts = SaveOptions.split('\\');
-
-	// The first part should specify the method and the URL
-	let method, saveUrl, special = false;
-	let method_url = parts.shift().match(/^(?:(put|post):)?(.*)$/i);
-	if (method_url) {
-		if (method_url[1]) {
-			// This is the standard syntax method:url
-			method = method_url[1].toUpperCase();
-		} else {
-			// This is the special save syntax
-			method = 'POST';
-			special = true;
-		}
-		if (method_url[2]) {
-			// A URL has been specified
-			saveUrl = method_url[2];
-		} else if (LinksUrl) {
-			// No URL has been specified, use the URL for reading
-			saveUrl = LinksUrl;
-		} else {
-			// No URL to use
-			console.error('Cannot find read nor write url');
-			return false;
-		}
-	} else {
-		console.error('Incorrect method/url in \'' + SaveOptions + '\'');
-		return false;
-	}
-
-	// Derive absolute URL to save
-	let saveUrlAbs;
-	if (LinksUrl) {
-		// LinksUrl may be relative to this script and saveUrl may be relative to LinksUrl
-		let linksUrlAbs = new URL(LinksUrl, window.location).href;
-		saveUrlAbs = new URL(saveUrl, linksUrlAbs).href;
-	} else {
-		// No LinksUrl known, assume base of saveUrl is this script
-		saveUrlAbs = new URL(saveUrl, window.location).href;
-	}
-
-	console.important('Uploading to URL ' + saveUrlAbs + ': ' + (special ? 'Special ' : '') + method + ' ' + value.length + ' characters');
-
-	// The other parts are additional headers
-	let headers = [];
-	if (special) {
-		// For the special syntax, the next part is the token
-		if (parts.length > 0) {
-			headers.push([ 'x-token', parts.shift() ]);
-		}
-		// Create the x-name header
-		if (LinksName) {
-			headers.push([ 'x-name', LinksName ]);
-		} else {
-			console.error('Special save cannot find LinksName for x-name');
-			return false;
-		}
-	}
-	// The other parts are additional headers in name:value format
-	for (let i = 0; i < parts.length; ++i) {
-		let name_value = parts[i].match(/([^:]+):(.+)/);
-		if (name_value) {
-			headers.push(name_value.slice(1,3));
-		} else {
-			console.warn('Expected header: ' + parts[i]);
-		}
-	}
-
-	console.log('Request headers: ', headers);
-
-	// Create the Promise for uploading
-	let uploadPromise = new Promise((resolveFunc, rejectFunc) => {
-		let xhr = new XMLHttpRequest();
-		xhr.open(method, saveUrlAbs);
-		for (let i = 0; i < headers.length; ++i) {
-			xhr.setRequestHeader(headers[i][0], headers[i][1]);
-		}
-		xhr.onreadystatechange = function() {
-			if (this.readyState == 4) {
-				// Request has been handled
-				if (this.status == 200) {
-					// Success
-					console.log('Uploaded links successfully');
-					resolveFunc(this.status);
-				} else {
-					// Failed
-					console.log('Failed to upload links, good luck next time (' + this.status + ')');
-					resolveFunc(this.status);  //do not see this as a fail
-				}
-			}
-		};
-		xhr.send(value);  //send the request
-	});
-
-	return uploadPromise;
 }
 
 // }}}
@@ -1798,7 +2007,7 @@ class UserInputError extends Error {
 // Level 2 is called Block and is rendered as a rectangular block.
 // Level 3 is called Item and is rendered as a line in a Block.
 // Level 4 and higher are called sub-Items and are rendered as indented Items.
-function outputItem(link, level, container, parentPath) {
+function outputItem(link, level, container, parentPath, cancel) {
 	//console.log('outputItem ' + link.toString());
 	// Copy input data
 	let name = link.name;
@@ -2027,7 +2236,7 @@ function outputItem(link, level, container, parentPath) {
 				if (newLinks != Links) {
 					Links = newLinks;
 					writeLocalStorage(LSKey_Links, Links);
-					writeOnlineLinks(Links);
+					uploadLinks(Links);
 				} else {
 					console.error('RegExp did not change Links: ', re);
 				}
@@ -2119,14 +2328,14 @@ function outputItem(link, level, container, parentPath) {
 
 		// If there is continuation, output those items in this itemContainer too
 		if (contItems != null) {
-			outputItems(contItems, level, itemContainer, myPath);
+			outputItems(contItems, level, itemContainer, myPath, cancel);
 		}
 	}
 	// Create sub-Items in container
 	if (subItems != null) {
 		if (addSubContainer) {
 			let subContainer = addSubContainer();
-			outputItems(subItems, level+1, subContainer, myPath);
+			outputItems(subItems, level+1, subContainer, myPath, cancel);
 		}
 	}
 	// Add closing elements
@@ -2145,14 +2354,15 @@ function outputText(lines, container) {
 }
 
 // Render array of Links to the container at specified level.
-function outputItems(links, level, container, parentPath = '') {
+function outputItems(links, level, container, parentPath, cancel) {
 	for (let i = 0; i < links.length; ++i) {
 		let link = links[i];
 		if (link.type == 'link') {
-			outputItem(link, level, container, parentPath);
+			outputItem(link, level, container, parentPath, cancel);
 		} else if (link.type == 'text') {
 			outputText(link.lines, container);
 		}
+		if (cancel()) return;
 	}
 }
 
@@ -2873,47 +3083,52 @@ function initSettingsPanel() {
 			optionEntries.push(option);
 			return option;
 		}
-		if (LinksOverrideConfigName && LinksConfigName == LinksOverrideConfigName) {
-			// One entry for both LinksOverrideOptions and LinksOptions
-			createOption('Config \'' + LinksOverrideConfigName + '\'',
-				() => LinksOverrideOptions,
+		let loadConfigName = UrlResolver.getLoadConfigName();
+		let loadOverrideConfigName = UrlResolver.getLoadOverrideConfigName();
+		if (loadOverrideConfigName && loadConfigName == loadOverrideConfigName) {
+			// One entry for both LoadOverrideOptions and LoadOptions
+			createOption('Config \'' + loadOverrideConfigName + '\'',
+				() => UrlResolver.getLoadOverrideOptions(),
 				(value) => {
-					LinksOptions = LinksOverrideOptions = value;
-					writeLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName, value);
+					UrlResolver.setLoadOptions(value);
+					UrlResolver.setLoadOverrideOptions(value);
+					writeLocalStorage(LSKey_LoadOptions_Prefix + loadOverrideConfigName, value);
 				});
 		} else {
-			if (LinksOverrideConfigName) {
-				// Entry for LinksOverrideOptions
-				createOption('Config \'' + LinksOverrideConfigName + '\'',
-					() => LinksOverrideOptions,
+			if (loadOverrideConfigName) {
+				// Entry for LoadOverrideOptions
+				createOption('Config \'' + loadOverrideConfigName + '\'',
+					() => UrlResolver.getLoadOverrideOptions(),
 					(value) => {
-						LinksOverrideOptions = value;
-						writeLocalStorage(LSKey_LoadOptions_Prefix + LinksOverrideConfigName, value);
+						UrlResolver.setLoadOverrideOptions(value);
+						writeLocalStorage(LSKey_LoadOptions_Prefix + loadOverrideConfigName, value);
 					});
 			}
-			if (LinksConfigName) {
-				// Entry for LinksOptions
-				createOption('Config \'' + LinksConfigName + '\'',
-					() => LinksOptions,
+			if (loadConfigName) {
+				// Entry for LoadOptions
+				createOption('Config \'' + loadConfigName + '\'',
+					() => UrlResolver.getLoadOptions(),
 					(value) => {
-						LinksOptions = value;
-						writeLocalStorage(LSKey_LoadOptions_Prefix + LinksConfigName, value);
+						UrlResolver.setLoadOptions(value);
+						writeLocalStorage(LSKey_LoadOptions_Prefix + loadConfigName, value);
 					});
 			}
 		}
-		if (SaveConfigName) {
+		let saveConfigName = UrlResolver.getSaveConfigName();
+		if (saveConfigName) {
 			// Entry for SaveOptions
-			let option = createOption('Online Save \'' + SaveConfigName + '\'',
-				() => SaveOptions,
+			let saveOptionsDisabled = UrlResolver.getUploadDisabled();
+			let option = createOption('Online Save \'' + saveConfigName + '\'',
+				() => UrlResolver.getSaveOptions(),
 				(value) => {
-					if (!SaveOptionsDisabled) {
-						SaveOptions = value;
-						writeLocalStorage(LSKey_SaveOptions_Prefix + SaveConfigName, value);
+					if (!saveOptionsDisabled) {
+						UrlResolver.setSaveOptions(value);
+						writeLocalStorage(LSKey_SaveOptions_Prefix + saveConfigName, value);
 					}
 				});
-			if (SaveOptionsDisabled) {
+			if (saveOptionsDisabled) {
 				option.entry.disabled = true;
-				option.entry.title = SaveOptionsDisabled;  //the text with reason
+				option.entry.title = saveOptionsDisabled;  //the text with reason
 			} else {
 				option.entry.disabled = false;
 				option.entry.title = '';
@@ -2993,12 +3208,12 @@ function initSettingsPanel() {
 			let saveLinks = Links;
 			if (save == 'clear' || settingsText.value == '') {
 				console.log('Clear settings');
-				loadLinks(true, true)  //re-resolve Links
+				loadLinks(true)  //re-resolve Links
 				.then(() => {
 					// Links are correct
 					settingsText.value = Links;
 					writeLocalStorage(LSKey_Links, Links);
-					// Just read from URL, don't call writeOnlineLinks().
+					// Just read from URL, don't call uploadLinks().
 					// Close the panel
 					hide();
 				})
@@ -3025,10 +3240,10 @@ function initSettingsPanel() {
 				console.log('Save settings');
 				try {
 					Links = settingsText.value;
-					processLinks();  //Render Links
+					processLinks(() => false);  //Render Links
 					// Links are correct
 					writeLocalStorage(LSKey_Links, Links);
-					writeOnlineLinks(Links);
+					uploadLinks(Links);
 					// Close the panel
 					hide();
 				} catch (error) {
@@ -3281,9 +3496,11 @@ function setFontSize(size) {
 // From the Links configuration, parse its content and display it.
 // This function may throw a UserInputError exceptions when something is wrong
 // with the contents of the Links variable.
-function processLinks() {
+function processLinks(cancel) {
 	// Parse Links
 	parseLinks();
+
+	if (cancel()) return;
 
 	console.important('Render styles, scripts, title, etc');
 
@@ -3296,6 +3513,8 @@ function processLinks() {
 		newError.cause = error;
 		throw newError;
 	}
+
+	if (cancel()) return;
 
 	// Set page title, theme and font size
 	setPageTitle(PageTitle);
@@ -3312,7 +3531,9 @@ function processLinks() {
 	console.important('Render Links...');
 	let container = document.getElementById('LinksBox');
 	container.textContent = '';
-	outputItems(RootLinks, 1, container);
+	outputItems(RootLinks, 1, container, '', cancel);
+
+	if (cancel()) return;
 
 	// Fill SearchForm
 	console.important('Render SearchButtons...');
@@ -3342,45 +3563,140 @@ function processLinks() {
 	}
 }
 
+// Create object that can be called as a function. The return value of the
+// function can be set with the setReturn() method.
+// This object can be used as 'cancel' argument for processLinks().
+function CreateCancel() {
+	let cancel = false;  //default value
+	let retval = () => cancel;  //returns a function that returns cancel
+	retval['setReturn'] = (value) => cancel = value;  //extra method
+	return retval;
+}
+
 // Load the Links and render them.
-// If reload==true, the Links are completely resolved again and possibly
-// reloaded from URLs.
-// If resolveLinks() is called, the value of skipLocalStorage is passed to
-// control whether the value in LocalStorage is considered.
+// If forcedownload==true, the Links are downloaded without fallbackLinks.
 // This function returns a Promise to communicate when it's done or if there
 // are exceptions.
-function loadLinks(reload = false, skipLocalStorage = false) {
-	if (LinksPromise == null || reload) {
-		// Resolve links if not already done so
-		resolveLinks(skipLocalStorage);
-	}
-
+function loadLinks(forcedownload = false) {
 	let result = new PendingPromise();
 
-	LinksPromise
-	.then((value) => {
-		// Links have been resolved
-		//console.log(value);
-		Links = value;
+	// If forcedownload, don't do preliminary links
+	let preliminaryLinks = forcedownload ? null : UrlResolver.getPreliminaryLinks();
+	let preliminaryLinksCancel = CreateCancel();
+	let preliminaryLinksRenderPromise = null;
 
-		// Process the Links
-		processLinks();
+	// Helper function to handle processing the links.
+	function handleLinks(links, cancel = null) {
+		if (cancel && cancel()) return;
+		Links = links;
+		if (cancel == null) cancel = CreateCancel();
+		processLinks(cancel);
+	}
 
-		// Signal that this is done.
-		result.resolve(true);
-	})
-	.catch(error => {
-		if (error instanceof UserInputError) {
-			// It is a UserInputError, trigger reject, because
-			// the user can fix it.
-			result.reject(error);
-		} else {
-			// It is another error, log it for debugging, but
-			// do a resolve, so that no dialog is triggered.
-			console.error(error);
-			result.resolve(false);
+	// Helper function to render fallbackLinks, logging the reason.
+	function handleFallbackLinks(reason) {
+		if (forcedownload) {
+			// The download is forced, but we ended up in the
+			// fallback. Report to the user.
+			alert('Could not download, see console log for details.');
+			return;
 		}
-	});
+		let fallbackLinks = UrlResolver.getFallbackLinks();
+		if (fallbackLinks != null) {
+			if (preliminaryLinks == null || fallbackLinks.trim() != preliminaryLinks.trim()) {
+				console.important(reason + ', use fallback Links');
+				handleLinks(fallbackLinks);
+			} else {
+				console.important(reason + ' and fallback same as preliminary, keep preliminary Links');
+			}
+		} else {
+			console.important(reason + ', keep preliminary Links');
+		}
+	}
+
+	// NOTE: The intention is to start 2 Promises, one doing the rendition
+	// of the preliminaryLinks and a second doing the download. As soon as
+	// the download has finished and the result is different, the
+	// preliminary render is cancelled and a new rendition is started.
+	//
+	// Unfortunately, this is not how JavaScript Promises work. It seems
+	// like Promises are like co-operative multi-tasking and each Promise
+	// has to yield control in order for other Promises to progress.
+	// Since the handleLinks() doesn't need to wait, it does not yield by
+	// itself. It could be made to in the cancel() call, but I have not
+	// found a way to yield control manually.
+	// Surprisingly, also the downloading does not yield control.
+	// This means that the first Promise will finish before the second and
+	// preliminary rendition and downloading is not done in parallel.
+	// I tried the following:
+	// - Use fetch() for download, but that does not yield either
+	// - Place preliminary render in a setTimeout() with value 1ms to
+	//   forcibly yield. This works in the sense that the download is
+	//   started, but as soon as the render gets control again, it doesn't
+	//   let go anymore.
+
+	// Start rendering preliminaryLinks (if defined)
+	if (preliminaryLinks != null) {
+		preliminaryLinksRenderPromise = new Promise((resolveFunc, rejectFunc) => {
+			// Use a short timeout to give the download a chance to start
+			// so that the response will be received asap after the
+			// preliminary render is done (since handleLinks() does not
+			// yield control).
+			setTimeout(() => {
+				console.important('Start processing preliminaryLinks');
+				handleLinks(preliminaryLinks, preliminaryLinksCancel);
+				if (preliminaryLinksCancel()) {
+					console.important('preliminaryLinks have been cancelled');
+				} else {
+					console.important('preliminaryLinks finished successfully');
+				}
+				resolveFunc();
+			}, 50);
+		});
+	}
+
+	// Start download (if defined)
+	// Depending on download, render result or fallbackLinks.
+	let loadPromise = downloadLinks();
+	if (loadPromise != null) {
+		loadPromise
+		.then((value) => {
+			// Links have been downloaded successfully
+			if (preliminaryLinks == null || value.trim() != preliminaryLinks.trim()) {
+				console.important('Use downloaded Links');
+				preliminaryLinksCancel.setReturn(true);
+				if (!UrlResolver.getLoadOverrideOptions()) {
+					// Downloaded links are from links= and are different
+					console.log('Update LocalStorage');
+					writeLocalStorage(LSKey_Links, value);
+				}
+				handleLinks(value);
+				result.resolve(true);
+			} else {
+				console.important('Downloaded links same as preliminary, keep preliminary Links');
+				preliminaryLinksRenderPromise.then(() => result.resolve(true));
+			}
+		})
+		.catch(error => {
+			if (error === false) {
+				handleFallbackLinks('Download failed');
+				result.resolve(true);
+			} else if (error instanceof UserInputError) {
+				// It is a UserInputError, trigger reject, because
+				// the user can fix it.
+				console.log('Download failed with UserInputError');
+				result.reject(error);
+			} else {
+				// It is another error, log it for debugging, but
+				// do a resolve, so that no dialog is triggered.
+				console.error('Download failed with erro', error);
+				result.resolve(false);
+			}
+		});
+	} else {
+		// No download, go straight to fallback
+		handleFallbackLinks('No download');
+	}
 
 	return result;
 }
@@ -3388,7 +3704,7 @@ function loadLinks(reload = false, skipLocalStorage = false) {
 // Initialize the JavaScript on the page
 function init() {
 	initSettingsPanel();
-	loadLinks(false, false)
+	loadLinks()
 	.catch(error => {
 		// There is an error, report and open Settings
 		// Always log for debugging
