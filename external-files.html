@@ -123,67 +123,306 @@ body {
 <h1>Favorites and ToDo - Online Configuration</h1>
 
 <p>
-Generally, the configuration is stored in the browser's local storage.
-That local storage, however, is per domain, so if the page is opened from a different
-domain, a different configuration might be present in the local storage.
+Generally, the configuration is stored in the browser's local storage.  That
+local storage, however, is per domain, so if the page is opened from a
+different domain, a different configuration might be present in the local
+storage.
 </p>
 
 <p>
-It is possible to provide the configuration as a URL. This URL can be provided
-in several ways. These are the URL arguments that are used:
+It is also possible to load and save the configuration online. Loading is done
+with <a href="#load-options"><i>load-options</i></a> and saving is done with <a
+href="#save-options"><i>save-options</i></a>. The following URL arguments are
+used for passing these options:
 <ul>
-<li><dt>links=</dt>: If <code>links=&lt;URL&gt;</code> is provided, that
-    URL is downloaded and its contents is used.
-    If <code>links=config:&lt;config-name&gt;</code> is provided, that
-    config-name is a self-chosen configuration name that is stored in the
-    browser's local storage. The stored value can be modified in the Settings.
-    Using a config-name is preferred when there are credentials in the URL.
-<li><dt>links-override=</dt>: If <code>links-override=&lt;URL&gt;</code> is
-    provided, that URL is downloaded and its contents is used.
-    If <code>links-override=config:&lt;config-name&gt;</code> is provided, that
-    config-name is a self-chosen configuration name that is stored in the
-    browser's local storage. The stored value can be modified in the Settings.
-    Using a config-name is preferred when there are credentials in the URL.
-<li><dt>save=</dt>: If <code>save=&lt;config-name&gt;</code> is provided, that
-    config-name is a self-chosen configuration name that is stored in the
-    browser's local storage. The stored value allows the contents to be saved
-    online. The stored value can be modified in the Settings, see <a
-    href="#save-online">Save Online</a> for details. This is considered an
-    advanced feature.
+<li><dt>links=</dt>: The <i>load-options</i> can be specified with
+    <code>links=&lt;load-options&gt;</code> or with
+    <code>links=config:&lt;config-name&gt;</code>, where <i>config-name</i> is
+    a self-chosen configuration name that is stored in the browser's local
+    storage.  The stored value is the <i>load-options</i> and can be modified
+    in the Settings.  Using a config-name is preferred when there are
+    credentials in the <i>load-options</i>.
+<li><dt>links-override=</dt>: This can also be used to specify
+    <i>load-options</i>, the same way as with links=.
+<li><dt>save=</dt>: The <i>save-options</i> can be specified with
+    <code>save=&lt;config-name&gt;</code>, where config-name is a self-chosen
+    configuration name that is stored in the browser's local storage. The
+    stored value is the <i>save-options</i> and can be modified in the
+    Settings.
+</ul>
+See below for some complete <a href="#examples">examples</a>.
+</p>
+
+<p>
+If <i>load-options</i> and/or <i>save-options</i> are used, the locally stored
+configuration can still be used. To make this clear, there is an order in which
+the configuration is searched.
+</p>
+
+<p>
+If no <i>load-options</i> have been specified, the order is:
+<ol>
+<li>Browser's local storage
+<li>Use fixed default configuration with examples
+</ol>
+</p>
+
+<p>
+If <i>load-options</i> have been specified, but no <i>save-options</i>, the
+order is:
+<ol>
+<li>links-override=
+<li>Browser's local storage
+<li>links=
+<li>Use fixed default configuration with examples
+</ol>
+Note links= is only used if the local storage is empty.
+</p>
+
+<p>
+If both <i>load-options</i> and <i>save-options</i> have been specified, the
+order is:
+<ol>
+<li>links-override=
+<li>links=
+<li>Browser's local storage
+<li>Use fixed default configuration with examples
+</ol>
+Note there is no distinction between using links= and links-override=.
+</p>
+
+
+<a name="load-options"></a>
+<h2>Load-options</h2>
+
+<p>
+Load-options can be specified in any of these forms:
+<ul>
+<li><code>links=&lt;load-options&gt;</code> 
+<li><code>links-override=&lt;load-options&gt;</code>
+<li><code>links=config:&lt;config-name&gt;</code>
+<li><code>links-override=config:&lt;config-name&gt;</code>
+</ul>
+In the latter cases, config-name is a self-chosen name and the contents of the
+load-options can be managed under Settings.
+</p>
+
+<p>
+The syntax of the <i>load-options</i> is: <code>url\name\token\header:value\...</code>
+<br>
+With:
+<ul>
+<li><dt>url</dt> (mandatory): The URL that is used for downloading. This may be
+    a relative or absolute URL.
+<li><dt>name</dt> (optional): Name of the resource to use on the remote side.
+    If this is not specified, the name part of <i>url</i> is used.
+    This is equivalent to a <code>x-name:name</code> header.
+<li><dt>token</dt> (optional): If the <i>url</i> needs credentials in the form
+    of a token, it can be passed here.
+    This is equivalent to a <code>x-token:token</code> header.
+<li><dt>header:value</dt> (optional): Zero or more additional headers to send.
+    This may include credentials.
 </ul>
 </p>
 
 <p>
-<span class="important">Known Issue</span>: If the configuration is loaded
-and/or saved from a different domain with an absolute URL, that URL is subject
-to Cross-Origin Resource Sharing (CORS) rules, see <a
+The load-options may specify a URL to a .txt file directly, in which case that
+file will be downloaded. However, if that is on a different domain, it is
+subject to <span class="important">Cross-Origin Resource Sharing (CORS)</span>
+rules, see <a
 href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS">MDN</a>
-for details. In short, this means that the server where links.txt is hosted
-should provide an appropriate <code>Access-Control-Allow-Origin</code> header.
+for details. In short, this means that the server where the URL is hosted
+should provide an appropriate <code>Access-Control-Allow-Origin</code> header,
+otherwise the contents cannot be used in JavaScript.
+<br>
+As an alternative, <a href="#data-php"><code>data.php</code></a> is provided
+that may be copied onto the server and called as URL instead. It needs the name
+of the .txt file and, optionally, a token to protect it. It supports a
+different token for reading and writing.
 </p>
 
 <p>
-This is the order how the configuration is normally searched:
-<ol>
-<li>links-override=
-<li>Browser's local storage
-<li>links=
-<li>Use fixed default configuration with examples
-</ol>
+Some examples are:
+<ul>
+<li>links.txt
+<li>https://example.com/data.php\links.txt
+<li>https://example.com/data.php\links.txt\my-token
+<li>https://username:password@example.com/data.php\links.txt
+</ul>
+</p>
+
+
+<a name="save-options"></a>
+<h2>Save-options</h2>
+
+<p>
+Save-options can only be specified in a config-name because they will generally
+contain some sort of credentials. The way to specify save-options is:
+<ul>
+<li><code>save=&lt;config-name&gt;</code>
+</ul>
+Config-name is a self-chosen name and the contents of the save-options can be
+managed under Settings.
 </p>
 
 <p>
-This is the order how the configuration is searched when <code>save=</code> is
-used:
-<ol>
-<li>links-override=
-<li>links=
-<li>Browser's local storage
-<li>Use fixed default configuration with examples
-</ol>
+The save-options can either specify an arbitrary PUT or POST URL or use <a
+href="#data-php"><code>data.php</code></a> that was also used for the
+<i>load-options</i>. Using data.php is convenient if it's already used for the
+<i>load-options</i> and by using arbitrary POST or PUT requests with
+appropriate headers, it should be possible to use web forms and WebDAV.
+<p>
+
+<p>
+<span class="important">Note</span>: Since saving will modify data on the
+server and will send access tokens, it is recommended to use this only with
+https.
 </p>
 
 
+<h3>Save to data.php</h3>
+
+<p>
+For ease of use, a PHP script <a href="#data-php"><code>data.php</code></a> is
+included that can be used to save the configuration and works with CORS too.
+This script can be put in the same directory as the links.txt file on a PHP
+enabled server. See <a href"#data-php">here</a> on how it exactly works.
+</p>
+
+The syntax of the <i>save-options</i> with data.php is: <code>url\password\header:value\...</code>
+<br>
+With:
+<ul>
+<li><dt>url</dt> (mandatory): The URL of the <a
+    href="#data-php"><code>data.php</code></a> script. The used method will
+    always be POST.
+    If a relative URL is used, it is taken to be with respect to the URL in the
+    <i>load-options</i>.
+<li><dt>token</dt> (optional): If the <i>url</i> needs credentials in the form
+    of a token, it can be passed here.
+    This is equivalent to a <code>x-token:token</code> header.
+<li><dt>header:value</dt> (optional): Zero or more additional headers to send.
+    This may include credentials.
+<li>name (from <i>load-options</i>): This name is sent as a
+    <code>x-name:name</code> header.
+</ul>
+</p>
+
+<p>
+Example:
+<ul>
+<li>data.php\my-token
+</ul>
+</p>
+
+
+<h3>Save to URL</h3>
+
+<p>
+The syntax of the <i>save-options</i> with arbitrary URLs is: <code>method:url\header:value\...</code>
+<br>
+With:
+<ul>
+<li><dt>method</dt> (mandatory): This is the method to use, <code>put</code> or
+    <code>post</code>.
+<li><dt>url</dt> (optional): URL to send to. If this is not specified, the URL
+    from the <i>load-options</i> is used.
+    If neither is specified, no online save will be done.
+    If a relative URL is used, it is taken to be with respect to the URL in the
+    <i>load-options</i>.
+<li><dt>header:value</dt> (optional): Zero or more additional headers to send.
+    This may include credentials.
+</ul>
+</p>
+
+<p>
+Some examples are:
+<ul>
+<li>put
+<li>put:https://username:password@example.com/links.txt
+<li>put:https://storage.example.com/12345678-aaaa-bbbb-cccc-1234567890ab/links.txt
+<li>post:https://storage.example.com/webform.php\username:me\password:secret\name:links.txt
+<li>post:data.php\x-token:my-token\x-name:links.txt
+</ul>
+</p>
+
+
+<a name="data-php"></a>
+<h2>data.php</h2>
+
+<p>
+<code>data.php</code> is a PHP script that allows for .txt files to be read and
+written under protection of a password token. It also returns the
+<code>Access-Control-Allow-Origin</code> header to make it work with
+Cross-Origin Resource Sharing (CORS).
+</p>
+
+
+<h3>Reading</h3>
+
+<p>
+Reading is done with the GET method. When such a request is received, the
+following checks are performed:
+<ul>
+<li>Verify the token
+    <ul>
+    <li>Get the value of the x-token header.
+    <li>If there is no token, use the an empty string.
+    <li>Verify this token is the same as the contents of the file
+	<code>/etc/favlinks/read-token.</code>
+	The name of this file is defined in data.php and can be changed.
+    </ul>
+<li>Verify the name
+    <ul>
+    <li>Get the value of the x-name header.
+    <li>Verify if the name is specified and not empty.
+    <li>If the name contains directory separators (<code>/</code> or
+        <code>\</code>), only keep the last part (filename).
+    <li>From the name, remove all characters that are not letters, numbers or
+	any of the symbols <code>+</code>, <code>-</code>, <code>_</code>,
+	<code>,</code> or <code>.</code>.
+    <li>Verify the name ends with <code>.txt</code>.
+    </ul>
+</ul>
+If all checks returned valid, look for the specified file in the same directory
+as where data.php is and return its contents.
+</p>
+
+
+<h3>Writing</h3>
+
+<p>
+Writing is done with the POST method. When such a request is received, the
+following checks are performed:
+<ul>
+<li>Verify the token
+    <ul>
+    <li>Get the value of the x-token header.
+    <li>Verify if the token is specified and not empty.
+    <li>Verify this token is the same as the contents of the file
+	<code>/etc/favlinks/save-token</code>.
+	The name of this file is defined in data.php and can be changed.
+    </ul>
+<li>Verify the name
+    <ul>
+    <li>Get the value of the x-name header.
+    <li>Verify if the name is specified and not empty.
+    <li>If the name contains directory separators (<code>/</code> or
+        <code>\</code>), only keep the last part (filename).
+    <li>From the name, remove all characters that are not letters, numbers or
+	any of the symbols <code>+</code>, <code>-</code>, <code>_</code>,
+	<code>,</code> or <code>.</code>.
+    <li>Verify the name ends with <code>.txt</code>.
+    </ul>
+<li>Verify that the body of the request is at most 512KiB.
+    This maximum size is defined in data.php and can be changed.
+</ul>
+If all checks returned valid, write the contents into the specified file in the
+same directory as where data.php is.
+</p>
+
+
+<a name="examples"></a>
 <h2>Examples</h2>
 
 <p>
@@ -210,118 +449,32 @@ configure them:
 	<li>Config 'links': <code>https://user:password@example.com/links.txt</code>
         </ul>
     </ul>
-<li>Public URL with online save with save.php:
+<li>Read-only private URL with data.php:
     <ul>
-    <li>URL arguments: <code>?links=https://example.com/links.txt&amp;save=conf</code>
+    <li>URL arguments: <code>?links=config:links</code>
     <li>Settings:
         <ul>
-	<li>Online Save 'conf': <code>save.php\password</code>
-	</ul>
+	<li>Config 'links': <code>https://example.com/data.php\links.txt\token</code>
+        </ul>
     </ul>
-<li>With online save to NextCloud (WebDAV):
+<li>Read-only URL on a different domain (remember CORS):
     <ul>
-    <li>URL arguments: <code>links=config:my-nextcloud-links&amp;save=my-nextcloud</code>
+    <li>URL arguments: <code>?links=config:links</code>
     <li>Settings:
         <ul>
-	<li>Config 'my-nextcloud-links': <code>https://user:password@my-nextcloud.example.com/remote.php/dav/files/user/links.txt</code>
-	    <br>
-	    See URL in NextCloud -&gt; File Settings -&gt; WebDAV URL.
-	<li>Online Save 'my-nextcloud': <code>put</code>
-	    <br>
-	    URL can be omitted, because it is the same as links=.
+	<li>Config 'links': <code>https://storage.example.com/data.php\links.txt</code>
+        </ul>
+    </ul>
+<li>URL with online save with data.php:
+    <ul>
+    <li>URL arguments: <code>?links=config:links&amp;save=conf</code>
+    <li>Settings:
+        <ul>
+	<li>Config 'links': <code>data.php\links.txt</code>
+	<li>Online Save 'conf': <code>data.php\token</code>
 	</ul>
     </ul>
 </ul>
-
-
-<a name="save-online"></a>
-<h2>Save Online</h2>
-
-<p>
-By specifying the <code>save=&lt;config-name&gt;</code> URL argument, saving
-changed configuration to a server is enabled.  In this case the links
-configuration is stored in the browser's local storage as well as the location
-specified by the save-options indicated by config-name. The save-options can be
-changed under Settings for the currently selected config-name. Note that it is
-possible to have different configurations under different names.
-</p>
-
-
-<a name="save-to-url"></a>
-<h3>Save to URL</h3>
-
-<p>
-The save-option can be used to save changed configuration to any URL with a
-POST or PUT request. By specifying the correct headers, this should include web
-forms, WebDAV, database backed storage, etc.
-</p>
-
-<p>
-The general syntax is as follows: <code>method:url\header:value\...</code>
-<br>
-With:
-<ul>
-<li><dt>method</dt>: <code>put</code> or <code>post</code>. If this is missing,
-    the <a href="#special-save">special save syntax</a> is used, see below.
-<li><dt>url</dt> (optional): URL to send to. Defaults to URL used to read (from
-    <code>links=</code> or <code>links-override=</code>). If neither of those
-    are specified, no online save will be done. If a relative URL is used, it
-    is taken to be with respect to the URL read from.
-<li><dt>header:value</dt> (optional): Zero or more additional headers to send.
-    This may include credentials.
-</ul>
-</p>
-
-<p>
-Examples:
-<ul>
-<li>put
-<li>put:https://username:password@example.com/links.txt
-<li>put:https://storage.example.com/12345678-aaaa-bbbb-cccc-1234567890ab/links.txt
-<li>post:https://storage.example.com/webform.php\username:me\password:secret\name:links.txt
-</ul>
-</p>
-
-
-<a name="special-save"></a>
-<h3>Special Save Syntax</h3>
-
-<p>
-For ease of use, this repository also contains a little save.php script. This
-can be put in the same directory as the links.txt file on a PHP enabled server.
-When it is posted to, it first checks the token in the x-token header and the
-size of the content. If that is ok, it will take the filename in the x-name
-header, filter out all non-ASCII characters, verify it is a .txt file and use
-that as the target file to save.
-</p>
-
-There exists also a special save syntax for this: <code>url\password\header:value\...</code>
-<br>
-In this case, the following is implied:
-<ul>
-<li>The method is <code>post</code>.
-<li>The URL is typically just <code>save.php</code>, because it is in the same
-    directory as the <code>links=</code> or <code>links-override=</code> URL.
-<li>A header <code>x-token:password</code> is added.
-<li>A header <code>x-name:URL</code> of <code>links=</code> or
-    <code>links-override=</code> is added.
-<li>Typically, no other headers are needed.
-</ul>
-</p>
-
-<p>
-Example:
-<ul>
-<li>save.php\password
-</ul>
-</p>
-
-<p>
-<span class="important">Note</span>: Since saving will modify data on the
-server and will send access tokens, it is recommended to use this only with
-https.
-</p>
-
 
 </body>
 

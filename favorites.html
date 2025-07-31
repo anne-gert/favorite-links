@@ -745,14 +745,15 @@ const LSKey_LoadOptions_Prefix = LSKey_Prefix + 'load_';
 
 // Global variables to hold the URL and Promise for the Links.
 // Set by resolveLinks().
-var LinksConfigName = null;  //name of the config to load LinksUrl from (links=config:...)
+var LinksConfigName = null;  //name of the config to load LinksOptions from (links=config:...)
 var LinksOptions = null;  //value of links= or LocalStorage for LinksConfigName
-var LinksOverrideConfigName = null;  //name of the config to load LinksUrl from (links-override=config:...)
+var LinksOverrideConfigName = null;  //name of the config to load LinksOverrideOptions from (links-override=config:...)
 var LinksOverrideOptions = null;  //value of links-override= or LocalStorage for LinksOverrideConfigName
 var SaveConfigName = null;  //name of the config to get the SaveOptions from (save=...)
 var SaveOptions = null;  //value of LocalStorage for SaveConfigName
 var SaveOptionsDisabled = null;  //set to string with the reason why saving is disabled
-var LinksUrl = null;  //download URL (links= or links-override=)
+var LinksUrl = null;  //URL of the Links (from links= or links-override=)
+var LinksName = null;  //name of the Links (from links= or links-override=)
 var LinksPromise = null;
 
 // This function tries to find the configuration for the Links.
@@ -774,6 +775,7 @@ function resolveLinks(skipLocalStorage = false) {
 	SaveOptions = null;
 	SaveOptionsDisabled = null;
 	LinksUrl = null;
+	LinksName = null;
 	LinksPromise = null;
 
 	// The general order is:
@@ -796,6 +798,9 @@ function resolveLinks(skipLocalStorage = false) {
 	// Derive LinksUrl:
 	// - LinksUrl should always be the first of links-override= or links=
 	//   or null if neither is set.
+	//
+	// Derive LinksName:
+	// - This is the name part of LinksUrl.
 	//
 	// Derive linksText:
 	// - If LinksUrl is set, the contents should generally be downloaded.
@@ -827,7 +832,7 @@ function resolveLinks(skipLocalStorage = false) {
 			// Note: This value is not URL-encoded. If this is required, it should
 			// be done before the value is used in the context where that is needed.
 			if (LinksOverrideOptions === false || LinksOverrideOptions.match(/^\s*$/)) {
-				LInksOverrideOptions = '';
+				LinksOverrideOptions = '';
 			}
 		}
 	}
@@ -864,6 +869,40 @@ function resolveLinks(skipLocalStorage = false) {
 		console.log('LinksUrl: No URL specified');
 		LinksUrl = null;
 	}
+
+	// Derive linksToken and LinksName
+	let headers = [];
+	if (LinksUrl != null) {
+		let parts = LinksUrl.split('\\');
+		//console.log(parts);
+		LinksUrl = parts.shift();
+		// The other parts are additional headers in either value or
+		// name:value format
+		let implicitNames = [ 'x-name', 'x-token' ];
+		for (let i = 0; i < parts.length; ++i) {
+			let name_value = parts[i].match(/^([^:]+)?:(.+)$/);
+			if (name_value) {
+				// This is a name:value header
+				headers.push(name_value.slice(1,3));
+			} else {
+				// A header with an implicit name
+				if (implicitNames.length > 0) {
+					let name = implicitNames.shift();
+					headers.push([ name, parts[i] ]);
+					if (name == 'x-name') LinksName = parts[i];
+				} else {
+					console.error('Too many implicit headers in ' + LinksUrl);
+					// Just discard this header
+				}
+			}
+		}
+	}
+	if (LinksName == null) {
+		// No name found, now take the name of the URL
+		LinksName = LinksUrl.replace(/[?#].*$/, '').replace(/^[^\/]*/, '');
+	}
+	//console.log('LinksName=', LinksName);
+	//console.log('HTTP headers=', headers);
 
 	// Derive linksText
 	let checkLocalStorage = () => {
@@ -950,6 +989,9 @@ function resolveLinks(skipLocalStorage = false) {
 		LinksPromise = new Promise((resolveFunc, rejectFunc) => {
 			let xhr = new XMLHttpRequest();
 			xhr.open('GET', url);
+			for (let i = 0; i < headers.length; ++i) {
+				xhr.setRequestHeader(headers[i][0], headers[i][1]);
+			}
 			xhr.onreadystatechange = function() {
 				if (this.readyState == 4) {
 					// Request has been handled
@@ -992,7 +1034,7 @@ function resolveLinks(skipLocalStorage = false) {
 	}
 
 	// Here LinkPromise has been set to the links contents.
-	// Also LinksUrl has been set to the URL used or that would have been used.
+	// Also LinksUrl and LinksName have been set to the URL/Name used or that would have been used.
 
 	// Return the Promise too (for chaining)
 	return LinksPromise;
@@ -1100,11 +1142,10 @@ function writeOnlineLinks(value) {
 			headers.push([ 'x-token', parts.shift() ]);
 		}
 		// Create the x-name header
-		if (LinksUrl) {
-			let name = LinksUrl.replace(/\?.*/, '').replace(/.*\//, '');
-			headers.push([ 'x-name', name ]);
+		if (LinksName) {
+			headers.push([ 'x-name', LinksName ]);
 		} else {
-			console.error('Special save cannot find LinksUrl for x-name');
+			console.error('Special save cannot find LinksName for x-name');
 			return false;
 		}
 	}
