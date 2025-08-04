@@ -188,6 +188,7 @@ If you want to, though, please continue reading any of these topics:
     <li><a href="#link-examples">Link examples</a>
     </ul>
 <li><a href="#icons">Icons</a>
+<li><a href="#checkboxes">Checkboxes</a>
 <li><a href="#search-functions">Adding new search methods</a>
 <li><a href="#themes">Theming</a>
 </ul>
@@ -349,7 +350,7 @@ Each Link is specified on a single line as follows:
       href="#icons">Icons</a> for how to define the value.
   <li><dt>Checkbox</dt>: If <code>[ ]</code> or <code>[x]</code> is at the
       start of a line, render a checkbox for this item, so it can be used as a
-      todo list item.
+      todo list item, see <a href="#checkboxes">Checkboxes</a> for more details.
   <li><dt>url=URL</dt>: Target of this link. If this exists, no URL is
       attempted to be recognized in the rest of the line. So this is also a way
       to override the URL (possibly to empty) if a URL occurs in the Name too.
@@ -451,6 +452,23 @@ values:
 <li><code>html:&lt;fragment&gt;</code>: Use the specified HTML fragment after
     the colon to create a &lt;div&gt;. The contents is scaled to a square.
 </ul>
+</p>
+
+
+<a name="checkboxes"></a>
+<h2>Checkboxes</h2>
+
+<p>
+Checkboxes can be defined in an <a
+href="https://www.markdownguide.org/extended-syntax/#task-lists">Extended
+Markdown</a> way:
+<pre>
+- [ ] Unchecked value
+- [x] Checked value
+[x] List character is not mandatory
+</pre>
+The state of the checkbox is stored in the configuration and is updated when
+that is enabled.
 </p>
 
 
