@@ -26,6 +26,12 @@ Examples
             [ ] icon=github Start using favorite-links as todo-list
             []  icon=empty Write review
                 & Goto Blog icon=none url=https://blog.example.com
+        Poll
+            [ ]:3 I like shapes
+                [ ]:3 Square
+                [ ]:3 Circle
+                [ ]:3 Triangle
+            [ ]:yesno Yes or No
     Socials
         Facebook https://www.facebook.com
             Instagram https://www.instagram.com/
@@ -38,6 +44,10 @@ Examples
 !icondef html-preview.github.io github
 !icondef firefox                https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
 !icondef github                 https://github.com
+
+// Checkbox definitions
+!checkbox 3 uncheck check mcheck
+!checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E
 
 // Search button definitions
 //      Identifier   | Label  | Tooltip | Icon | URL-Template

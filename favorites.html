@@ -247,6 +247,20 @@ body {
 	color: var(--disabled-color);
 	text-decoration: line-through;
 }
+.custom-checkbox {
+	display: inline-block;
+	cursor: default;
+}
+.custom-checkbox:hover {
+	transform: scale(1.2);
+	transition: transform 0.2s;
+}
+.custom-checkbox .text-icon {
+	transform: scale(1.7);
+}
+.custom-checkbox img.text-icon {
+	transform: scale(1.4);
+}
 
 /* Item Icons */
 
@@ -566,9 +580,13 @@ const UNICODE_CLOCKWISE_TOP_SEMICIRCLE_ARROW = '\u{21B7}';  //a 180 degree arc
 const UNICODE_ANTICLOCKWISE_OPEN_CIRCLE_ARROW = '\u{21BA}';  //a 270 degree arc
 const UNICODE_CLOCKWISE_OPEN_CIRCLE_ARROW = '\u{21BB}';  //a 270 degree arc
 // Unicode Block: Geometric Shapes
+const UNICODE_WHITE_SQUARE_CONTAINING_BLACK_SMALL_SQUARE = '\u{25A3}';  //checkbox with square
 const UNICODE_BLACK_DOWN_POINTING_TRIANGLE = '\u{25BC}';
 const UNICODE_BLACK_RIGHT_POINTING_TRIANGLE = '\u{25B6}';
 // Unicode Block: Miscellaneous Symbols
+const UNICODE_BALLOT_BOX = '\u{2610}';  //empty checkbox
+const UNICODE_BALLOT_BOX_WITH_CHECK = '\u{2611}';  //checked checkbox
+const UNICODE_BALLOT_BOX_WITH_CROSS = '\u{2612}';  //crossed checkbox
 const UNICODE_GEARS = '\u{2699}';  //gears wheel
 // Unicode Block: Dingbats
 const UNICODE_CHECK_MARK = '\u{2713}';
@@ -711,6 +729,12 @@ These are some examples of the available features.
             [ ] icon=github Start using favorite-links as todo-list
             []  icon=empty Write review
                 & Goto Blog icon=none url=https://blog.example.com
+        Poll
+            [ ]:3 I like shapes
+                [ ]:3 Square
+                [ ]:3 Circle
+                [ ]:3 Triangle
+            [ ]:yesno Yes or No
     Socials
         Facebook https://www.facebook.com
             Instagram https://www.instagram.com/
@@ -723,6 +747,10 @@ These are some examples of the available features.
 !icondef html-preview.github.io github
 !icondef firefox                https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
 !icondef github                 https://github.com
+
+// Checkbox definitions
+!checkbox 3 uncheck check mcheck
+!checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E
 
 // Search button definitions
 //      Identifier   | Label  | Tooltip | Icon | URL-Template
@@ -1554,6 +1582,7 @@ var FontSize = null;  //specified font-size (may be relative, but that doesn't w
 var SearchButtonDefs = null;  //specified search button declarations
 var RootLinks = null;  //array of Link objects that have no parents (i.e. are roots)
 var IconDefs = null;  //specified icondef declarations
+var CheckBoxDefs = null;  //specified checkbox declarations
 var StyleBlocks = null;  //array of !style...!endstyle blocks
 var ScriptBlocks = null;  //array of !script...!endscript blocks
 
@@ -1570,6 +1599,7 @@ function parseLinks() {
 	SearchButtonDefs = [];
 	RootLinks = [];
 	IconDefs = {};
+	CheckboxDefs = {};
 	StyleBlocks = null;
 	ScriptBlocks = null;
 	let textBlock = null;  //used for literal !text ... !endtext blocks
@@ -1671,6 +1701,85 @@ function parseLinks() {
 			continue;
 		}
 
+		// Check if it is a checkbox definition
+		m = line.match(/^\s*!checkbox\s+(\S+)\s+(.+?)\s*$/i);
+		if (m) {
+			// This is a checkbox definition
+			// Parse the arguments
+			let args = m[2].split(/\s+/);  //split on whitespace
+			let firstOptionName = null, prevOptionName = null;
+			let options = {};
+			for (let i = 0; i < args.length; ++i) {
+				let arg = args[i];
+				//console.devlog('!checkbox arg: ' + arg);
+				let name = null, val = null;
+				let m = arg.match(/^([^=]+)=(.+)$/);
+				if (m) {
+					// It is an name=value option
+					if (m[1][0] == '!') {
+						// It is an argument
+						continue;  //not yet implemented
+					} else {
+						// This is a checkbox option
+						name = m[1];
+						val = m[2];
+					}
+				} else {
+					// It is a single value option
+					val = arg;
+				}
+				if (name == '_') name = ' ';
+				// Check special values
+				let lval = val.toLowerCase();
+				if (lval == '_' || lval == 'empty') {
+					if (name == null) name = ' ';
+					val = 'empty';  //a valid icon
+				} else if (lval == 'uncheck') {
+					val = UNICODE_BALLOT_BOX;
+				} else if (lval == 'check') {
+					val = UNICODE_BALLOT_BOX_WITH_CHECK;
+				} else if (lval == 'cross') {
+					val = UNICODE_BALLOT_BOX_WITH_CROSS;
+				} else if (lval == 'mcheck') {
+					val = UNICODE_WHITE_SQUARE_CONTAINING_BLACK_SMALL_SQUARE;
+				}
+				// Set name if name not yet set
+				if (name == null) name = val;
+				if (val.length == 1 || val.match(/^U\+[0-9a-f]{1,6}$/i)) {
+					// Single characters option, visualize with char:x
+					val = 'char:' + val;
+				}
+				// Add option to options structure
+				if (name != null) {
+					let option = {
+						'name'  : name,
+						'value' : val,
+						'next'  : firstOptionName,
+					}
+					if (firstOptionName == null) {
+						firstOptionName = name;
+					} else {
+						options[prevOptionName].next = name;
+					}
+					options[name] = option;
+					prevOptionName = name;
+				}
+			};
+			if (firstOptionName != null) {
+				let def = {
+					'name'    : m[1],
+					'options' : options,
+					'first'   : firstOptionName,
+				};
+				//console.devlog('!checkbox found');
+				//console.log(def);
+				CheckboxDefs[m[1]] = def;
+			} else {
+				console.warn('Ignore !checkbox \'' + m[1] + '\' with no options');
+			}
+			continue;
+		}
+
 		// Check if it is a search button definition
 		m = line.match(/^\s*!search\s+(.+?)\s*$/i);
 		if (m) {
@@ -1739,13 +1848,20 @@ function parseLinks() {
 			icon = m[2];
 			line = m[1] + m[3];  //the rest
 		}
-		// Take out Check: start with '[ ]' '[]' or '[x]'
-		let check = null;
-		m = line.match(/^(\s*)(?:[-*]\s*)?(?:(\[ ?\])|(\[x\]))(.*)$/i);
+		// Take out Check: start with '[]', '[value]' or '[value]:checkbox-type'.
+		let checkType = null, checkValue = null;
+		m = line.match(/^(\s*)(?:[-*]\s*)?(?:\[(\S+|\s+)\]|(\[\]))(?::(\S+))?(.*)$/);
+		// The above regex matches the following:
+		// - Capture 1: Initial whitespace (indentation)
+		// - Capture 2: The checkbox value (either non-space string or only-space string)
+		// - Capture 3: The empty []
+		// - Capture 4: The checkbox type
+		// - Capture 5: The rest of the line
 		if (m) {
-			if (m[2]) check = false;
-			if (m[3]) check = true;
-			line = m[1] + m[4];  //the rest
+			if (m[2]) checkValue = m[2];  //value is set
+			if (m[3]) checkValue = null;  //value is empty
+			checkType = (m[4] != null) ? m[4] : 'default'; 
+			line = m[1] + m[5];  //the rest
 		}
 		// Take out Target: /target=non-whitespace/
 		let target = null;
@@ -1791,17 +1907,18 @@ function parseLinks() {
 
 		// Create the Link object
 		let link = {
-			'lineNum'  : i+1,
-			'type'     : 'link',
-			'level'    : level,
-			'name'     : name,
-			'url'      : url,
-			'icon'     : icon,
-			'check'    : check,
-			'target'   : target,
-			'cont'     : [],
-			'subs'     : [],
-			'toString' : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', check=' + check + ', #SubItems=' + this.subs.length + ' }' },
+			'lineNum'    : i+1,
+			'type'       : 'link',
+			'level'      : level,
+			'name'       : name,
+			'url'        : url,
+			'icon'       : icon,
+			'checkType'  : checkType,
+			'checkValue' : checkValue,
+			'target'     : target,
+			'cont'       : [],
+			'subs'       : [],
+			'toString'   : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', check=' + check + ', #SubItems=' + this.subs.length + ' }' },
 		};
 		//console.log('Indentation=' + indent + ', Link=' + link);
 
@@ -1852,32 +1969,34 @@ function parseLinks() {
 			// Add 1 or 2 levels in the front of allLinks
 			// In either case, we need to add a Section
 			let section = {
-				'lineNum'  : 0,
-				'type'     : 'link',
-				'level'    : 0,
-				'name'     : '_',  //this makes this section not render
-				'url'      : null,
-				'icon'     : null,
-				'check'    : null,
-				'target'   : null,
-				'cont'     : [],
-				'subs'     : [],
-				'toString' : function() { return '{ Dummy Section }' },
+				'lineNum'    : 0,
+				'type'       : 'link',
+				'level'      : 0,
+				'name'       : '_',  //this makes this section not render
+				'url'        : null,
+				'icon'       : null,
+				'checkType'  : null,
+				'checkValue' : null,
+				'target'     : null,
+				'cont'       : [],
+				'subs'       : [],
+				'toString'   : function() { return '{ Dummy Section }' },
 			};
 			if (maxLevel == 0) {
 				// Only in this case, we need to add a Block level too
 				let block = {
-					'lineNum'  : 0,
-					'type'     : 'link',
-					'level'    : 1,
-					'name'     : firstLink.name,  //give it the same name as the first link
-					'url'      : null,
-					'icon'     : null,
-					'check'    : null,
-					'target'   : null,
-					'cont'     : [],
-					'subs'     : [],
-					'toString' : function() { return '{ Dummy Block }' },
+					'lineNum'    : 0,
+					'type'       : 'link',
+					'level'      : 1,
+					'name'       : firstLink.name,  //give it the same name as the first link
+					'url'        : null,
+					'icon'       : null,
+					'checkType'  : null,
+					'checkValue' : null,
+					'target'     : null,
+					'cont'       : [],
+					'subs'       : [],
+					'toString'   : function() { return '{ Dummy Block }' },
 				};
 				console.log('Add dummy Block');
 				allLinks.unshift(block);
@@ -2013,7 +2132,8 @@ function outputItem(link, level, container, parentPath, cancel) {
 	let name = link.name;
 	let url = link.url;
 	let icon = link.icon;
-	let check = link.check;
+	let checkType = link.checkType;
+	let checkValue = link.checkValue;
 	let target = link.target;
 	let tooltip = null;
 	let contItems = link.cont;
@@ -2214,35 +2334,8 @@ function outputItem(link, level, container, parentPath, cancel) {
 		let textContainer_maybe = itemContainer;  //null if we must create a separate one
 
 		// Create checkbox
-		let checkbox = null;
-		if (check != null) {
-			// Render a checkbox
-			checkbox = document.createElement('input');
-			checkbox.type = 'checkbox';
-			checkbox.className = 'todo-checkbox';
-			checkbox.onchange = function() {
-				let re = new RegExp('(^(?:[^\\n]*\\n){' + (link.lineNum - 1) + '}\\s*)\\[.?\\]');
-				let newCheck;
-				if (checkbox.checked) {
-					// Change checkbox to checked
-					console.log('Check checkbox on line ' + link.lineNum);
-					newCheck = '[x]';
-				} else {
-					// Change checkbox to checked
-					console.log('Uncheck checkbox on line ' + link.lineNum);
-					newCheck = '[ ]';
-				}
-				let newLinks = Links.replace(re, '$1' + newCheck);
-				if (newLinks != Links) {
-					Links = newLinks;
-					writeLocalStorage(LSKey_Links, Links);
-					uploadLinks(Links);
-				} else {
-					console.error('RegExp did not change Links: ', re);
-				}
-				setTextClass('checked', checkbox.checked);
-			};
-			checkbox.checked = check;
+		let checkbox = outputCheckbox(checkType, checkValue, link.lineNum);
+		if (checkbox.present) {
 			textContainer_maybe = null;  //for styling purposes
 		}
 
@@ -2287,8 +2380,8 @@ function outputItem(link, level, container, parentPath, cancel) {
 		}
 
 		// Add checkbox to the itemContainer
-		if (checkbox != null) {
-			itemContainer.appendChild(checkbox);
+		if (checkbox.present) {
+			itemContainer.appendChild(checkbox.element);
 		}
 
 		// Add hyperlink to itemContainer
@@ -2317,10 +2410,10 @@ function outputItem(link, level, container, parentPath, cancel) {
 				linkContainer.appendChild(textContainer);
 			}
 			textContainer.appendChild(document.createTextNode(name));
-			if (check != null) {
+			if (checkbox.present) {
 				// This is a checkbox item, give the name the correct class
 				setTextClass('checkbox-label', true);
-				setTextClass('checked', check);
+				checkbox.associateLabel(textContainer);
 			} else {
 				setTextClass('link-name', true);
 			}
@@ -2368,15 +2461,129 @@ function outputItems(links, level, container, parentPath, cancel) {
 
 // }}}
 
+// Output Checkbox {{{
+
+// Create element for a checkbox and return that.
+// Arguments:
+// - type: Type of checkbox, null if no checkbox.
+// - value: Current value of checkbox.
+// - lineNum: Linenumber where this checkbox is in the links. This is used
+//   to update the value when the checkbox' value is changed.
+// Returns object with:
+// - present: True if a checkbox was generated.
+// - element: Represents the checkbox, may be null.
+// - associateLabel: Function to call to associate this checkbox with its
+//   label. The single argument should be a DOM element, representing the
+//   label.
+function outputCheckbox(type, value, lineNum) {
+	// If type==null, don't make a checkbox
+	let retval = {
+		'present'        : false,
+		'element'        : null,
+		'associateLabel' : null,
+	};
+	if (type == null) return retval;
+
+	// Find the checkbox definition for this type
+	let def = CheckboxDefs[type];
+
+	// Placeholder for the associated label
+	let labelElement = null;
+	let setLabelClass = (className, add) => {
+		if (labelElement != null) {
+			if (add) {
+				labelElement.classList.add(className);
+			} else {
+				labelElement.classList.remove(className);
+			}
+		}
+	};
+	let initialSetLabel = null;  //will be set to init function
+	retval.associateLabel = element => {
+		labelElement = element;
+		if (initialSetLabel) initialSetLabel();
+	};
+
+	// Function to update the Links
+	let updateLinks = function(newCheck) {
+		const re = new RegExp('(^(?:[^\\n]*\\n){' + (lineNum - 1) + '}\\s*(?:[-*]\\s*)?)\\[(?:\\s+|\\S+)?\\]');
+		let newLinks = Links.replace(re, '$1' + newCheck);
+		if (newLinks != Links) {
+			Links = newLinks;
+			writeLocalStorage(LSKey_Links, Links);
+			uploadLinks(Links);
+		} else {
+			console.error('RegExp did not change Links: ', re);
+		}
+	}
+
+	// Render the checkbox as specified by the definition
+	let checkbox = null;
+	if (def == null) {
+		// Default checkbox: Use the standard <input> element
+		checkbox = document.createElement('input');
+		checkbox.type = 'checkbox';
+		checkbox.className = 'todo-checkbox';
+		checkbox.onchange = function() {
+			let newCheck;
+			if (checkbox.checked) {
+				// Change checkbox to checked
+				console.log('Check checkbox on line ' + lineNum);
+				newCheck = '[x]';
+			} else {
+				// Change checkbox to checked
+				console.log('Uncheck checkbox on line ' + lineNum);
+				newCheck = '[ ]';
+			}
+			updateLinks(newCheck);
+			setLabelClass('checked', checkbox.checked);
+		};
+		let boolValue = value != null && value != '' && value != ' ';
+		checkbox.checked = boolValue;
+		initialSetLabel = () => setLabelClass('checked', boolValue);
+		// Set return value
+		retval.present = true;
+		retval.element = checkbox;
+	} else {
+		// The checkbox is defined by def
+		let checkbox = document.createElement('span');
+		checkbox.className = 'custom-checkbox';
+		let sel = def.options[value];
+		if (sel == null) sel = def.options[def.first];
+		let icon = outputIcon(null, sel.value);
+		checkbox.appendChild(icon.element);
+		checkbox.onclick = function() {
+			// Determine next value
+			sel = def.options[sel.next];
+			// Update Links
+			if (sel != null) {
+				console.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
+				let newCheck = '[' + sel.name + ']';
+				updateLinks(newCheck);
+			}
+			// Put this icon in
+			let newIcon = outputIcon(null, sel.value);
+			checkbox.replaceChild(newIcon.element, icon.element);
+			icon = newIcon;
+		};
+		// Set return value
+		retval.present = true;
+		retval.element = checkbox;
+	}
+	return retval;
+}
+
+// }}}
+
 // Output Icon {{{
 
-// Create element for icon and return that
+// Create element for an icon and return that.
 // If alt_text is defined, use that.
 // icon_url is what is specified in the icon=URL argument, see explanation at
 // the top of this file.
 // Returns object with:
-// - present: true if a non-empty icon is generated.
-// - element: represents the icon, may be null.
+// - present: True if a non-empty icon was generated.
+// - element: Represents the icon, may be null.
 //
 // To retrieve the icon, first try the primary URL. If that fails and skip_alternatives==false,
 // try these alternatives:
@@ -2428,6 +2635,7 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 	} else {
 		console.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
 		let img = document.createElement('img');
+		img.className = 'item-icon';
 		icon_present = true;
 		if (icon_url == 'empty') {
 			img.style.visibility = 'hidden';
@@ -2436,17 +2644,13 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 			let text = m[1];
 			// Replace 'U+XXX...'
 			function hexChar(hex) {
-				console.devlog('hex=' + hex);
 				let i = Number('0x' + hex);
-				console.devlog('i=' + i);
 				if (i > 0xFFFF) {
 					// JavaScript only supports UTF-16, so for codepoints
 					// above 0x10000, surrogate pairs are used, see
 					// https://en.wikipedia.org/wiki/UTF-16#U+0000_to_U+D7FF_and_U+E000_to_U+FFFF
 					let w1 = 0xD800 + ((i - 0x10000) >> 10);  //higher 10 bits
-					console.devlog('w1=' + w1.toString(16));
 					let w2 = 0xDC00 + (i & 0x3FF);  //lower 10 bits
-					console.devlog('w2=' + w2.toString(16));
 					return String.fromCharCode(w1, w2);
 				} else {
 					return String.fromCharCode(i);
@@ -2454,6 +2658,7 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 			}
 			text = text.replace(/^U\+([0-9a-f]+)$/i, s => hexChar(s.substring(2)));
 			// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
+			img.classList.add('text-icon');
 			icon_url = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">' + text + '</text></svg>';
 			img.src = icon_url;
 		} else {
@@ -2550,7 +2755,6 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 		if (alt_text != null) {
 			img.alt = alt_text;
 		}
-		img.className = 'item-icon';
 		icon_element = img;
 	}
 

@@ -263,6 +263,9 @@ Each line should be one of the following:
       <code>empty</code>, <code>html:x</code>, etc.  It is also allowed to
       write this with an <code>=</code> between name and replacement. See <a
       href="#icons">Icons</a> for more on icons.
+  <li><dt>Checkbox Definition</dt>: The line <code>!checkbox name options
+      ...</code> defines a custom checkbox. See <a
+      href="#checkboxes">Checkboxes</a> for more details.
   <li><dt>Text Block</dt>: A text block is the lines of text between
       <code>!text</code> and <code>!endtext</code>, which each should appear
       on a line of their own. The text block will be rendered at that
@@ -349,8 +352,11 @@ Each Link is specified on a single line as follows:
   <li><dt>icon=&lt;value&gt;</dt>: Defines the icon to use. See <a
       href="#icons">Icons</a> for how to define the value.
   <li><dt>Checkbox</dt>: If <code>[ ]</code> or <code>[x]</code> is at the
-      start of a line, render a checkbox for this item, so it can be used as a
-      todo list item, see <a href="#checkboxes">Checkboxes</a> for more details.
+      start of a line, render a standard checkbox for this item, so it can be
+      used as a todo list item. Custom checkboxes with icons can also be used
+      by specifying <code>[]:name</code> where <i>name</i> is the name of a
+      <code>!checkbox</code> definition, see <a
+      href="#checkboxes">Checkboxes</a> for more details.
   <li><dt>url=URL</dt>: Target of this link. If this exists, no URL is
       attempted to be recognized in the rest of the line. So this is also a way
       to override the URL (possibly to empty) if a URL occurs in the Name too.
@@ -459,7 +465,7 @@ values:
 <h2>Checkboxes</h2>
 
 <p>
-Checkboxes can be defined in an <a
+Standard checkboxes can be defined in an <a
 href="https://www.markdownguide.org/extended-syntax/#task-lists">Extended
 Markdown</a> way:
 <pre>
@@ -469,6 +475,104 @@ Markdown</a> way:
 </pre>
 The state of the checkbox is stored in the configuration and is updated when
 that is enabled.
+</p>
+
+
+<h3>Custom Checkboxes</h3>
+
+<p>
+In addition to standard Checkboxes, <code>!checkbox name options...</code> can
+be used to define a checkbox type with custom options. The allowed options are:
+<ul>
+<li><dt>Single letter</dt>: Instead of <code>[x]</code> and <code>[ ]</code>,
+    use these letters as checkbox values. <code>_</code> has the special
+    meaning that it represents a space character. See below for examples.
+<li><dt>Icon</dt>: By using <code>X=icon</code>, the checkbox <code>[X]</code>
+    is displayed as icon, all <a href="#icons">icon definitions</a> can be
+    used. See below for examples.
+<li><dt>empty</dt>: Shorthand for <code>_=empty</code>.
+<li><dt>uncheck</dt>: Shorthand for <code>U+2610</code> (empty box, &#x2610;).
+<li><dt>check</dt>: Shorthand for <code>U+2611</code> (checked box, &#x2611;).
+<li><dt>cross</dt>: Shorthand for <code>U+2612</code> (crossed box, &#x2612;).
+<li><dt>mcheck</dt>: Shorthand for <code>U+25A3</code> (filled box, &#x25A3;).
+</ul>
+</p>
+
+<p>
+The checkbox definition defined with <code>!checkbox name</code> can be used
+for a specific checkbox by appending the <code>:name</code> with no spaces to
+the checkbox.
+</p>
+
+<p>
+Examples 1: Simple checkbox with standard Unicode icons:
+<pre>
+!checkbox standard _=uncheck x=check
+[ ]:standard Option 1
+[x]:standard Option 2
+</pre>
+</p>
+
+<p>
+Examples 2: Standard checkbox with sub-options:
+<pre>
+!checkbox sub uncheck check mcheck
+[&#x2610;]:sub Option 1
+[&#x25A3;]:sub Option 2
+    [&#x2611;]:sub Option 2-1
+    [&#x2610;]:sub Option 2-2
+</pre>
+</p>
+
+<p>
+Examples 3: Checkbox with 3 values, A, B and C:
+<pre>
+!checkbox letters A B C
+[A]:letters Option 1
+[B]:letters Option 2
+[C]:letters Option 3
+</pre>
+</p>
+
+<p>
+Examples 4: Checkbox with 3 values, unknown (&#x2753;), thumbs-up (&#x1F44D;)
+and thumbs-down (&#x1F44E;):
+<pre>
+!checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E
+[ ]:yesno Option 1
+[yes]:yesno Option 2
+[no]:yesno Option 3
+</pre>
+</p>
+
+<p>
+Examples 5: Checkbox with 6 values, empty and 5 icons where '1' and '3' show
+the same icon because of the !icondef and '2' and '5' also show the same icon
+because both options have the same display value:
+<pre>
+!checkbox icons empty 1=icon1 2=icon2 3=icon3 4=icon4 5=icon2
+[1]:icons Option 1
+[2]:icons Option 2
+!icondef icon1 http://example.com/icon1.png
+!icondef icon2 http://example.com/icon2.png
+!icondef icon3 icon1
+!icondef icon4 char:X
+</pre>
+</p>
+
+
+<h3>Overriding Default</h3>
+
+<p>
+If no checkbox definition is supplied, the default checkbox definition is used.
+If that is not defined, the standard checkboxes are used. By defining a default
+checkbox definition, the behevior of all default checkboxes can be changed.
+<pre>
+!checkbox default _=U+2753 x=U+1F44D -=U+1F44E
+[ ] Unknown
+[x] Yes
+[-] No
+</pre>
 </p>
 
 
