@@ -760,13 +760,6 @@ These are some examples of the available features.
 !search Google Maps  | Maps
 `;
 
-// LocalStorage keys.
-const LSKey_Prefix = 'favlist_';
-const LSKey_Links = LSKey_Prefix + 'links';
-const LSKey_ItemExpandedPrefix = LSKey_Prefix + 'expanded_';
-const LSKey_SaveOptions_Prefix = LSKey_Prefix + 'save_';
-const LSKey_LoadOptions_Prefix = LSKey_Prefix + 'load_';
-
 // }}}
 
 // Utility Functions {{{
@@ -978,13 +971,54 @@ function CreateUrlResolver() {
 		}
 	}
 
+	// Methods to get the correct LocalStorage keys
+	const LSKey_Prefix = 'favlist_';
+	function getLoadOverrideOptionsLSKey() {
+		if (loadOverrideConfigName != null) {
+			return LSKey_Prefix + 'load_' + loadOverrideConfigName;
+		} else {
+			return LSKey_Prefix + 'load_default';
+		}
+	}
+	function getLoadOptionsLSKey() {
+		if (loadConfigName != null) {
+			return LSKey_Prefix + 'load_' + loadConfigName;
+		} else {
+			return LSKey_Prefix + 'load_default';
+		}
+	}
+	function getSaveOptionsLSKey() {
+		if (saveConfigName != null) {
+			return LSKey_Prefix + 'save_' + saveConfigName;
+		} else {
+			return LSKey_Prefix + 'save_default';
+		}
+	}
+	function getLSKeyHelper(subKey) {
+		let key = LSKey_Prefix + subKey;
+		if (_usedLoadConfigName != null) key += '_' + _usedLoadConfigName;
+		if (_loadName != null) key += '_' + _loadName;
+		return key;
+	}
+	function _getLinksLSKey_noRecurse() {
+		return getLSKeyHelper('links');
+	}
+	function getLinksLSKey() {
+		if (_usedLoadConfigName == null || _loadName == null) calcDownloadUrl();
+		return _getLinksLSKey_noRecurse();
+	}
+	function getItemExpandedLSKey(itemPath) {
+		if (_usedLoadConfigName == null || _loadName == null) calcDownloadUrl();
+		return getLSKeyHelper('expanded') + '_' + itemPath;
+	}
+
 	// Get the options
 	let _loadOverrideOptions = null;
 	function getLoadOverrideOptions() {
 		if (_loadOverrideOptions == null) {
 			if (loadOverrideConfigName != null) {
 				// Read from config
-				_loadOverrideOptions = readLocalStorage(LSKey_LoadOptions_Prefix + loadOverrideConfigName);
+				_loadOverrideOptions = readLocalStorage(getLoadOverrideOptionsLSKey());
 				// Note: This value is not URL-encoded. If this is required, it should
 				// be done before the value is used in the context where that is needed.
 				if (_loadOverrideOptions === false || _loadOverrideOptions.match(/^\s*$/)) {
@@ -1008,7 +1042,7 @@ function CreateUrlResolver() {
 		if (_loadOptions == null) {
 			if (loadConfigName != null) {
 				// Read from config
-				_loadOptions = readLocalStorage(LSKey_LoadOptions_Prefix + loadConfigName);
+				_loadOptions = readLocalStorage(getLoadOptionsLSKey());
 				// Note: This value is not URL-encoded. If this is required, it should
 				// be done before the value is used in the context where that is needed.
 				if (_loadOptions === false || _loadOptions.match(/^\s*$/)) {
@@ -1032,7 +1066,7 @@ function CreateUrlResolver() {
 		if (_saveOptions == null) {
 			if (saveConfigName != null) {
 				// Read from config
-				_saveOptions = readLocalStorage(LSKey_SaveOptions_Prefix + saveConfigName);
+				_saveOptions = readLocalStorage(getSaveOptionsLSKey());
 				// Note: This value is not URL-encoded. If this is required, it should
 				// be done before the value is used in the context where that is needed.
 				if (_saveOptions === false || _saveOptions.match(/^\s*$/)) {
@@ -1081,85 +1115,66 @@ function CreateUrlResolver() {
 
 	// Reset the download URL variables, so that it gets recalculated when needed
 	function resetDownloadUrl() {
-		_preliminaryLinks = _loadUrl = _fallbackLinks = _loadName = _downloadHeaders = null;
+		_preliminaryLinks = _loadUrl = _fallbackLinks = _loadName = _downloadHeaders = _usedLoadConfigName = null;
 		resetUploadUrl();
 	}
 
 	// Calculate the download URL values
+	let _usedLoacConfigName = null;
 	function calcDownloadUrl() {
-		// Get Links from LocalStorage
-		let localLinks = readLocalStorage(LSKey_Links);
-		let localLinksMsg = 'none';
-		if (localLinks === false) {  //nothing in LocalStorage
-			localLinks = null;
-			localLinksMsg = 'LocalStorage(empty)';
-		} else {
-			localLinksMsg = 'LocalStorage';
-		}
+		// Note: The LinksLSKey depends on the _usedLoadConfigName and
+		// on the _loadName, so these have to be calculated before
+		// we can call _getLinksLSKey_noRecurse().
 
 		// Derive _preliminaryLinks: Generally LocalStorage if available,
 		// because it might be equal to the downloaded Links in which case
 		// rendering doesn't need to be restarted.
-		// If localLinks==null, don't do preliminary render.
-		_preliminaryLinks = localLinks;
-		let preliminaryLinksMsg = localLinksMsg;
+		let preliminaryIsLocal = true;  //flag to use localLinks as preliminary
 
-		// Derive _loadUrl: The first of loadOverrideOptions or loadOptions
 		// Derive _fallbackLinks: The final links text, unless download was successful
-		_loadUrl;
-		let loadUrlMsg;
-		_fallbackLinks;
-		let fallbackLinksMsg;
-		if (localLinks != null) {
-			_fallbackLinks = null;
-			fallbackLinksMsg = 'same as preliminaryLinks (LocalStorage)';
-		} else {
-			_fallbackLinks = DefaultLinks;
-			fallbackLinksMsg = 'default';
-		}
+		_fallbackLinks = null;
+		let fallbackLinksMsg = 'same as preliminaryLinks';
+
+		// Derive _loadUrl and _usedConfigName: The first of Load or
+		// LoadOverride that is set.
+		// Also adjust preliminary and fallback flags.
 		let loadOverrideOptions = getLoadOverrideOptions();
 		let loadOptions = getLoadOptions();
 		let saveOptions = getSaveOptions();
+		let localBeforeDownload = false;  //flag to not use local before download
+		let loadUrlMsg;
 		if (loadOverrideOptions) {
 			// Source selection: override - default  (do not consider LoadOptions or LocalStorage)
 			console.log('loadOverrideOptions set');
-			_preliminaryLinks = null;
-			preliminaryLinksMsg = 'none';
+			preliminaryIsLocal = false;
 			// Note: The override might be te same as localLinks, in which case
 			// preliminary-render would have helped.
 			_loadUrl = loadOverrideOptions;
 			loadUrlMsg = 'loadOverrideOptions';
+			_usedLoadConfigName = loadOverrideConfigName;
 			_fallbackLinks = DefaultLinks;
 			fallbackLinksMsg = 'default';
 		} else if (loadOptions) {
 			if (saveOptions) {
-				// Source selection: links - local - default  (LoadOptions before LocalStorage, because saveOptions is set)
+				// Source selection: download - local - default  (LoadOptions before LocalStorage, because saveOptions is set)
 				console.log('Both loadOptions and saveOptions set');
-				_loadUrl = loadOptions;
-				loadUrlMsg = 'loadOptions';
 			} else {
-				// Source selection: local - links - default
+				// Source selection: local - download - default
 				console.log('loadOptions without saveOptions set');
-				if (localLinks != null) {
-					// The first option is LocalStorage and that is set.
-					// No need to download
-					_loadUrl = null;
-					loadUrlMsg = 'none';
-				} else {
-					// No LocalStorage set, we need download
-					_loadUrl = loadOptions;
-					loadUrlMsg = 'loadOptions';
-				}
+				localBeforeDownload = true;
 			}
+			_loadUrl = loadOptions;
+			loadUrlMsg = 'loadOptions';
+			_usedLoadConfigName = loadConfigName;
 		} else {
 			// Source selection: local - default
 			console.log('Both loadOverrideOptions and loadOptions not set');
 			_loadUrl = null;
 			loadUrlMsg = 'none';
+			_usedLoadConfigName = null;
 		}
-		console.log('preliminaryLinks: Use ' + preliminaryLinksMsg);
-		console.log('loadUrl: Use ' + loadUrlMsg);
-		console.log('fallbackLinks: Use ' + fallbackLinksMsg);
+		console.log('_usedLoadConfigName=' + _usedLoadConfigName);
+		console.log('_loadUrl=' + _loadUrl);
 
 		// Derive loadToken and loadName
 		_loadName = null;
@@ -1191,10 +1206,43 @@ function CreateUrlResolver() {
 		}
 		if (_loadName == null && _loadUrl != null) {
 			// No name found, now take the name from the URL
-			_loadName = _loadUrl.replace(/[?#].*$/, '').replace(/^[^\/]*/, '');
+			_loadName = _loadUrl.replace(/[?#].*$/, '').replace(/^[^\/]*\//, '');
 		}
-		//console.log('_loadName=', _loadName);
-		//console.log('HTTP headers=', _downloadHeaders);
+		console.log('_loadName=' + _loadName);
+		//console.log('HTTP headers=' + _downloadHeaders);
+
+		// Get Links from LocalStorage (needs _usedConfigName and _loadName)
+		// Derive _preliminaryLinks and _fallbackLinks.
+		let localLinksKey = _getLinksLSKey_noRecurse();
+		console.log('localLinks: From ' + localLinksKey);
+		let localLinks = readLocalStorage(localLinksKey);
+		let preliminaryLinksMsg;
+		if (localLinks !== false) {
+			// localLinks present
+			if (preliminaryIsLocal) {
+				_preliminaryLinks = localLinks;
+				preliminaryLinksMsg = 'LocalStorage (' + localLinks.length + ' characters)';
+			} else {
+				_preliminaryLinks = null;
+				preliminaryLinksMsg = 'none (ignore LocalStorage)';
+			}
+			if (localBeforeDownload) {
+				// The first option is LocalStorage and that is set.
+				// No need to download
+				_loadUrl = null;
+				loadUrlMsg = 'none (use LocalStorage instead)';
+			}
+		} else {
+			// localLinks not present
+			_preliminaryLinks = null;
+			preliminaryLinksMsg = 'none (LocalStorage is empty)';
+			_fallbackLinks = DefaultLinks;
+			fallbackLinksMsg = 'default (LocalStorage is empty)';
+		}
+
+		console.log('preliminaryLinks: Use ' + preliminaryLinksMsg);
+		console.log('loadUrl: Use ' + loadUrlMsg);
+		console.log('fallbackLinks: Use ' + fallbackLinksMsg);
 
 		// If _loadUrl set, check special cases
 		if (_loadUrl != null) {
@@ -1384,16 +1432,19 @@ function CreateUrlResolver() {
 		'getLoadConfigName' : () => loadConfigName,
 		'getLoadOptions' : getLoadOptions,
 		'setLoadOptions' : setLoadOptions,
+		'getLoadOptionsLSKey' : getLoadOptionsLSKey,
 
 		// Fields to manage LoadOptions override
 		'getLoadOverrideConfigName' : () => loadOverrideConfigName,
 		'getLoadOverrideOptions' : getLoadOverrideOptions,
 		'setLoadOverrideOptions' : setLoadOverrideOptions,
+		'getLoadOverrideOptionsLSKey' : getLoadOverrideOptionsLSKey,
 
 		// Fields to manage SaveOptions
 		'getSaveConfigName' : () => saveConfigName,
 		'getSaveOptions' : getSaveOptions,
 		'setSaveOptions' : setSaveOptions,
+		'getSaveOptionsLSKey' : getSaveOptionsLSKey,
 
 		// Fields for downloading Links
 		'getDownloadUrl' : getDownloadUrl,
@@ -1412,6 +1463,10 @@ function CreateUrlResolver() {
 
 		// Fields for fallback Links
 		'getFallbackLinks' : getFallbackLinks,
+
+		// Fields for accessing other LocalStorage keys
+		'getLinksLSKey' : getLinksLSKey,
+		'getItemExpandedLSKey' : getItemExpandedLSKey,
 	};
 }
 
@@ -2206,7 +2261,7 @@ function outputItem(link, level, container, parentPath, cancel) {
 				expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
 				_blockContainer.appendChild(expandIcon);
 				let isExpanded = true;  //true if block is expanded
-				let storageKey = LSKey_ItemExpandedPrefix + myPath;
+				let storageKey = UrlResolver.getItemExpandedLSKey(myPath);
 				if (localStorage) {
 					// LocalStorage is available, use persistent value
 					let v = localStorage.getItem(storageKey);
@@ -2510,7 +2565,7 @@ function outputCheckbox(type, value, lineNum) {
 		let newLinks = Links.replace(re, '$1' + newCheck);
 		if (newLinks != Links) {
 			Links = newLinks;
-			writeLocalStorage(LSKey_Links, Links);
+			writeLocalStorage(UrlResolver.getLinksLSKey(), Links);
 			uploadLinks(Links);
 		} else {
 			console.error('RegExp did not change Links: ', re);
@@ -3315,7 +3370,7 @@ function initSettingsPanel() {
 				(value) => {
 					UrlResolver.setLoadOptions(value);
 					UrlResolver.setLoadOverrideOptions(value);
-					writeLocalStorage(LSKey_LoadOptions_Prefix + loadOverrideConfigName, value);
+					writeLocalStorage(UrlResolver.getLoadOverrideOptionsLSKey(), value);
 				});
 		} else {
 			if (loadOverrideConfigName) {
@@ -3324,7 +3379,7 @@ function initSettingsPanel() {
 					() => UrlResolver.getLoadOverrideOptions(),
 					(value) => {
 						UrlResolver.setLoadOverrideOptions(value);
-						writeLocalStorage(LSKey_LoadOptions_Prefix + loadOverrideConfigName, value);
+						writeLocalStorage(UrlResolver.getLoadOverrideOptionsLSKey(), value);
 					});
 			}
 			if (loadConfigName) {
@@ -3333,7 +3388,7 @@ function initSettingsPanel() {
 					() => UrlResolver.getLoadOptions(),
 					(value) => {
 						UrlResolver.setLoadOptions(value);
-						writeLocalStorage(LSKey_LoadOptions_Prefix + loadConfigName, value);
+						writeLocalStorage(UrlResolver.getLoadOptionsLSKey(), value);
 					});
 			}
 		}
@@ -3346,7 +3401,7 @@ function initSettingsPanel() {
 				(value) => {
 					if (!saveOptionsDisabled) {
 						UrlResolver.setSaveOptions(value);
-						writeLocalStorage(LSKey_SaveOptions_Prefix + saveConfigName, value);
+						writeLocalStorage(UrlResolver.getSaveOptionsLSKey(), value);
 					}
 				});
 			if (saveOptionsDisabled) {
@@ -3435,7 +3490,7 @@ function initSettingsPanel() {
 				.then(() => {
 					// Links are correct
 					settingsText.value = Links;
-					writeLocalStorage(LSKey_Links, Links);
+					writeLocalStorage(UrlResolver.getLinksLSKey(), Links);
 					// Just read from URL, don't call uploadLinks().
 					// Close the panel
 					hide();
@@ -3465,7 +3520,7 @@ function initSettingsPanel() {
 					Links = settingsText.value;
 					processLinks(() => false);  //Render Links
 					// Links are correct
-					writeLocalStorage(LSKey_Links, Links);
+					writeLocalStorage(UrlResolver.getLinksLSKey(), Links);
 					uploadLinks(Links);
 					// Close the panel
 					hide();
@@ -3891,7 +3946,7 @@ function loadLinks(forcedownload = false) {
 				if (!UrlResolver.getLoadOverrideOptions()) {
 					// Downloaded links are from links= and are different
 					console.log('Update LocalStorage');
-					writeLocalStorage(LSKey_Links, value);
+					writeLocalStorage(UrlResolver.getLinksLSKey(), value);
 				}
 				handleLinks(value);
 				result.resolve(true);
