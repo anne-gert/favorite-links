@@ -187,6 +187,7 @@ If you want to, though, please continue reading any of these topics:
     <li><a href="#link-syntax">Link syntax</a>
     <li><a href="#link-examples">Link examples</a>
     </ul>
+<li><a href="#icons">Icons</a>
 <li><a href="#search-functions">Adding new search methods</a>
 <li><a href="#themes">Theming</a>
 </ul>
@@ -259,7 +260,8 @@ Each line should be one of the following:
       <code>icon=name</code>, it will be replaced by whatever is defined for
       name.  This also works with the special words <code>none</code>,
       <code>empty</code>, <code>html:x</code>, etc.  It is also allowed to
-      write this with an <code>=</code> between name and replacement.
+      write this with an <code>=</code> between name and replacement. See <a
+      href="#icons">Icons</a> for more on icons.
   <li><dt>Text Block</dt>: A text block is the lines of text between
       <code>!text</code> and <code>!endtext</code>, which each should appear
       on a line of their own. The text block will be rendered at that
@@ -343,35 +345,8 @@ Each Link is specified on a single line as follows:
       <ul>
         <li>If no URL is given, no hyperlink is created.
       </ul>
-  <li><dt>icon=URL</dt>: URL of the icon to use.
-      <ul>
-	<li>If the value <code>default</code> is used or no icon is given, the
-	    URL domain + <code>favicon.ico</code> is used. If the URL domain
-	    is the name of an !icondef, that value is used.
-	<li>If the value <code>none</code> is used, no image is rendered.
-	<li>If the value <code>empty</code> is used, an empty image is
-	    rendered.
-	<li>If the value <code>alt:&lt;method&gt;?&lt;url&gt;</code> is used,
-	    don't use the website's icon (which may be inaccessible due to
-	    referer restrictions), but use the specified alternative method.
-	    Current methods are:
-	    <ul>
-              <li><code>google</code>: Use Google's database.
-	      <li><code>*</code>, <code>any</code>: Use any of the known
-		  methods. This is the default if <code>:&lt;method&gt;</code>
-		  is not specified.
-	    </ul>
-	    If <code>?&lt;url&gt;</code> is specified, that URL is used,
-	    otherwise the target URL is used as a base for the alternative
-	    method.
-	<li>If the value <code>char:&lt;x&gt;</code> is used, the (short) text
-	    after the colon is used to create an icon.
-	<li>If the value <code>html:&lt;x&gt;</code> is used, the (short) text
-	    after the colon is used to create a &lt;div&gt;. The contents is
-	    scaled to a square.  Specifically, this can be used to display
-	    unicode as in <code>html:&amp;#x2661;</code> (white heart,
-	    &#x2661;).
-      </ul>
+  <li><dt>icon=&lt;value&gt;</dt>: Defines the icon to use. See <a
+      href="#icons">Icons</a> for how to define the value.
   <li><dt>Checkbox</dt>: If <code>[ ]</code> or <code>[x]</code> is at the
       start of a line, render a checkbox for this item, so it can be used as a
       todo list item.
@@ -445,6 +420,40 @@ Specifying icons.
 </p>
 
 
+<a name="icons"></a>
+<h2>Icons</h2>
+
+<p>
+At different places, icons can be used. An icon can be any of the following
+values:
+<ul>
+<li>URL: This URL is used as the image URL of the icon.
+<li><code>default</code>: If value is default or no icon is given, the URL
+    domain + <code>favicon.ico</code> is used. If the URL domain is the name of
+    an !icondef, that value is used.
+<li><code>none</code>: No image is rendered.
+<li><code>empty</code>: An empty image is rendered.
+<li><code>alt:&lt;method&gt;?&lt;url&gt;</code>: Instead of the website's icon
+    (which may be inaccessible due to referer restrictions), use the specified
+    alternative method. Current methods are:
+    <ul>
+      <li><code>google</code>: Use Google's database.
+      <li><code>*</code>, <code>any</code>: Use any of the known methods. This
+          is the default if <code>:&lt;method&gt;</code> is not specified.
+    </ul>
+    If <code>?&lt;url&gt;</code> is specified, that URL is used, otherwise the
+    target URL is used as a base for the alternative method.
+<li><code>char:&lt;x&gt;</code>: Use the (unicode) character or (short) text
+    after the colon to create an icon. To use, a Unicode character, it can be
+    entered in either UTF-8 encoding or as U+xxxxxx for the codepoint with
+    hexadecimal number xxxxxx, e.g.  <code>char:U+2661</code> (white heart,
+    &#x2661;).
+<li><code>html:&lt;fragment&gt;</code>: Use the specified HTML fragment after
+    the colon to create a &lt;div&gt;. The contents is scaled to a square.
+</ul>
+</p>
+
+
 <a name="search-functions"></a>
 <h2>New Search Function</h2>
 
@@ -462,9 +471,9 @@ are the fields to be specified:
     displayd if the mouse is hovered over the button. If '_' is specified, no
     tooltip will be displayed.
 <li><dt>Icon</dt> (default: <code>default</code> if SearchFunction exists,
-    <code>char:&lt;U+1F50D&gt;</code> (magnifying glass, &#x1F50D;) if not):
-    This is the specification of the icon to display. See the icon=URL of Links
-    for the syntax.
+    <code>char:U+1F50D</code> (magnifying glass, &#x1F50D;) if not):
+    This is the specification of the icon to display. See the <a
+    href="#icons">Icons</a> for the syntax.
 <li><dt>URL-Template</dt>: If this is defined, this string is used as the
     Search URL Function result. This template recogizes the following special
     values:
