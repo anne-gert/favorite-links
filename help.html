@@ -423,6 +423,7 @@ Specifying icons.
   icon=iconToo http://www.example.com  : Uses icon icon2.png from !icondef above (expliciti, recursive)
   icon=alt http://example.com          : Use alternate
   icon=alt:google http://example.com   : Use alternate from Google
+  icon=html:&lt;span&amp;space;style="color:green"&gt;&amp;#x2714;&lt;/span&gt; http://example.com
 </pre>
 </p>
 
@@ -456,7 +457,9 @@ values:
     hexadecimal number xxxxxx, e.g.  <code>char:U+2661</code> (white heart,
     &#x2661;).
 <li><code>html:&lt;fragment&gt;</code>: Use the specified HTML fragment after
-    the colon to create a &lt;div&gt;. The contents is scaled to a square.
+    the colon to create a &lt;div&gt;. The contents is scaled to a square. To
+    include a space in the fragment use &amp;space; (or the shorthand &amp;sp;
+    or &amp;spc;).
 </ul>
 </p>
 
@@ -566,9 +569,12 @@ because both options have the same display value:
 <p>
 If no checkbox definition is supplied, the default checkbox definition is used.
 If that is not defined, the standard checkboxes are used. By defining a default
-checkbox definition, the behevior of all default checkboxes can be changed.
+checkbox definition, the behevior of all default checkboxes can be changed. As
+an example, the example below make all checkboxes have 3 states: &#x2753;
+(U+2753), a green <span style="color:green">&#x2714;</span> (U+2714) and a red
+&#x274C; (U+274C).
 <pre>
-!checkbox default _=U+2753 x=U+1F44D -=U+1F44E
+!checkbox default _=U+2753 x=html:&lt;span&amp;sp;style="color:green"&gt;&amp;#x2714;&lt;/span&gt; -=U+274C
 [ ] Unknown
 [x] Yes
 [-] No

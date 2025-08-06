@@ -2722,7 +2722,7 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 	} else if (icon_url == 'none') {
 		console.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
 	} else if (m = icon_url.match(/^html:(.+)/i)) {
-		let html = m[1];
+		let html = m[1].replace(/&(?:sp|spc|space);/ig, ' ');
 		// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
 		let iconDiv = document.createElement('div');
 		iconDiv.className = 'item-icon text-icon';
