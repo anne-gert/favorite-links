@@ -265,6 +265,8 @@ body {
 .custom-checkbox img.text-icon {
 	transform: scale(1.4);
 }
+.checkbox-label.not-first-option {
+}
 
 /* Item Icons */
 
@@ -1813,17 +1815,17 @@ function parseLinks() {
 					let option = {
 						'name'  : name,
 						'value' : val,
-						'next'  : firstOptionName,
+						'next'  : firstOptionName,  //last points to first
 					}
 					if (firstOptionName == null) {
-						firstOptionName = name;
+						firstOptionName = name;  //first in list
 					} else {
-						options[prevOptionName].next = name;
+						options[prevOptionName].next = name;  //prev points to me
 					}
-					options[name] = option;
-					prevOptionName = name;
+					options[name] = option;  //add to list
+					prevOptionName = name;  //advance prev
 				}
-			};
+			}
 			if (firstOptionName != null) {
 				let def = {
 					'name'    : m[1],
@@ -2552,8 +2554,10 @@ function outputCheckbox(type, value, lineNum) {
 		if (labelElement != null) {
 			if (add) {
 				labelElement.classList.add(className);
+				labelElement.classList.remove('not-' + className);
 			} else {
 				labelElement.classList.remove(className);
+				labelElement.classList.add('not-' + className);
 			}
 		}
 	};
@@ -2584,6 +2588,7 @@ function outputCheckbox(type, value, lineNum) {
 		checkbox.type = 'checkbox';
 		checkbox.className = 'todo-checkbox';
 		checkbox.onchange = function() {
+			// Update Links
 			let newCheck;
 			if (checkbox.checked) {
 				// Change checkbox to checked
@@ -2595,11 +2600,12 @@ function outputCheckbox(type, value, lineNum) {
 				newCheck = '[ ]';
 			}
 			updateLinks(newCheck);
+			// Update label
 			setLabelClass('checked', checkbox.checked);
 		};
-		let boolValue = value != null && value != '' && value != ' ';
-		checkbox.checked = boolValue;
-		initialSetLabel = () => setLabelClass('checked', boolValue);
+		let isChecked = value != null && value != '' && value != ' ';
+		checkbox.checked = isChecked;
+		initialSetLabel = () => setLabelClass('checked', isChecked);
 		// Set return value
 		retval.present = true;
 		retval.element = checkbox;
@@ -2609,22 +2615,27 @@ function outputCheckbox(type, value, lineNum) {
 		checkbox.className = 'custom-checkbox';
 		let sel = def.options[value];
 		if (sel == null) sel = def.options[def.first];
+		let isFirst = sel.name == def.first;
 		let icon = outputIcon(null, sel.value);
 		checkbox.appendChild(icon.element);
 		checkbox.onclick = function() {
 			// Determine next value
 			sel = def.options[sel.next];
+			isFirst = sel.name == def.first;
 			// Update Links
 			if (sel != null) {
 				console.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
 				let newCheck = '[' + sel.name + ']';
 				updateLinks(newCheck);
 			}
-			// Put this icon in
+			// Update icon
 			let newIcon = outputIcon(null, sel.value);
 			checkbox.replaceChild(newIcon.element, icon.element);
 			icon = newIcon;
+			// Update label
+			setLabelClass('first-option', isFirst);
 		};
+		initialSetLabel = () => setLabelClass('first-option', isFirst);
 		// Set return value
 		retval.present = true;
 		retval.element = checkbox;
