@@ -393,6 +393,24 @@ body {
 	width: 100%;
 }
 
+
+/****************************************************************************
+ * Status line
+ ****************************************************************************/
+
+.status-line {
+	font-size: 80%;
+	color: var(--background);
+	background: var(--background);
+}
+.status-line.visible {
+	color: var(--foreground);
+}
+.status-line:hover {
+	background: color-mix(in hsl, var(--background), #777 20%);
+}
+
+
 /****************************************************************************
  * blink animation
  ****************************************************************************/
@@ -1077,9 +1095,12 @@ function CreateUrlResolver() {
 				// be done before the value is used in the context where that is needed.
 				if (_saveOptions === false || _saveOptions.match(/^\s*$/)) {
 					_saveOptions = '';
+				} else {
+					addStatus('Saveable');
 				}
 			} else if (saveArg != null) {
 				_saveOptions = saveArg;
+				addStatus('Saveable');
 			} else {
 				_saveOptions = '';
 			}
@@ -1160,6 +1181,7 @@ function CreateUrlResolver() {
 			_usedLoadConfigName = loadOverrideConfigName;
 			_fallbackLinks = DefaultLinks;
 			fallbackLinksMsg = 'default';
+			addStatus('Override');
 		} else if (loadOptions) {
 			if (saveOptions) {
 				// Source selection: download - local - default  (LoadOptions before LocalStorage, because saveOptions is set)
@@ -1172,12 +1194,14 @@ function CreateUrlResolver() {
 			_loadUrl = loadOptions;
 			loadUrlMsg = 'loadOptions';
 			_usedLoadConfigName = loadConfigName;
+			addStatus('Links');
 		} else {
 			// Source selection: local - default
 			console.log('Both loadOverrideOptions and loadOptions not set');
 			_loadUrl = null;
 			loadUrlMsg = 'none';
 			_usedLoadConfigName = null;
+			addStatus('Local');
 		}
 		console.log('_usedLoadConfigName=' + _usedLoadConfigName);
 		console.log('_loadUrl=' + _loadUrl);
@@ -1511,10 +1535,12 @@ function downloadLinks() {
 			if (status == 200) {
 				// Success
 				console.log('downloadLinks: Download successful');
+				addStatus('Load OK');
 				dowloadPromise.resolve(text);
 			} else {
 				// Failed
 				console.error('downloadLinks: Download failed');
+				addStatus('Load ' + status);
 				// If the download failed, disable
 				// saveOptions to not accidentally
 				// overwrite the file.
@@ -1538,10 +1564,12 @@ function downloadLinks() {
 					if (this.status == 200) {
 						// Success
 						console.log('downloadLinks: Download successful');
+						addStatus('Load OK');
 						resolveFunc(xhr.responseText);
 					} else {
 						// Failed
 						console.error('downloadLinks: Download failed');
+						addStatus('Load ' + this.status);
 						// If the download failed, disable
 						// saveOptions to not accidentally
 						// overwrite the file.
@@ -1593,10 +1621,12 @@ function uploadLinks(value) {
 				if (this.status == 200) {
 					// Success
 					console.log('Uploaded links successfully');
+					addStatus('Save OK');
 					resolveFunc(this.status);
 				} else {
 					// Failed
 					console.log('Failed to upload Links, good luck next time (' + this.status + ')');
+					addStatus('Save ' + this.status);
 					resolveFunc(this.status);  //do not see this as a fail
 				}
 			}
@@ -3600,6 +3630,65 @@ function textInsert(ctl, inserter) {
 
 // }}}
 
+// StatusLine {{{
+
+// Add a SatusLine statuement.
+// Will be set in initStatus().
+let addStatus = () => {};
+
+// Clear current StatusLine.
+// Will be set in initStatus().
+let clearStatus = () => {};
+
+// Initialize StatusLine functions
+function initStatus() {
+	let statusLine = document.getElementById('StatusLine');
+	if (!statusLine) return;
+
+	let currentLine = '';
+	let lastStatus = null;
+	let count = 0;
+
+	function withCount() {
+		return currentLine + '(' + count + 'x)';
+	}
+
+	function renderStatus() {
+		if (count > 1) {
+			statusLine.textContent = withCount();
+		} else {
+			statusLine.textContent = currentLine;
+		}
+	}
+
+	addStatus = (status) => {
+		if (status == lastStatus) {
+			count++;
+		} else {
+			if (count > 1) {
+				currentLine = withCount();
+			}
+			currentLine += ' [' + status + ']';
+			lastStatus = status;
+			count = 1;
+		}
+		renderStatus();
+	};
+
+	clearStatus = () => {
+		currentLine = '';
+		lastStatus = null;
+		count = 0;
+		renderStatus();
+	};
+
+	statusLine.onclick = () => {
+		statusLine.classList.toggle('visible');
+	};
+}
+
+// }}}
+
 // Handling prefer-color-scheme and PageTheme {{{
 
 // Global variables that are used to monitor prefers-color-scheme
@@ -3898,6 +3987,7 @@ function loadLinks(forcedownload = false) {
 		if (fallbackLinks != null) {
 			if (preliminaryLinks == null || fallbackLinks.trim() != preliminaryLinks.trim()) {
 				console.important(reason + ', use fallback Links');
+				addStatus('Render fallback');
 				handleLinks(fallbackLinks);
 			} else {
 				console.important(reason + ' and fallback same as preliminary, keep preliminary Links');
@@ -3937,6 +4027,7 @@ function loadLinks(forcedownload = false) {
 			// yield control).
 			setTimeout(() => {
 				console.important('Start processing preliminaryLinks');
+				addStatus('Pre-render');
 				handleLinks(preliminaryLinks, preliminaryLinksCancel);
 				if (preliminaryLinksCancel()) {
 					console.important('preliminaryLinks have been cancelled');
@@ -3963,10 +4054,12 @@ function loadLinks(forcedownload = false) {
 					console.log('Update LocalStorage');
 					writeLocalStorage(UrlResolver.getLinksLSKey(), value);
 				}
+				addStatus('Render');
 				handleLinks(value);
 				result.resolve(true);
 			} else {
 				console.important('Downloaded links same as preliminary, keep preliminary Links');
+				addStatus('Same');
 				preliminaryLinksRenderPromise.then(() => result.resolve(true));
 			}
 		})
@@ -3996,6 +4089,7 @@ function loadLinks(forcedownload = false) {
 
 // Initialize the JavaScript on the page
 function init() {
+	initStatus();
 	initSettingsPanel();
 	loadLinks()
 	.catch(error => {
@@ -4045,6 +4139,8 @@ window.onload = init;
 </form>
 
 <div id="LinksBox"></div>
+
+<div id="StatusLine" class="status-line">STATUS</div>
 
 </body>
 
