@@ -250,10 +250,14 @@ body {
 .custom-checkbox {
 	display: inline-block;
 	cursor: default;
+	/* Add padding to the left, so that icon is not cut off when transformed bigger */
+	padding-left: 0.2em;
+	padding-right: 0.2em;
+	transition: transform 0.05s ease-out;  /* used when hover -> not-hover */
 }
 .custom-checkbox:hover {
 	transform: scale(1.2);
-	transition: transform 0.2s;
+	transition: transform 0.2s ease-out;  /* used when not-hover -> hover */
 }
 .custom-checkbox .text-icon {
 	transform: scale(1.7);
