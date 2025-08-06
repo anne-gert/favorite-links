@@ -252,6 +252,16 @@ Each line should be one of the following:
   <li><dt>Font Size</dt>: The line <code>!size font-size</code> specifies the
       base font-size to use. All CSS length quantities can be used, e.g.
       '10pt' or '120%'. This feature is experimental.
+  <li><dt>Blocks Collapsed</dt>: The line <code>!collapsed state</code>
+      specifies how blocks are displayed when loaded:
+      <ul>
+      <li><dt>no</dt> (default): Blocks are expanded if not previously closed.
+      <li><dt>yes</dt>: Blocks are closed if not previously expanded.
+      <li><dt>always</dt>: Blocks are always closed (previous state is
+          ignored).
+      <li><dt>never</dt>: Blocks are always expanded (previous state is
+          ignored).
+      </ul>
   <li><dt>Search Buttons</dt>: The line <code>!search identifier | label |
       tooltip | icon | url-template</code> defines a search button to be
       displayed next to the search box.  See <a

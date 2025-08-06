@@ -1670,6 +1670,8 @@ var Links = null;  //links text, input for parseLinks()
 var PageTitle = null;  //specified title
 var PageTheme = null;  //specified color theme
 var FontSize = null;  //specified font-size (may be relative, but that doesn't work very well)
+var BlocksCollapsedInitially = false;  //if blocks are initially collapsed by default
+var BlocksCollapsedAlwaysInitial = false;  //if initial is always used or if local value is used
 var SearchButtonDefs = null;  //specified search button declarations
 var RootLinks = null;  //array of Link objects that have no parents (i.e. are roots)
 var IconDefs = null;  //specified icondef declarations
@@ -1687,6 +1689,8 @@ function parseLinks() {
 	PageTitle = null;
 	PageTheme = null;
 	FontSize = null;
+	BlocksCollapsedInitially = false;
+	BlocksCollapsedAlwaysInitial = false;
 	SearchButtonDefs = [];
 	RootLinks = [];
 	IconDefs = {};
@@ -1781,6 +1785,16 @@ function parseLinks() {
 		if (m) {
 			// This is a size
 			FontSize = m[1];  //save string
+			continue;
+		}
+
+		// Check if it is a blocks-closed definition
+		m = line.match(/^\s*!collapsed\s+(always|never|yes|no)\s*$/i);
+		if (m) {
+			// This is a blocks-closed definition
+			let v = m[1].toLowerCase();
+			BlocksCollapsedInitially = (v == 'always' || v == 'yes');
+			BlocksCollapsedAlwaysInitial = (v == 'always' || v == 'never');
 			continue;
 		}
 
@@ -2296,14 +2310,17 @@ function outputItem(link, level, container, parentPath, cancel) {
 				expandIcon.className = 'resize-icon';
 				expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
 				_blockContainer.appendChild(expandIcon);
-				let isExpanded = true;  //true if block is expanded
+				let isExpanded = !BlocksCollapsedInitially;  //true if block is expanded
 				let storageKey = UrlResolver.getItemExpandedLSKey(myPath);
-				if (localStorage) {
+				if (!BlocksCollapsedAlwaysInitial && localStorage) {
 					// LocalStorage is available, use persistent value
 					let v = localStorage.getItem(storageKey);
 					console.debug('Preset isExpanded for \'' + myPath + '\' to ' + v);
-					if (v == 'false')
+					if (v == 'false') {
 						isExpanded = false;
+					} else if (v == 'true') {
+						isExpanded = true;
+					}
 				}
 				let displayExpandState = function() {
 					console.debug('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
