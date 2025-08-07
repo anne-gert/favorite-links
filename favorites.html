@@ -3878,6 +3878,7 @@ function setPageTitle(title) {
 	if (title == null) title = 'Favorites';
 	// Set the title
 	console.log('Set PageTitle to \'' + title + '\'');
+	document.title = title;
 	let titleCtl = document.getElementById('Title');
 	if (titleCtl)
 		titleCtl.innerText = title;
