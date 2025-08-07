@@ -3383,8 +3383,8 @@ function initSettingsPanel() {
 		settingsText.onkeydown = function(e) {
 			//console.log('KeyCode=' + e.keyCode);
 			if (e.keyCode == 9) {
-				// This is the TAB key -> Insert 4 spaces
-				textInsert(this, () => ' '.repeat(4));
+				// This is the TAB key
+				tabInsert(this, !e.shiftKey);
 				return false;  //stop further handling
 			} else if (e.keyCode == 13) {
 				// This is the Enter key -> Copy indentation from current line
@@ -3613,10 +3613,11 @@ function initSettingsPanel() {
 
 // Assume the ctl is an input control.
 // Return the sanitized insertion point or selection range.
-function getSelectionPos(ctl) {
+function getSelection(ctl) {
 	// The selection position indicates the selection, but also the insertion point
 	let start = ctl.selectionStart;  //char pos AT which the selection starts
 	let end = ctl.selectionEnd;  //char pos AFTER the selection end
+	let dir = ctl.selectionDirection;  //forward, backward or none
 	// Sanitize, so it is within the string:
 	// - start is in [0, len]
 	// - end is in [start, len]
@@ -3626,7 +3627,7 @@ function getSelectionPos(ctl) {
 	if (end == null || end < start) end = start;
 	if (end > len) end = len;
 
-	return [start, end];
+	return [start, end, dir];
 }
 
 // Assume the ctl is an input control.
@@ -3634,15 +3635,111 @@ function getSelectionPos(ctl) {
 // Then call the inserter with these values. The inserter should return the insertion string.
 // Update ctl and place the new insertion point after the insertion.
 function textInsert(ctl, inserter) {
-	let pos = getSelectionPos(ctl);
+	let pos = getSelection(ctl);
 	let start = pos[0], end = pos[1];
 	// Do the insertion, replace the selection if any
-	let before = ctl.value.substring(0, start), mid = ctl.value.substring(start, end), after = ctl.value.substring(end);
+	let val = ctl.value;
+	let before = val.substring(0, start), mid = val.substring(start, end), after = val.substring(end);
 	let mid2 = inserter(before, mid, after);
 	ctl.value = before + mid2 + after;
 	// Put the insertion point after the insertion
 	let newPos = start + mid2.length;
 	ctl.selectionStart = ctl.selectionEnd = newPos;
+}
+
+// Assume the ctl is an input control.
+// 'Insert' a TAB. This may be a few different things:
+// - If there is a selection, add/remove indentation.
+// - If there is no selection, add N spaces.
+// Return true if handled.
+function tabInsert(ctl, add) {
+	const N = 4;
+	const space = ' ';
+	let sel = getSelection(ctl);
+	let val = ctl.value;
+	let start = sel[0], end = sel[1], dir = sel[2];
+	let pos = (dir == 'backward') ? start : end;
+	if (start != end) {
+		// There is a slection -> add/remove indentation
+		// Get the indexes of the starts of the lines in the selection
+		let locs = [];
+		let i = start;
+		while (i > 0) {
+			let ch = val.charAt(i-1);  //char before
+			if (ch == '\r' || ch == '\n') break;
+			--i;
+		}
+		let spaceBeforeStart = start - i;  //chars in line before selection
+		locs.push(i);  //start of line at or before start
+		i = start+1;
+		while (i <= end) {
+			let ch = val.charAt(i-1);  //char before
+			if (ch == '\r' || ch == '\n') locs.push(i);
+			++i;
+		}
+		let spaceBeforeEnd = end - locs[locs.length-1];  //chars in line after selection
+		// Split the value at these indexes
+		let parts = [];
+		parts.push(val.substring(0, locs[0]));
+		for (let i = 1; i < locs.length; ++i) {
+			parts.push(val.substring(locs[i-1], locs[i]));
+		}
+		parts.push(val.substring(locs[locs.length-1]));
+		// Change the parts
+		if (add) {
+			// At every location, insert indentation
+			for (let i = 1; i < parts.length; ++i) {
+				// Add n (max N) spaces
+				let n = N;
+				let ch = parts[i].charAt(0);
+				if (ch == '\r' || ch == '\n' || ch == '') n = 0;
+				//console.devlog('Part ' + i + ': Add ' + n + ' spaces');
+				if (n > 0) {
+					parts[i] = space.repeat(n) + parts[i];
+					// Adjust the selection
+					if (i == 1) start += n;  //the first is before start
+					end += n;
+				}
+			}
+		} else {
+			// At every location, remove indentation
+			for (let i = 1; i < parts.length; ++i) {
+				// Find the number of spaces to remove with max N
+				let n = 0;
+				while (n < N) {
+					let ch = parts[i].charAt(n);
+					if (ch != space) break;
+					++n;
+				}
+				// Remove n spaces
+				//console.devlog('Part ' + i + ': Remove ' + n + ' spaces');
+				if (n > 0) {
+					parts[i] = parts[i].substring(n);
+					if (i == 1) {
+						start -= Math.min(n, spaceBeforeStart);
+					}
+					if (i == parts.length-1) {
+						end -= Math.min(n, spaceBeforeEnd);
+					} else {
+						end -= n;
+					}
+				}
+			}
+		}
+		// Put back the parts
+		ctl.value = parts.join('');
+		// Set the new selection
+		ctl.selectionStart = start;
+		ctl.selectionEnd = end;
+		ctl.selectionDirection = dir;
+	} else {
+		// There is no selection -> insert 4 spaces
+		let before = val.substring(0, pos), after = val.substring(pos);
+		ctl.value = before + space.repeat(N) + after;
+		// Put the insertion point after the insertion
+		ctl.selectionStart = ctl.selectionEnd = pos + N;
+	}
+	return true;
 }
 
 // }}}
