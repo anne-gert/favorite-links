@@ -247,6 +247,7 @@ body {
 	color: var(--disabled-color);
 	text-decoration: line-through;
 }
+
 .custom-checkbox {
 	display: inline-block;
 	cursor: default;
@@ -266,6 +267,15 @@ body {
 	transform: scale(1.4);
 }
 .checkbox-label.not-first-option {
+}
+
+.any-parent-checked {
+}
+.any-child-checked {
+}
+.self-checked {
+}
+.any-child-checked:not(.self-checked) {
 }
 
 /* Item Icons */
@@ -2250,6 +2260,10 @@ function outputItem(link, level, container, parentPath, cancel) {
 	if (icon == '') icon = null;
 	if (target == '') target = null;
 	let myPath = parentPath + '->' + name;
+	link['output'] = {
+		'icon'     : null,
+		'checkbox' : null,
+	};
 	// Fill in defaults for missing elements
 	if (name == null) {
 		if (url != null) {
@@ -2445,6 +2459,7 @@ function outputItem(link, level, container, parentPath, cancel) {
 		let checkbox = outputCheckbox(checkType, checkValue, link.lineNum);
 		if (checkbox.present) {
 			textContainer_maybe = null;  //for styling purposes
+			link.output.checkbox = checkbox;
 		}
 
 		// Create hyperlink
@@ -2464,6 +2479,7 @@ function outputItem(link, level, container, parentPath, cancel) {
 		let icon_control = outputIcon(null, icon, url);
 		if (icon_control.present) {
 			textContainer_maybe = null;  //for styling purposes
+			link.output.icon = icon_control;
 		}
 
 		// Determine name/label to display
@@ -2567,6 +2583,39 @@ function outputItems(links, level, container, parentPath, cancel) {
 	}
 }
 
+// Render the RootLinks in the container.
+function outputAllItems(container, cancel) {
+	container.textContent = '';
+	outputItems(RootLinks, 1, container, '', cancel);
+
+	// Collect all checkboxes in a hierarchy
+	let toplevel = [];
+	function discover(links, parent) {
+		for (let i = 0; i < links.length; ++i) {
+			let link = links[i];
+			let here = parent;
+			if (link.output && link.output.checkbox && link.output.checkbox.present) {
+				// This item has a checkbox
+				let cb = link.output.checkbox;
+				if (parent == null) {
+					toplevel.push(cb);
+				} else {
+					parent.children.push(cb);
+				}
+				cb.parent = parent;
+				here = cb;  //descend a level
+			}
+			if (link.cont) discover(link.cont, parent);  //add these to same parent
+			if (link.subs) discover(link.subs, here);  //add these below here
+		}
+	}
+	discover(RootLinks, null);
+	// For all the toplevels, calculate the hierarchical status
+	for (let i = 0; i < toplevel.length; ++i) {
+		toplevel[i].updateSelFirst(true);
+	}
+}
+
 // }}}
 
 // Output Checkbox {{{
@@ -2586,9 +2635,18 @@ function outputItems(links, level, container, parentPath, cancel) {
 function outputCheckbox(type, value, lineNum) {
 	// If type==null, don't make a checkbox
 	let retval = {
-		'present'        : false,
-		'element'        : null,
-		'associateLabel' : null,
+		'present'             : false,
+		'element'             : null,
+		'associateLabel'      : null,
+		// Transient data
+		'selFirstMe'          : null,  //true if my current selection is first
+		'selFirstAllParents'  : null,  //true if all parents have current selection first
+		'selFirstAllChildren' : null,  //true if all children's current selection is first
+		// parent/children of this checkbox, will be filled in later
+		'parent'              : null,
+		'children'            : [],
+		'iterateChildren'     : iterateChildren,  //iterate the children, calling specified function
+		'updateSelFirst'      : updateSelFirst,  //propagate selFirstXxx
 	};
 	if (type == null) return retval;
 
@@ -2641,17 +2699,22 @@ function outputCheckbox(type, value, lineNum) {
 				// Change checkbox to checked
 				console.log('Check checkbox on line ' + lineNum);
 				newCheck = '[x]';
+				retval.selFirstMe = false;
 			} else {
 				// Change checkbox to checked
 				console.log('Uncheck checkbox on line ' + lineNum);
 				newCheck = '[ ]';
+				retval.selFirstMe = true;
 			}
 			updateLinks(newCheck);
 			// Update label
 			setLabelClass('checked', checkbox.checked);
+			// Update parents/children
+			updateSelFirst(true);
 		};
 		let isChecked = value != null && value != '' && value != ' ';
 		checkbox.checked = isChecked;
+		retval.selFirstMe = !isChecked;
 		initialSetLabel = () => setLabelClass('checked', isChecked);
 		// Set return value
 		retval.present = true;
@@ -2663,12 +2726,14 @@ function outputCheckbox(type, value, lineNum) {
 		let sel = def.options[value];
 		if (sel == null) sel = def.options[def.first];
 		let isFirst = sel.name == def.first;
+		retval.selFirstMe = isFirst;
 		let icon = outputIcon(null, sel.value);
 		checkbox.appendChild(icon.element);
 		checkbox.onclick = function() {
 			// Determine next value
 			sel = def.options[sel.next];
 			isFirst = sel.name == def.first;
+			retval.selFirstMe = isFirst;
 			// Update Links
 			if (sel != null) {
 				console.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
@@ -2681,12 +2746,70 @@ function outputCheckbox(type, value, lineNum) {
 			icon = newIcon;
 			// Update label
 			setLabelClass('first-option', isFirst);
+			// Update parents/children
+			updateSelFirst(true);
 		};
 		initialSetLabel = () => setLabelClass('first-option', isFirst);
 		// Set return value
 		retval.present = true;
 		retval.element = checkbox;
 	}
+
+	// Callbacks if parent/child changed
+	function iterateChildren(func, recurse) {
+		let func2;
+		if (recurse) {
+			func2 = child => {
+				func(child);
+				child.iterateChildren(func, recurse);
+			};
+		} else {
+			func2 = func;
+		}
+		for (let i = 0; i < retval.children.length; ++i) {
+			func2(retval.children[i]);
+		}
+	}
+	function updateSelFirst(down) {
+		//console.devlog('Checkbox on line ' + lineNum + ': updateSelFirst(' + (down ? 'down' : 'up') + ')');
+		// Parent may have set a new value
+		retval.selFirstAllChildren = true;
+		iterateChildren(child => {
+			if (down) {
+				// Propagate selFirstMe and selFirstAllParents down
+				child.selFirstAllParents = retval.selFirstMe && retval.selFirstAllParents;
+				// Recurse down
+				child.updateSelFirst(true);
+			}
+			// Propagate selFirstAllChildren up
+			if (!child.selFirstMe || !child.selFirstAllChildren) {
+				retval.selFirstAllChildren = false;
+			}
+		});
+		// Recurse up
+		if (retval.parent != null) {
+			retval.parent.updateSelFirst(false);
+		}
+		//console.log(retval);
+		// Update Appearance
+		let classes = {};
+		let anyParentChecked = retval.selFirstAllParents === false;
+		classes['any-parent-checked'] = anyParentChecked;
+		let anyChildChecked = retval.selFirstAllChildren === false;
+		classes['any-child-checked'] = anyChildChecked;
+		let selfChecked = !retval.selFirstMe;
+		classes['self-checked'] = selfChecked;
+		// Apply classes
+		let target = retval.element.parentElement;  //the itemContainer
+		for (className in classes) {
+			if (classes[className]) {
+				target.classList.add(className);
+			} else {
+				target.classList.remove(className);
+			}
+		}
+	}
+
 	return retval;
 }
 
@@ -4027,8 +4150,7 @@ function processLinks(cancel) {
 	// Render links
 	console.important('Render Links...');
 	let container = document.getElementById('LinksBox');
-	container.textContent = '';
-	outputItems(RootLinks, 1, container, '', cancel);
+	outputAllItems(container, cancel);
 
 	if (cancel()) return;
 
