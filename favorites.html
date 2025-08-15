@@ -1026,6 +1026,9 @@ function CreateUrlResolver() {
 		}
 	}
 
+	let _usedLoadConfigName = undefined;
+	let _loadName = undefined;
+
 	// Methods to get the correct LocalStorage keys
 	const LSKey_Prefix = 'favlist_';
 	function getLoadOverrideOptionsLSKey() {
@@ -1050,6 +1053,7 @@ function CreateUrlResolver() {
 		}
 	}
 	function getLSKeyHelper(subKey) {
+		if (_usedLoadConfigName === undefined || _loadName === undefined) calcDownloadUrl();
 		let key = LSKey_Prefix + subKey;
 		if (_usedLoadConfigName != null) key += '_' + _usedLoadConfigName;
 		if (_loadName != null) key += '_' + _loadName;
@@ -1059,18 +1063,16 @@ function CreateUrlResolver() {
 		return getLSKeyHelper('links');
 	}
 	function getLinksLSKey() {
-		if (_usedLoadConfigName == null || _loadName == null) calcDownloadUrl();
 		return _getLinksLSKey_noRecurse();
 	}
 	function getItemExpandedLSKey(itemPath) {
-		if (_usedLoadConfigName == null || _loadName == null) calcDownloadUrl();
 		return getLSKeyHelper('expanded') + '_' + itemPath;
 	}
 
 	// Get the options
-	let _loadOverrideOptions = null;
+	let _loadOverrideOptions = undefined;
 	function getLoadOverrideOptions() {
-		if (_loadOverrideOptions == null) {
+		if (_loadOverrideOptions === undefined) {
 			if (loadOverrideConfigName != null) {
 				// Read from config
 				_loadOverrideOptions = readLocalStorage(getLoadOverrideOptionsLSKey());
@@ -1088,13 +1090,16 @@ function CreateUrlResolver() {
 		return _loadOverrideOptions;
 	}
 	function setLoadOverrideOptions(value) {
-		_loadOverrideOptions = value;
-		resetDownloadUrl();
+		if (_loadOverrideOptions !== value) {
+			console.log('Change _loadOverrideOptions to \'' + value + '\'');
+			_loadOverrideOptions = value;
+			resetDownloadUrl();
+		}
 	}
 
-	let _loadOptions = null;
+	let _loadOptions = undefined;
 	function getLoadOptions() {
-		if (_loadOptions == null) {
+		if (_loadOptions === undefined) {
 			if (loadConfigName != null) {
 				// Read from config
 				_loadOptions = readLocalStorage(getLoadOptionsLSKey());
@@ -1112,13 +1117,16 @@ function CreateUrlResolver() {
 		return _loadOptions;
 	}
 	function setLoadOptions(value) {
-		_loadOptions = value;
-		resetDownloadUrl();
+		if (_loadOptions !== value) {
+			console.log('Change _loadOptions to \'' + value + '\'');
+			_loadOptions = value;
+			resetDownloadUrl();
+		}
 	}
 
-	let _saveOptions = null;
+	let _saveOptions = undefined;
 	function getSaveOptions() {
-		if (_saveOptions == null) {
+		if (_saveOptions === undefined) {
 			if (saveConfigName != null) {
 				// Read from config
 				_saveOptions = readLocalStorage(getSaveOptionsLSKey());
@@ -1139,46 +1147,47 @@ function CreateUrlResolver() {
 		return _saveOptions;
 	}
 	function setSaveOptions(value) {
-		_saveOptions = value;
-		resetDownloadUrl();
-		resetUploadUrl();
+		if (_saveOptions !== value) {
+			console.log('Change _saveOptions to \'' + value + '\'');
+			_saveOptions = value;
+			resetDownloadUrl();
+			resetUploadUrl();
+		}
 	}
 
 	// Variables and access methods for the download URL
-	let _preliminaryLinks = null;
+	let _preliminaryLinks = undefined;
 	function getPreliminaryLinks() {
-		if (_preliminaryLinks == null) calcDownloadUrl();
+		if (_preliminaryLinks === undefined) calcDownloadUrl();
 		return _preliminaryLinks;
 	}
-	let _loadUrl = null;
+	let _loadUrl = undefined;
 	function getDownloadUrl() {
-		if (_loadUrl == null) calcDownloadUrl();
+		if (_loadUrl === undefined) calcDownloadUrl();
 		return _loadUrl;
 	}
-	let _fallbackLinks = null;
+	let _fallbackLinks = undefined;
 	function getFallbackLinks() {
-		if (_fallbackLinks == null) calcDownloadUrl();
+		if (_fallbackLinks === undefined) calcDownloadUrl();
 		return _fallbackLinks;
 	}
-	let _loadName = null;
 	function getLoadName() {
-		if (_loadName == null) calcDownloadUrl();
+		if (_loadName === undefined) calcDownloadUrl();
 		return _loadName;
 	}
-	let _downloadHeaders = null;
+	let _downloadHeaders = undefined;
 	function getDownloadHeaders() {
-		if (_downloadHeaders == null) calcDownloadUrl();
+		if (_downloadHeaders === undefined) calcDownloadUrl();
 		return _downloadHeaders;
 	}
 
 	// Reset the download URL variables, so that it gets recalculated when needed
 	function resetDownloadUrl() {
-		_preliminaryLinks = _loadUrl = _fallbackLinks = _loadName = _downloadHeaders = _usedLoadConfigName = null;
+		_preliminaryLinks = _loadUrl = _fallbackLinks = _loadName = _downloadHeaders = _usedLoadConfigName = undefined;
 		resetUploadUrl();
 	}
 
 	// Calculate the download URL values
-	let _usedLoacConfigName = null;
 	function calcDownloadUrl() {
 		// Note: The LinksLSKey depends on the _usedLoadConfigName and
 		// on the _loadName, so these have to be calculated before
@@ -1362,25 +1371,25 @@ function CreateUrlResolver() {
 	}
 
 	// Variables and access methods for the upload URL
-	let _uploadUrl = null;
+	let _uploadUrl = undefined;
 	function getUploadUrl() {
-		if (_uploadUrl == null) calcUploadUrl();
+		if (_uploadUrl === undefined) calcUploadUrl();
 		return _uploadUrl;
 	}
-	let _uploadMethod = null;
+	let _uploadMethod = undefined;
 	function getUploadMethod() {
-		if (_uploadMethod == null) calcUploadUrl();
+		if (_uploadMethod === undefined) calcUploadUrl();
 		return _uploadMethod;
 	}
-	let _uploadHeaders = null;
+	let _uploadHeaders = undefined;
 	function getUploadHeaders() {
-		if (_uploadHeaders == null) calcUploadUrl();
+		if (_uploadHeaders === undefined) calcUploadUrl();
 		return _uploadHeaders;
 	}
 
 	// Reset the upload URL variables, so that it gets recalculated when needed
 	function resetUploadUrl() {
-		_uploadUrl = _uploadMethod = _uploadHeaders = null;
+		_uploadUrl = _uploadMethod = _uploadHeaders = undefined;
 	}
 	function noUploadUrl() {
 		_uploadUrl = '';
@@ -1483,8 +1492,11 @@ function CreateUrlResolver() {
 		return _saveOptionsDisabled;
 	}
 	function setSaveOptionsDisabled(value) {
-		_saveOptionsDisabled = value;
-		resetUploadUrl();
+		if (_saveOptionsDisabled !== value) {
+			console.log('Change _saveOptionsDisabled to \'' + value + '\'');
+			_saveOptionsDisabled = value;
+			resetUploadUrl();
+		}
 	}
 
 	// Return the object with the appropriate functions
