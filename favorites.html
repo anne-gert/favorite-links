@@ -1657,6 +1657,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 // It starts the download and returns a Promise.
 // The Promise resolves normally if the download finished successfully. Otherwise
 // the Promise is rejected.
+// The global Links variable is not used or updated.
 function downloadLinks() {
 	let url = UrlResolver.getDownloadUrl();
 	if (url == null) return null;
@@ -3476,7 +3477,7 @@ function addSearchButtons(searchBox, container) {
 
 // Edit Settings {{{
 
-var showSettingsPanel = null;  // will be set later
+var showSettingsPanel = null;  //will be set later
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
@@ -3494,8 +3495,8 @@ function initSettingsPanel() {
 	let settingsText;
 	let optionEntries = [];
 
-	// Create the minimal hooks and defer rest at first showing
-	showSettingsPanel = showSettings;  //expose function
+	// Create the minimal hooks (expose functions) and defer rest at first showing
+	showSettingsPanel = showSettings;
 	// Create iconOpen
 	let iconOpen = document.createElement('span');
 	setUnicodeText(iconOpen, UNICODE_GEARS, '[Settings]');
@@ -3764,7 +3765,7 @@ function initSettingsPanel() {
 			let saveLinks = Links;
 			if (save == 'clear' || settingsText.value == '') {
 				console.log('Clear settings');
-				loadLinks(true)  //re-resolve Links
+				loadLinks(true)  //re-resolve, download and render Links
 				.then(() => {
 					// Links are correct
 					settingsText.value = Links;
@@ -3796,7 +3797,7 @@ function initSettingsPanel() {
 				console.log('Save settings');
 				try {
 					Links = settingsText.value;
-					processLinks(() => false);  //Render Links
+					processLinks();  //Render Links
 					// Links are correct
 					Data.writeLocalLinks(Links);
 					uploadLinks(Links);
@@ -4209,7 +4210,9 @@ function setFontSize(size) {
 // From the Links configuration, parse its content and display it.
 // This function may throw a UserInputError exceptions when something is wrong
 // with the contents of the Links variable.
-function processLinks(cancel) {
+function processLinks(cancel = null) {
+	if (!cancel) cancel = () => false;
+
 	// Parse Links
 	parseLinks();
 
@@ -4303,7 +4306,6 @@ function loadLinks(forcedownload = false) {
 	function handleLinks(links, cancel = null) {
 		if (cancel && cancel()) return;
 		Links = links;
-		if (cancel == null) cancel = CreateCancel();
 		processLinks(cancel);
 	}
 
@@ -4376,7 +4378,7 @@ function loadLinks(forcedownload = false) {
 	let loadPromise = downloadLinks();
 	if (loadPromise != null) {
 		loadPromise
-		.then((value) => {
+		.then(value => {
 			// Links have been downloaded successfully
 			if (preliminaryLinks == null || value.trim() != preliminaryLinks.trim()) {
 				console.important('Use downloaded Links');
