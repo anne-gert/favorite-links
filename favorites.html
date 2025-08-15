@@ -147,6 +147,18 @@ body {
 	color: var(--selection-foreground); background: var(--selection-background);
 }
 
+.normal {
+	color: var(--foreground);
+}
+.alert {
+	color: var(--error-foreground);
+}
+.accent {
+	color: var(--accent-color);
+}
+.hidden {
+	display: none;
+}
 
 /****************************************************************************
  * Shared styles for displaying text-blocks
@@ -480,9 +492,6 @@ body {
 	}
 }
 
-.settings-iconbar .hidden {
-	display: none;
-}
 .settings-iconbar .slide-in {
 	animation: 200ms ease-in settings-iconbar-slider;
 }
@@ -935,6 +944,18 @@ function setUnicodeText(control, unicodeCharacter, /* more unicodeCharacters, */
 	// If we get here, none matched. Now set the altText.
 	altText = arguments[arguments.length - 1];  //the last argument
 	control['textContent'] = altText;
+}
+
+// General function to add/remove a CSS class for a specified widget.
+// If the widget is not defined, do nothing.
+// If add==true, add the class, else remove it.
+function addClass(widget, className, add) {
+	if (widget != null) {
+		if (add)
+			widget.classList.add(className);
+		else
+			widget.classList.remove(className);
+	}
 }
 
 // }}}
@@ -1469,44 +1490,44 @@ function CreateUrlResolver() {
 	// Return the object with the appropriate functions
 	return {
 		// Fields to manage LoadOptions
-		'getLoadConfigName' : () => loadConfigName,
-		'getLoadOptions' : getLoadOptions,
-		'setLoadOptions' : setLoadOptions,
-		'getLoadOptionsLSKey' : getLoadOptionsLSKey,
+		getLoadConfigName : () => loadConfigName,
+		getLoadOptions : getLoadOptions,
+		setLoadOptions : setLoadOptions,
+		getLoadOptionsLSKey : getLoadOptionsLSKey,
 
 		// Fields to manage LoadOptions override
-		'getLoadOverrideConfigName' : () => loadOverrideConfigName,
-		'getLoadOverrideOptions' : getLoadOverrideOptions,
-		'setLoadOverrideOptions' : setLoadOverrideOptions,
-		'getLoadOverrideOptionsLSKey' : getLoadOverrideOptionsLSKey,
+		getLoadOverrideConfigName : () => loadOverrideConfigName,
+		getLoadOverrideOptions : getLoadOverrideOptions,
+		setLoadOverrideOptions : setLoadOverrideOptions,
+		getLoadOverrideOptionsLSKey : getLoadOverrideOptionsLSKey,
 
 		// Fields to manage SaveOptions
-		'getSaveConfigName' : () => saveConfigName,
-		'getSaveOptions' : getSaveOptions,
-		'setSaveOptions' : setSaveOptions,
-		'getSaveOptionsLSKey' : getSaveOptionsLSKey,
+		getSaveConfigName : () => saveConfigName,
+		getSaveOptions : getSaveOptions,
+		setSaveOptions : setSaveOptions,
+		getSaveOptionsLSKey : getSaveOptionsLSKey,
 
 		// Fields for downloading Links
-		'getDownloadUrl' : getDownloadUrl,
-		'getDownloadHeaders' : getDownloadHeaders,
-		'getLoadName' : getLoadName,
+		getDownloadUrl : getDownloadUrl,
+		getDownloadHeaders : getDownloadHeaders,
+		getLoadName : getLoadName,
 
 		// Fields for uploading Links
-		'getUploadUrl' : getUploadUrl,
-		'getUploadMethod' : getUploadMethod,
-		'getUploadHeaders' : getUploadHeaders,
-		'getUploadDisabled' : getSaveOptionsDisabled,
-		'setUploadDisabled' : setSaveOptionsDisabled,
+		getUploadUrl : getUploadUrl,
+		getUploadMethod : getUploadMethod,
+		getUploadHeaders : getUploadHeaders,
+		getUploadDisabled : getSaveOptionsDisabled,
+		setUploadDisabled : setSaveOptionsDisabled,
 
 		// Fields for preliminary Links
-		'getPreliminaryLinks' : getPreliminaryLinks,
+		getPreliminaryLinks : getPreliminaryLinks,
 
 		// Fields for fallback Links
-		'getFallbackLinks' : getFallbackLinks,
+		getFallbackLinks : getFallbackLinks,
 
 		// Fields for accessing other LocalStorage keys
-		'getLinksLSKey' : getLinksLSKey,
-		'getItemExpandedLSKey' : getItemExpandedLSKey,
+		getLinksLSKey : getLinksLSKey,
+		getItemExpandedLSKey : getItemExpandedLSKey,
 	};
 }
 
@@ -1534,7 +1555,7 @@ function downloadLinks() {
 		}
 		dowloadPromise = new PendingPromise();
 		let status;
-		fetch(url, { 'headers' : hdrs })
+		fetch(url, { headers : hdrs })
 		.then(response => {
 			//console.devlog('downloadLinks: Request sent');
 			status = response.status;
@@ -1867,9 +1888,9 @@ function parseLinks() {
 				// Add option to options structure
 				if (name != null) {
 					let option = {
-						'name'  : name,
-						'value' : val,
-						'next'  : firstOptionName,  //last points to first
+						name  : name,
+						value : val,
+						next  : firstOptionName,  //last points to first
 					}
 					if (firstOptionName == null) {
 						firstOptionName = name;  //first in list
@@ -1882,9 +1903,9 @@ function parseLinks() {
 			}
 			if (firstOptionName != null) {
 				let def = {
-					'name'    : m[1],
-					'options' : options,
-					'first'   : firstOptionName,
+					name    : m[1],
+					options : options,
+					first   : firstOptionName,
 				};
 				//console.devlog('!checkbox found');
 				//console.log(def);
@@ -1909,11 +1930,11 @@ function parseLinks() {
 		if (m) {
 			// Mark the start of the block
 			textBlock = {  //special type of Link object
-				'lineNum'  : i+1,  //start of this block
-				'type'     : 'text',
-				'level'    : null,  //adjusted later
-				'lines'    : [],
-				'toString' : function() { return '{ !text, #Lines=' + this.lines.length + ' }' },
+				lineNum  : i+1,  //start of this block
+				type     : 'text',
+				level    : null,  //adjusted later
+				lines    : [],
+				toString : function() { return '{ !text, #Lines=' + this.lines.length + ' }' },
 			};
 			continue;
 		}
@@ -1923,9 +1944,9 @@ function parseLinks() {
 		if (m) {
 			// Mark the start of the block
 			styleBlock = {
-				'lineNum'  : i+1,  //start of this block
-				'lines'    : [],
-				'toString' : function() { return '{ !style, #Lines=' + this.lines.length + ' }' },
+				lineNum  : i+1,  //start of this block
+				lines    : [],
+				toString : function() { return '{ !style, #Lines=' + this.lines.length + ' }' },
 			};
 			continue;
 		}
@@ -1935,9 +1956,9 @@ function parseLinks() {
 		if (m) {
 			// Mark the start of the block
 			scriptBlock = {
-				'lineNum'  : i+1,  //start of this block
-				'lines'    : [],
-				'toString' : function() { return '{ !script, #Lines=' + this.lines.length + ' }' },
+				lineNum  : i+1,  //start of this block
+				lines    : [],
+				toString : function() { return '{ !script, #Lines=' + this.lines.length + ' }' },
 			};
 			continue;
 		}
@@ -2022,18 +2043,18 @@ function parseLinks() {
 
 		// Create the Link object
 		let link = {
-			'lineNum'    : i+1,
-			'type'       : 'link',
-			'level'      : level,
-			'name'       : name,
-			'url'        : url,
-			'icon'       : icon,
-			'checkType'  : checkType,
-			'checkValue' : checkValue,
-			'target'     : target,
-			'cont'       : [],
-			'subs'       : [],
-			'toString'   : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', check=' + check + ', #SubItems=' + this.subs.length + ' }' },
+			lineNum    : i+1,
+			type       : 'link',
+			level      : level,
+			name       : name,
+			url        : url,
+			icon       : icon,
+			checkType  : checkType,
+			checkValue : checkValue,
+			target     : target,
+			cont       : [],
+			subs       : [],
+			toString   : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', check=' + check + ', #SubItems=' + this.subs.length + ' }' },
 		};
 		//console.log('Indentation=' + indent + ', Link=' + link);
 
@@ -2084,34 +2105,34 @@ function parseLinks() {
 			// Add 1 or 2 levels in the front of allLinks
 			// In either case, we need to add a Section
 			let section = {
-				'lineNum'    : 0,
-				'type'       : 'link',
-				'level'      : 0,
-				'name'       : '_',  //this makes this section not render
-				'url'        : null,
-				'icon'       : null,
-				'checkType'  : null,
-				'checkValue' : null,
-				'target'     : null,
-				'cont'       : [],
-				'subs'       : [],
-				'toString'   : function() { return '{ Dummy Section }' },
+				lineNum    : 0,
+				type       : 'link',
+				level      : 0,
+				name       : '_',  //this makes this section not render
+				url        : null,
+				icon       : null,
+				checkType  : null,
+				checkValue : null,
+				target     : null,
+				cont       : [],
+				subs       : [],
+				toString   : function() { return '{ Dummy Section }' },
 			};
 			if (maxLevel == 0) {
 				// Only in this case, we need to add a Block level too
 				let block = {
-					'lineNum'    : 0,
-					'type'       : 'link',
-					'level'      : 1,
-					'name'       : firstLink.name,  //give it the same name as the first link
-					'url'        : null,
-					'icon'       : null,
-					'checkType'  : null,
-					'checkValue' : null,
-					'target'     : null,
-					'cont'       : [],
-					'subs'       : [],
-					'toString'   : function() { return '{ Dummy Block }' },
+					lineNum    : 0,
+					type       : 'link',
+					level      : 1,
+					name       : firstLink.name,  //give it the same name as the first link
+					url        : null,
+					icon       : null,
+					checkType  : null,
+					checkValue : null,
+					target     : null,
+					cont       : [],
+					subs       : [],
+					toString   : function() { return '{ Dummy Block }' },
 				};
 				console.log('Add dummy Block');
 				allLinks.unshift(block);
@@ -2261,8 +2282,8 @@ function outputItem(link, level, container, parentPath, cancel) {
 	if (target == '') target = null;
 	let myPath = parentPath + '->' + name;
 	link['output'] = {
-		'icon'     : null,
-		'checkbox' : null,
+		icon     : null,
+		checkbox : null,
 	};
 	// Fill in defaults for missing elements
 	if (name == null) {
@@ -2445,14 +2466,7 @@ function outputItem(link, level, container, parentPath, cancel) {
 
 		// Declare textContainer to hold the name/label
 		let textContainer = null;
-		let setTextClass = function(className, add) {
-			if (textContainer != null) {
-				if (add)
-					textContainer.classList.add(className);
-				else
-					textContainer.classList.remove(className);
-			}
-		};
+		let setTextClass = (className, add) => addClass(textContainer, className, add);
 		let textContainer_maybe = itemContainer;  //null if we must create a separate one
 
 		// Create checkbox
@@ -2635,18 +2649,18 @@ function outputAllItems(container, cancel) {
 function outputCheckbox(type, value, lineNum) {
 	// If type==null, don't make a checkbox
 	let retval = {
-		'present'             : false,
-		'element'             : null,
-		'associateLabel'      : null,
+		present             : false,
+		element             : null,
+		associateLabel      : null,
 		// Transient data
-		'selFirstMe'          : null,  //true if my current selection is first
-		'selFirstAllParents'  : null,  //true if all parents have current selection first
-		'selFirstAllChildren' : null,  //true if all children's current selection is first
+		selFirstMe          : null,  //true if my current selection is first
+		selFirstAllParents  : null,  //true if all parents have current selection first
+		selFirstAllChildren : null,  //true if all children's current selection is first
 		// parent/children of this checkbox, will be filled in later
-		'parent'              : null,
-		'children'            : [],
-		'iterateChildren'     : iterateChildren,  //iterate the children, calling specified function
-		'updateSelFirst'      : updateSelFirst,  //propagate selFirstXxx
+		parent              : null,
+		children            : [],
+		iterateChildren     : iterateChildren,  //iterate the children, calling specified function
+		updateSelFirst      : updateSelFirst,  //propagate selFirstXxx
 	};
 	if (type == null) return retval;
 
@@ -2656,15 +2670,8 @@ function outputCheckbox(type, value, lineNum) {
 	// Placeholder for the associated label
 	let labelElement = null;
 	let setLabelClass = (className, add) => {
-		if (labelElement != null) {
-			if (add) {
-				labelElement.classList.add(className);
-				labelElement.classList.remove('not-' + className);
-			} else {
-				labelElement.classList.remove(className);
-				labelElement.classList.add('not-' + className);
-			}
-		}
+		addClass(labelElement, className, add);
+		addClass(labelElement, 'not-' + className, !add);
 	};
 	let initialSetLabel = null;  //will be set to init function
 	retval.associateLabel = element => {
@@ -2802,11 +2809,7 @@ function outputCheckbox(type, value, lineNum) {
 		// Apply classes
 		let target = retval.element.parentElement;  //the itemContainer
 		for (className in classes) {
-			if (classes[className]) {
-				target.classList.add(className);
-			} else {
-				target.classList.remove(className);
-			}
+			addClass(target, className, classes[className]);
 		}
 	}
 
@@ -2999,8 +3002,8 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 	}
 
 	return {
-		'present' : icon_present,
-		'element' : icon_element,
+		present : icon_present,
+		element : icon_element,
 	};
 }
 
@@ -4156,6 +4159,7 @@ function processLinks(cancel) {
 
 	// Fill SearchForm
 	console.important('Render SearchButtons...');
+	let searchForm = document.getElementById('SearchForm');
 	// Use a static input field, so that the browser retains its contents
 	// after going back to this page.
 	if (SearchButtonDefs != null && SearchButtonDefs.length > 0) {
@@ -4164,6 +4168,8 @@ function processLinks(cancel) {
 		// Focus SearchBox
 		let searchBox = document.getElementById('SearchBox');
 		if (searchBox) {
+			console.log('Hide & focus SearchForm');
+			searchForm.classList.remove('hidden');
 			searchBox.focus();
 			searchBox.select();
 		}
@@ -4174,10 +4180,9 @@ function processLinks(cancel) {
 	} else {
 		// No SearchButtons defined, hide SearchForm
 		console.log('There are no SearchButtonDefs');
-		let searchForm = document.getElementById('SearchForm');
 		if (searchForm) {
 			console.log('Hide SearchForm');
-			searchForm.style.display = 'none';
+			searchForm.classList.add('hidden');
 		}
 	}
 }
@@ -4369,7 +4374,7 @@ window.onload = init;
   <hr>
 </form>
 
-<form id="SearchForm" class="search-form">
+<form id="SearchForm" class="search-form hidden">
   Search:
   <input id="SearchBox" name="q" type="text" inputmode="search" autocorrect="off" autocapitalize="off" autocomplete="off" size="40" class="textbox"/>
   <span id="SearchButtons"></span>
