@@ -840,6 +840,8 @@ function PendingPromise()
 	return result;
 }
 
+// Unicode Support {{{
+
 // Function to detect if a unicode character is supported by the specified font.
 // - character: Character to test.
 // - font: Font to test. Defaults to font as specified for the body.
@@ -946,6 +948,8 @@ function setUnicodeText(control, unicodeCharacter, /* more unicodeCharacters, */
 	control['textContent'] = altText;
 }
 
+// }}}
+
 // General function to add/remove a CSS class for a specified widget.
 // If the widget is not defined, do nothing.
 // If add==true, add the class, else remove it.
@@ -960,15 +964,168 @@ function addClass(widget, className, add) {
 
 // }}}
 
-// Resolving Links {{{
+// Links Data {{{
+
+// Global object to hold Links and other data.
+const Data = CreateData();
+
+// Function to create the object to hold and maintain the Links data.
+// This object uses LocalStorage if available.
+// If getResolver is set, call that to get UrlResolvere object. Else,
+// UrlResolver is used.
+function CreateData(getResolver = () => UrlResolver) {
+	const LSKey_Prefix = 'favlist_';
+
+	let storage;
+	if (localStorage) {
+		storage = localStorage;
+	} else {
+		// Dummy implementation of LocalStorage
+		let data = {};
+		storage = {
+			getItem : key => data[key],
+			setItem : (key, value) => data[key] = value,
+			removeItem : key => delete data[key],
+		};
+	}
+
+	// Read value from Storage.
+	// Return value or undefined in case of error or if it does not exist.
+	function readStorage(key) {
+		console.debug('Read storage key \'' + key + '\'');
+		let v = storage.getItem(key);
+		return (v != null) ? v : undefined;
+	}
+
+	// Store value in Storage.
+	// If value is null, empty or whitespace, delete key from Storage.
+	function writeStorage(key, value) {
+		if (value == null || value.toString().match(/^\s*$/)) {
+			console.debug('Remove storage key \'' + key + '\'');
+			storage.removeItem(key);
+		} else {
+			console.debug('Write storage key \'' + key + '\'');
+			storage.setItem(key, value);
+		}
+	}
+
+	// Functions to construct Storage keys
+	function getLinksLSKey() {
+		return LSKey_Prefix + 'links_' + getResolver().getConfigLoadKey();
+	}
+	function getItemExpandedLSKey(itemPath) {
+		return LSKey_Prefix + 'expanded_' + getResolver().getConfigLoadKey() + '_' + itemPath;
+	}
+	function getOptionsLSKey(loadOrSave, configName) {
+		if (configName != null) {
+			return LSKey_Prefix + loadOrSave + '_' + configName;
+		} else {
+			return LSKey_Prefix + loadOrSave + '_default';
+		}
+	}
+
+	// Read/Write Links from Storage.
+	// Returns null if not available.
+	function readLocalLinks() {
+		let key = getLinksLSKey();
+		console.log('localLinks: Read from ' + key);
+		let links = readStorage(key);
+		if (links === undefined) links = null;
+		return links;
+	}
+	function writeLocalLinks(links) {
+		let key = getLinksLSKey();
+		writeStorage(key, links);
+	}
+
+	// Read/write expanded/collapsed status of this itemPath.
+	function readItemExpanded(itemPath) {
+		let key = getItemExpandedLSKey(itemPath);
+		return readStorage(key);
+	}
+	function writeItemExpanded(itemPath, value) {
+		let key = getItemExpandedLSKey(itemPath);
+		writeStorage(key, value);
+	}
+
+	// Read/Write LoadOverrideOptions from Storage.
+	// Return empty string if not set or empty.
+	function readLoadOverrideOptions() {
+		let configName = getResolver().getLoadOverrideConfigName();
+		let key = getOptionsLSKey('load', configName);
+		let s = readStorage(key);
+		if (s === undefined || s.toString().match(/^\s*$/)) s = '';
+		return s;
+	}
+	function writeLoadOverrideOptions(value) {
+		let configName = getResolver().getLoadOverrideConfigName();
+		let key = getOptionsLSKey('load', configName);
+		writeStorage(key, value);
+	}
+
+	// Read/Write LoadOptions from Storage.
+	// Return empty string if not set or empty.
+	function readLoadOptions() {
+		let configName = getResolver().getLoadConfigName();
+		let key = getOptionsLSKey('load', configName);
+		let s = readStorage(key);
+		if (s === undefined || s.toString().match(/^\s*$/)) s = '';
+		return s;
+	}
+	function writeLoadOptions(value) {
+		let configName = getResolver().getLoadConfigName();
+		let key = getOptionsLSKey('load', configName);
+		writeStorage(key, value);
+	}
+
+	// Read/Write SaveOptions from Storage.
+	// Return empty string if not set or empty.
+	function readSaveOptions() {
+		let configName = getResolver().getSaveConfigName();
+		let key = getOptionsLSKey('save', configName);
+		let s = readStorage(key);
+		if (s === undefined || s.toString().match(/^\s*$/)) s = '';
+		return s;
+	}
+	function writeSaveOptions(value) {
+		let configName = getResolver().getSaveConfigName();
+		let key = getOptionsLSKey('save', configName);
+		writeStorage(key, value);
+	}
+
+	return {
+		// Functions to read/write Links
+		readLocalLinks : readLocalLinks,
+		writeLocalLinks : writeLocalLinks,
+
+		// Functions to read/write expanded/collapsed state of Items
+		readItemExpanded : readItemExpanded,
+		writeItemExpanded : writeItemExpanded,
+
+		// Function so read/write Load/Override/Save Options
+		readLoadOverrideOptions : readLoadOverrideOptions,
+		writeLoadOverrideOptions : writeLoadOverrideOptions,
+		readLoadOptions : readLoadOptions,
+		writeLoadOptions : writeLoadOptions,
+		readSaveOptions : readSaveOptions,
+		writeSaveOptions : writeSaveOptions,
+	};
+}
+
+// }}}
+
+// Resolving Links (UrlResolver) {{{
 
 // Global object to hold the Load- and SaveOptions for the Links.
 const UrlResolver = CreateUrlResolver();
 
 // This function retrieves the parameters, parses them and determines which
 // URLs to use for loading and saving.
+// If queryString is set, that is used, otherwise the current location is used.
+// If getData is set, call that to get the persistent storage object. Else,
+// Data is used.
 // It returns a UrlResolver object with LoadOptions, SaveOptions and URLs.
-function CreateUrlResolver() {
+function CreateUrlResolver(queryString = location.search, getData = () => Data) {
 	console.important('Resolving Links source...');
 
 	// Parse links=, links-override= and save= and set internal variables
@@ -986,7 +1143,7 @@ function CreateUrlResolver() {
 	// 2) links=
 	// 3) LocalStorage
 
-	let params = new URLSearchParams(location.search);
+	let params = new URLSearchParams(queryString);
 	let loadOverrideArg = params.get('links-override');
 	let loadArg = params.get('links');
 	let saveArg = params.get('save');
@@ -1030,43 +1187,12 @@ function CreateUrlResolver() {
 	let _loadName = undefined;
 
 	// Methods to get the correct LocalStorage keys
-	const LSKey_Prefix = 'favlist_';
-	function getLoadOverrideOptionsLSKey() {
-		if (loadOverrideConfigName != null) {
-			return LSKey_Prefix + 'load_' + loadOverrideConfigName;
-		} else {
-			return LSKey_Prefix + 'load_default';
-		}
-	}
-	function getLoadOptionsLSKey() {
-		if (loadConfigName != null) {
-			return LSKey_Prefix + 'load_' + loadConfigName;
-		} else {
-			return LSKey_Prefix + 'load_default';
-		}
-	}
-	function getSaveOptionsLSKey() {
-		if (saveConfigName != null) {
-			return LSKey_Prefix + 'save_' + saveConfigName;
-		} else {
-			return LSKey_Prefix + 'save_default';
-		}
-	}
-	function getLSKeyHelper(subKey) {
+	function getConfigLoadKey() {
 		if (_usedLoadConfigName === undefined || _loadName === undefined) calcDownloadUrl();
-		let key = LSKey_Prefix + subKey;
-		if (_usedLoadConfigName != null) key += '_' + _usedLoadConfigName;
-		if (_loadName != null) key += '_' + _loadName;
-		return key;
-	}
-	function _getLinksLSKey_noRecurse() {
-		return getLSKeyHelper('links');
-	}
-	function getLinksLSKey() {
-		return _getLinksLSKey_noRecurse();
-	}
-	function getItemExpandedLSKey(itemPath) {
-		return getLSKeyHelper('expanded') + '_' + itemPath;
+		let key = [];
+		if (_usedLoadConfigName != null) key.push(_usedLoadConfigName);
+		if (_loadName != null) key.push(_loadName);
+		return key.join('_');
 	}
 
 	// Get the options
@@ -1075,12 +1201,7 @@ function CreateUrlResolver() {
 		if (_loadOverrideOptions === undefined) {
 			if (loadOverrideConfigName != null) {
 				// Read from config
-				_loadOverrideOptions = readLocalStorage(getLoadOverrideOptionsLSKey());
-				// Note: This value is not URL-encoded. If this is required, it should
-				// be done before the value is used in the context where that is needed.
-				if (_loadOverrideOptions === false || _loadOverrideOptions.match(/^\s*$/)) {
-					_loadOverrideOptions = '';
-				}
+				_loadOverrideOptions = getData().readLoadOverrideOptions();
 			} else if (loadOverrideArg != null) {
 				_loadOverrideOptions = loadOverrideArg;
 			} else {
@@ -1102,12 +1223,7 @@ function CreateUrlResolver() {
 		if (_loadOptions === undefined) {
 			if (loadConfigName != null) {
 				// Read from config
-				_loadOptions = readLocalStorage(getLoadOptionsLSKey());
-				// Note: This value is not URL-encoded. If this is required, it should
-				// be done before the value is used in the context where that is needed.
-				if (_loadOptions === false || _loadOptions.match(/^\s*$/)) {
-					_loadOptions = '';
-				}
+				_loadOptions = getData().readLoadOptions();
 			} else if (loadArg != null) {
 				_loadOptions = loadArg;
 			} else {
@@ -1129,14 +1245,8 @@ function CreateUrlResolver() {
 		if (_saveOptions === undefined) {
 			if (saveConfigName != null) {
 				// Read from config
-				_saveOptions = readLocalStorage(getSaveOptionsLSKey());
-				// Note: This value is not URL-encoded. If this is required, it should
-				// be done before the value is used in the context where that is needed.
-				if (_saveOptions === false || _saveOptions.match(/^\s*$/)) {
-					_saveOptions = '';
-				} else {
-					addStatus('Saveable');
-				}
+				_saveOptions = getData().readSaveOptions();
+				if (_saveOptions) addStatus('Saveable');
 			} else if (saveArg != null) {
 				_saveOptions = saveArg;
 				addStatus('Saveable');
@@ -1191,7 +1301,7 @@ function CreateUrlResolver() {
 	function calcDownloadUrl() {
 		// Note: The LinksLSKey depends on the _usedLoadConfigName and
 		// on the _loadName, so these have to be calculated before
-		// we can call _getLinksLSKey_noRecurse().
+		// we can call getConfigLoadKey().
 
 		// Derive _preliminaryLinks: Generally LocalStorage if available,
 		// because it might be equal to the downloaded Links in which case
@@ -1243,6 +1353,7 @@ function CreateUrlResolver() {
 			_usedLoadConfigName = null;
 			addStatus('Local');
 		}
+		console.assert(_usedLoadConfigName !== undefined);
 		console.log('_usedLoadConfigName=' + _usedLoadConfigName);
 		console.log('_loadUrl=' + _loadUrl);
 
@@ -1278,16 +1389,15 @@ function CreateUrlResolver() {
 			// No name found, now take the name from the URL
 			_loadName = _loadUrl.replace(/[?#].*$/, '').replace(/^[^\/]*\//, '');
 		}
+		console.assert(_loadName !== undefined);
 		console.log('_loadName=' + _loadName);
 		//console.log('HTTP headers=' + _downloadHeaders);
 
 		// Get Links from LocalStorage (needs _usedConfigName and _loadName)
 		// Derive _preliminaryLinks and _fallbackLinks.
-		let localLinksKey = _getLinksLSKey_noRecurse();
-		console.log('localLinks: From ' + localLinksKey);
-		let localLinks = readLocalStorage(localLinksKey);
+		let localLinks = getData().readLocalLinks();
 		let preliminaryLinksMsg;
-		if (localLinks !== false) {
+		if (localLinks !== null) {
 			// localLinks present
 			if (preliminaryIsLocal) {
 				_preliminaryLinks = localLinks;
@@ -1505,19 +1615,16 @@ function CreateUrlResolver() {
 		getLoadConfigName : () => loadConfigName,
 		getLoadOptions : getLoadOptions,
 		setLoadOptions : setLoadOptions,
-		getLoadOptionsLSKey : getLoadOptionsLSKey,
 
 		// Fields to manage LoadOptions override
 		getLoadOverrideConfigName : () => loadOverrideConfigName,
 		getLoadOverrideOptions : getLoadOverrideOptions,
 		setLoadOverrideOptions : setLoadOverrideOptions,
-		getLoadOverrideOptionsLSKey : getLoadOverrideOptionsLSKey,
 
 		// Fields to manage SaveOptions
 		getSaveConfigName : () => saveConfigName,
 		getSaveOptions : getSaveOptions,
 		setSaveOptions : setSaveOptions,
-		getSaveOptionsLSKey : getSaveOptionsLSKey,
 
 		// Fields for downloading Links
 		getDownloadUrl : getDownloadUrl,
@@ -1538,8 +1645,7 @@ function CreateUrlResolver() {
 		getFallbackLinks : getFallbackLinks,
 
 		// Fields for accessing other LocalStorage keys
-		getLinksLSKey : getLinksLSKey,
-		getItemExpandedLSKey : getItemExpandedLSKey,
+		getConfigLoadKey : getConfigLoadKey,
 	};
 }
 
@@ -1678,30 +1784,6 @@ function uploadLinks(value) {
 	});
 
 	return uploadPromise;
-}
-
-// Read value from LocalStorage.
-// Return value or false in case of error or if it does not exist.
-function readLocalStorage(key) {
-	if (localStorage) {
-		let v = localStorage.getItem(key);
-		if (v != null) return v;
-	}
-	return false;
-}
-
-// Store value in LocalStorage.
-// If value is null, empty or whitespace, delete key from LocalStorage.
-// Return true if success, false if not saved.
-function writeLocalStorage(key, value) {
-	if (localStorage) {
-		if (value == null || value.match(/^\s*$/))
-			localStorage.removeItem(key);
-		else
-			localStorage.setItem(key, value);
-		return true;
-	}
-	return false;
 }
 
 // }}}
@@ -2358,10 +2440,9 @@ function outputItem(link, level, container, parentPath, cancel) {
 				expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
 				_blockContainer.appendChild(expandIcon);
 				let isExpanded = !BlocksCollapsedInitially;  //true if block is expanded
-				let storageKey = UrlResolver.getItemExpandedLSKey(myPath);
-				if (!BlocksCollapsedAlwaysInitial && localStorage) {
-					// LocalStorage is available, use persistent value
-					let v = localStorage.getItem(storageKey);
+				if (!BlocksCollapsedAlwaysInitial) {
+					// Use persistent value if available
+					let v = Data.readItemExpanded(myPath);
 					console.debug('Preset isExpanded for \'' + myPath + '\' to ' + v);
 					if (v == 'false') {
 						isExpanded = false;
@@ -2394,10 +2475,7 @@ function outputItem(link, level, container, parentPath, cancel) {
 				expandIcon.onclick = function() {
 					isExpanded = !isExpanded;
 					console.debug('Set isExpanded for \'' + name + '\' to ' + isExpanded);
-					if (localStorage) {
-						// LocalStorage is available, persist it
-						localStorage.setItem(storageKey, isExpanded);
-					}
+					Data.writeItemExpanded(myPath, isExpanded);
 					displayExpandState();
 				};
 				addClosingElements = function() {
@@ -2697,7 +2775,7 @@ function outputCheckbox(type, value, lineNum) {
 		let newLinks = Links.replace(re, '$1' + newCheck);
 		if (newLinks != Links) {
 			Links = newLinks;
-			writeLocalStorage(UrlResolver.getLinksLSKey(), Links);
+			Data.writeLocalLinks(Links);
 			uploadLinks(Links);
 		} else {
 			console.error('RegExp did not change Links: ', re);
@@ -3570,7 +3648,7 @@ function initSettingsPanel() {
 				(value) => {
 					UrlResolver.setLoadOptions(value);
 					UrlResolver.setLoadOverrideOptions(value);
-					writeLocalStorage(UrlResolver.getLoadOverrideOptionsLSKey(), value);
+					Data.writeLoadOverrideOptions(value);
 				});
 		} else {
 			if (loadOverrideConfigName) {
@@ -3579,7 +3657,7 @@ function initSettingsPanel() {
 					() => UrlResolver.getLoadOverrideOptions(),
 					(value) => {
 						UrlResolver.setLoadOverrideOptions(value);
-						writeLocalStorage(UrlResolver.getLoadOverrideOptionsLSKey(), value);
+						Data.writeLoadOverrideOptions(value);
 					});
 			}
 			if (loadConfigName) {
@@ -3588,7 +3666,7 @@ function initSettingsPanel() {
 					() => UrlResolver.getLoadOptions(),
 					(value) => {
 						UrlResolver.setLoadOptions(value);
-						writeLocalStorage(UrlResolver.getLoadOptionsLSKey(), value);
+						Data.writeLoadOptions(value);
 					});
 			}
 		}
@@ -3601,7 +3679,7 @@ function initSettingsPanel() {
 				(value) => {
 					if (!saveOptionsDisabled) {
 						UrlResolver.setSaveOptions(value);
-						writeLocalStorage(UrlResolver.getSaveOptionsLSKey(), value);
+						Data.writeSaveOptions(value);
 					}
 				});
 			if (saveOptionsDisabled) {
@@ -3690,7 +3768,7 @@ function initSettingsPanel() {
 				.then(() => {
 					// Links are correct
 					settingsText.value = Links;
-					writeLocalStorage(UrlResolver.getLinksLSKey(), Links);
+					Data.writeLocalLinks(Links);
 					// Just read from URL, don't call uploadLinks().
 					// Close the panel
 					hide();
@@ -3720,7 +3798,7 @@ function initSettingsPanel() {
 					Links = settingsText.value;
 					processLinks(() => false);  //Render Links
 					// Links are correct
-					writeLocalStorage(UrlResolver.getLinksLSKey(), Links);
+					Data.writeLocalLinks(Links);
 					uploadLinks(Links);
 					// Close the panel
 					hide();
@@ -4306,7 +4384,7 @@ function loadLinks(forcedownload = false) {
 				if (!UrlResolver.getLoadOverrideOptions()) {
 					// Downloaded links are from links= and are different
 					console.log('Update LocalStorage');
-					writeLocalStorage(UrlResolver.getLinksLSKey(), value);
+					Data.writeLocalLinks(value);
 				}
 				addStatus('Render');
 				handleLinks(value);
