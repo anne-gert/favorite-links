@@ -1792,7 +1792,6 @@ function uploadLinks(value) {
 // Parsing Links {{{
 
 // Global variables in which parseLinks() puts its output.
-var Links = null;  //links text, input for parseLinks()
 var PageTitle = null;  //specified title
 var PageTheme = null;  //specified color theme
 var FontSize = null;  //specified font-size (may be relative, but that doesn't work very well)
@@ -1807,7 +1806,7 @@ var ScriptBlocks = null;  //array of !script...!endscript blocks
 
 
 // Parse the string in Links and fills the global variables above.
-function parseLinks() {
+function parseLinks(links) {
 	console.important('Parsing Links...');
 
 	// Parse the input lines and construct a list of objects
@@ -1828,7 +1827,7 @@ function parseLinks() {
 	let scriptBlock = null;  //used for literal !script ... !endscript blocks
 	let openIndentLevels = [];  //indentation level (number of spaces) for each open level
 	let maxLevel = null;  //keep track of the maximum level
-	let lines = Links.split(/\r?\n\r?/);  //lines with Link specifications
+	let lines = links.split(/\r?\n\r?/);  //lines with Link specifications
 	for (let i = 0; i < lines.length; ++i) {
 		let line = lines[i];
 		//console.log('Line=\'' + line + '\'');
@@ -2773,11 +2772,12 @@ function outputCheckbox(type, value, lineNum) {
 	// Function to update the Links
 	let updateLinks = function(newCheck) {
 		const re = new RegExp('(^(?:[^\\n]*\\n){' + (lineNum - 1) + '}\\s*(?:[-*]\\s*)?)\\[(?:\\s+|\\S+)?\\]');
-		let newLinks = Links.replace(re, '$1' + newCheck);
-		if (newLinks != Links) {
-			Links = newLinks;
-			Data.writeLocalLinks(Links);
-			uploadLinks(Links);
+		let links = Data.getLocalLinks();
+		let newLinks = links.replace(re, '$1' + newCheck);
+		if (newLinks != links) {
+			links = newLinks;
+			Data.writeLocalLinks(links);
+			uploadLinks(links);
 		} else {
 			console.error('RegExp did not change Links: ', re);
 		}
@@ -3707,7 +3707,7 @@ function initSettingsPanel() {
 			}
 		}
 		// Update the contents
-		settingsText.value = Links;
+		settingsText.value = Data.readLocalLinks();
 		for (let i = 0; i < optionEntries.length; ++i) {
 			optionEntries[i].showData();
 		}
@@ -3762,14 +3762,13 @@ function initSettingsPanel() {
 				optionEntries[i].saveData();
 			}
 			// Update Links and close panel
-			let saveLinks = Links;
+			let saveLinks = Data.readLocalLinks();
 			if (save == 'clear' || settingsText.value == '') {
 				console.log('Clear settings');
 				loadLinks(true)  //re-resolve, download and render Links
 				.then(() => {
 					// Links are correct
-					settingsText.value = Links;
-					Data.writeLocalLinks(Links);
+					settingsText.value = links;
 					// Just read from URL, don't call uploadLinks().
 					// Close the panel
 					hide();
@@ -3780,8 +3779,8 @@ function initSettingsPanel() {
 					console.error(error);
 					// Put newly read value in settingsText to correct.
 					// Restore old value in Links in case of cancel.
-					settingsText.value = Links;
-					Links = saveLinks;
+					settingsText.value = Data.readLocalLinks();
+					Data.writeLocalLinks(saveLinks);
 					if (error instanceof UserInputError) {
 						// It is a UserInputError, show a dialog,
 						// because the user can fix it.
@@ -3796,11 +3795,11 @@ function initSettingsPanel() {
 			} else {
 				console.log('Save settings');
 				try {
-					Links = settingsText.value;
-					processLinks();  //Render Links
+					let links = settingsText.value;
+					processLinks(links);  //Render Links
 					// Links are correct
-					Data.writeLocalLinks(Links);
-					uploadLinks(Links);
+					Data.writeLocalLinks(links);
+					uploadLinks(links);
 					// Close the panel
 					hide();
 				} catch (error) {
@@ -3818,7 +3817,7 @@ function initSettingsPanel() {
 					}
 					// Leave the value in settingsText to correct.
 					// Restore old value in Links in case of cancel.
-					Links = saveLinks;
+					Data.writeLocalLinks(saveLinks);
 				}
 			}
 		} else {
@@ -4210,11 +4209,11 @@ function setFontSize(size) {
 // From the Links configuration, parse its content and display it.
 // This function may throw a UserInputError exceptions when something is wrong
 // with the contents of the Links variable.
-function processLinks(cancel = null) {
+function processLinks(links, cancel = null) {
 	if (!cancel) cancel = () => false;
 
 	// Parse Links
-	parseLinks();
+	parseLinks(links);
 
 	if (cancel()) return;
 
@@ -4305,8 +4304,7 @@ function loadLinks(forcedownload = false) {
 	// Helper function to handle processing the links.
 	function handleLinks(links, cancel = null) {
 		if (cancel && cancel()) return;
-		Links = links;
-		processLinks(cancel);
+		processLinks(links, cancel);
 	}
 
 	// Helper function to render fallbackLinks, logging the reason.
