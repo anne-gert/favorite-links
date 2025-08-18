@@ -159,6 +159,16 @@ body {
 .hidden {
 	display: none;
 }
+.alert-box {
+	color: var(--foreground);
+	margin: 1em 3em 0.5em;
+	padding: 0.5em 1em;
+	border-left: 0.2em solid var(--error-foreground);
+}
+.alert-box .label {
+	color: var(--error-foreground);
+}
+
 
 /****************************************************************************
  * Shared styles for displaying text-blocks
@@ -1013,6 +1023,9 @@ function CreateData(getResolver = () => UrlResolver) {
 	function getLinksLSKey() {
 		return LSKey_Prefix + 'links_' + getResolver().getConfigLoadKey();
 	}
+	function getCleanLinksLSKey() {
+		return LSKey_Prefix + 'clean-links_' + UrlResolver.getConfigLoadKey();
+	}
 	function getItemExpandedLSKey(itemPath) {
 		return LSKey_Prefix + 'expanded_' + getResolver().getConfigLoadKey() + '_' + itemPath;
 	}
@@ -1036,6 +1049,30 @@ function CreateData(getResolver = () => UrlResolver) {
 	function writeLocalLinks(links) {
 		let key = getLinksLSKey();
 		writeStorage(key, links);
+	}
+
+	// Read/Write CleanLinks from Storage. CleanLinks are basically the
+	// last downloaded version. This is used as the common ancestor for
+	// determining if LocalLinks or newly DownloadedLinks have changed.
+	// Returns null if not available.
+	function readCleanLinks() {
+		let key = getCleanLinksLSKey();
+		let links = readStorage(key);
+		if (links === undefined) links = null;
+		return links;
+	}
+	function writeCleanLinks(links) {
+		let key = getCleanLinksLSKey();
+		writeStorage(key, links);
+	}
+
+	// Return true if LocalLinks is different from CleanLinks.
+	function linksDirty() {
+		let localLinks = readLocalLinks();
+		localLinks = (localLinks != null) ? localLinks.trim() : '';
+		let cleanLinks = readCleanLinks();
+		cleanLinks = (cleanLinks != null) ? cleanLinks.trim() : '';
+		return localLinks != cleanLinks;
 	}
 
 	// Read/write expanded/collapsed status of this itemPath.
@@ -1097,6 +1134,9 @@ function CreateData(getResolver = () => UrlResolver) {
 		// Functions to read/write Links
 		readLocalLinks : readLocalLinks,
 		writeLocalLinks : writeLocalLinks,
+		readCleanLinks : readCleanLinks,
+		writeCleanLinks : writeCleanLinks,
+		linksDirty : linksDirty,
 
 		// Functions to read/write expanded/collapsed state of Items
 		readItemExpanded : readItemExpanded,
@@ -1344,7 +1384,6 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 			_loadUrl = loadOptions;
 			loadUrlMsg = 'loadOptions';
 			_usedLoadConfigName = loadConfigName;
-			addStatus('Links');
 		} else {
 			// Source selection: local - default
 			console.log('Both loadOverrideOptions and loadOptions not set');
@@ -1397,7 +1436,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 		// Derive _preliminaryLinks and _fallbackLinks.
 		let localLinks = getData().readLocalLinks();
 		let preliminaryLinksMsg;
-		if (localLinks !== null) {
+		if (localLinks != null) {
 			// localLinks present
 			if (preliminaryIsLocal) {
 				_preliminaryLinks = localLinks;
@@ -1411,6 +1450,9 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 				// No need to download
 				_loadUrl = null;
 				loadUrlMsg = 'none (use LocalStorage instead)';
+				addStatus('Local');
+			} else {
+				addStatus('Links');
 			}
 		} else {
 			// localLinks not present
@@ -1420,9 +1462,9 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 			fallbackLinksMsg = 'default (LocalStorage is empty)';
 		}
 
-		console.log('preliminaryLinks: Use ' + preliminaryLinksMsg);
-		console.log('loadUrl: Use ' + loadUrlMsg);
-		console.log('fallbackLinks: Use ' + fallbackLinksMsg);
+		console.log('* preliminaryLinks: Use ' + preliminaryLinksMsg);
+		console.log('* loadUrl: Use ' + loadUrlMsg);
+		console.log('* fallbackLinks: Use ' + fallbackLinksMsg);
 
 		// If _loadUrl set, check special cases
 		if (_loadUrl != null) {
@@ -1737,6 +1779,7 @@ function downloadLinks() {
 
 // Save links online by the method specified.
 // If the value is null, empty or whitespace, save an empty string.
+// CleanLinks and LinksDirty are also updated if save successful.
 // Returns Promise of the upload or false if not saving.
 function uploadLinks(value) {
 	let url = UrlResolver.getUploadUrl();
@@ -1772,11 +1815,15 @@ function uploadLinks(value) {
 					// Success
 					console.log('Uploaded links successfully');
 					addStatus('Save OK');
+					console.log('Update CleanLinks');
+					Data.writeCleanLinks(value);  //assume upload & download are same content
+					updateSettingsDirty(false);
 					resolveFunc(this.status);
 				} else {
 					// Failed
 					console.log('Failed to upload Links, good luck next time (' + this.status + ')');
 					addStatus('Save ' + this.status);
+					updateSettingsDirty();
 					resolveFunc(this.status);  //do not see this as a fail
 				}
 			}
@@ -2772,7 +2819,7 @@ function outputCheckbox(type, value, lineNum) {
 	// Function to update the Links
 	let updateLinks = function(newCheck) {
 		const re = new RegExp('(^(?:[^\\n]*\\n){' + (lineNum - 1) + '}\\s*(?:[-*]\\s*)?)\\[(?:\\s+|\\S+)?\\]');
-		let links = Data.getLocalLinks();
+		let links = Data.readLocalLinks();
 		let newLinks = links.replace(re, '$1' + newCheck);
 		if (newLinks != links) {
 			links = newLinks;
@@ -3478,6 +3525,7 @@ function addSearchButtons(searchBox, container) {
 // Edit Settings {{{
 
 var showSettingsPanel = null;  //will be set later
+var updateSettingsDirty = null;  //will be set later
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
@@ -3487,6 +3535,7 @@ function initSettingsPanel() {
 	let iconBarClosed = document.getElementById('SettingsIconBarClosed');  //iconbar for closed status
 	let iconBarOpen = document.getElementById('SettingsIconBarOpen');  //iconbar for open status
 	let settingsPanel = null;
+	let iconOpen, iconSave, iconClear, iconCancel, warningDirty;
 
 	// Status
 	let visible = false;
@@ -3497,8 +3546,9 @@ function initSettingsPanel() {
 
 	// Create the minimal hooks (expose functions) and defer rest at first showing
 	showSettingsPanel = showSettings;
+	updateSettingsDirty = updateDirty;
 	// Create iconOpen
-	let iconOpen = document.createElement('span');
+	iconOpen = document.createElement('span');
 	setUnicodeText(iconOpen, UNICODE_GEARS, '[Settings]');
 	iconOpen.title = 'Settings';
 	iconOpen.className = 'settings-icon';
@@ -3518,19 +3568,19 @@ function initSettingsPanel() {
 		// exception, breaking the buttons to close.
 
 		// Create iconSave
-		let iconSave = document.createElement('span');
+		iconSave = document.createElement('span');
 		iconSave.title = 'Save (Ctrl-S)';
 		iconSave.className = 'settings-icon';
 		iconSave.onclick = () => hideSettings(true);
 		iconBarOpen.appendChild(iconSave);
 		// Create iconClear
-		let iconClear = document.createElement('span');
+		iconClear = document.createElement('span');
 		iconClear.title = 'Clear';
 		iconClear.className = 'settings-icon';
 		iconClear.onclick = () => hideSettings('clear');
 		iconBarOpen.appendChild(iconClear);
 		// Create iconCancel
-		let iconCancel = document.createElement('span');
+		iconCancel = document.createElement('span');
 		iconCancel.title = 'Cancel';
 		iconCancel.className = 'settings-icon';
 		iconCancel.onclick = () => hideSettings(false);
@@ -3587,6 +3637,17 @@ function initSettingsPanel() {
 		//	}
 		//	return true;
 		//});
+
+		// Create hidden warnings
+		warningDirty = document.createElement('div');
+		warningDirty.className = 'alert-box hidden';
+		warningDirty.innerHTML = `
+<span class="label">WARNING</span>: Previous online save was unsuccessful. Choose one of the following:<br>
+&bull; <span class="accent">Save</span> will overwrite online changes with this configuration, discarding changes that have been made online.<br>
+&bull; <span class="accent">Clear</span> will discard local changes and download the online version.<br>
+&bull; <span class="accent">Cancel</span> will not make any changes.
+`;
+		settingsArea.appendChild(warningDirty);
 
 		// Create settingsText
 		settingsText = document.createElement('textarea');
@@ -3694,6 +3755,16 @@ function initSettingsPanel() {
 		return true;
 	}
 
+	function updateDirty(dirty) {
+		if (dirty == null) dirty = UrlResolver.getSaveOptions() && Data.linksDirty();
+		// Change visibility
+		console.important('Set Links Dirty=' + dirty);
+		addClass(iconOpen, 'alert', dirty);
+		addClass(iconSave, 'alert', dirty);
+		addClass(iconClear, 'alert', dirty);
+		addClass(warningDirty, 'hidden', !dirty);
+	}
+
 	// Show the Settings panel.
 	function showSettings() {
 		if (visible) return;  //do nothing if already visible
@@ -3706,6 +3777,8 @@ function initSettingsPanel() {
 				return;
 			}
 		}
+		// Display items for dirty Settings
+		updateDirty();
 		// Update the contents
 		settingsText.value = Data.readLocalLinks();
 		for (let i = 0; i < optionEntries.length; ++i) {
@@ -3768,7 +3841,11 @@ function initSettingsPanel() {
 				loadLinks(true)  //re-resolve, download and render Links
 				.then(() => {
 					// Links are correct
+					let links = Data.readLocalLinks();
 					settingsText.value = links;
+					Data.writeLocalLinks(links);
+					Data.writeCleanLinks(links);
+					updateDirty(false);
 					// Just read from URL, don't call uploadLinks().
 					// Close the panel
 					hide();
@@ -4301,12 +4378,6 @@ function loadLinks(forcedownload = false) {
 	let preliminaryLinksCancel = CreateCancel();
 	let preliminaryLinksRenderPromise = null;
 
-	// Helper function to handle processing the links.
-	function handleLinks(links, cancel = null) {
-		if (cancel && cancel()) return;
-		processLinks(links, cancel);
-	}
-
 	// Helper function to render fallbackLinks, logging the reason.
 	function handleFallbackLinks(reason) {
 		if (forcedownload) {
@@ -4320,7 +4391,8 @@ function loadLinks(forcedownload = false) {
 			if (preliminaryLinks == null || fallbackLinks.trim() != preliminaryLinks.trim()) {
 				console.important(reason + ', use fallback Links');
 				addStatus('Render fallback');
-				handleLinks(fallbackLinks);
+				Data.writeLocalLinks(fallbackLinks);
+				processLinks(fallbackLinks);
 			} else {
 				console.important(reason + ' and fallback same as preliminary, keep preliminary Links');
 			}
@@ -4337,7 +4409,7 @@ function loadLinks(forcedownload = false) {
 	// Unfortunately, this is not how JavaScript Promises work. It seems
 	// like Promises are like co-operative multi-tasking and each Promise
 	// has to yield control in order for other Promises to progress.
-	// Since the handleLinks() doesn't need to wait, it does not yield by
+	// Since the processLinks() doesn't need to wait, it does not yield by
 	// itself. It could be made to in the cancel() call, but I have not
 	// found a way to yield control manually.
 	// Surprisingly, also the downloading does not yield control.
@@ -4355,12 +4427,12 @@ function loadLinks(forcedownload = false) {
 		preliminaryLinksRenderPromise = new Promise((resolveFunc, rejectFunc) => {
 			// Use a short timeout to give the download a chance to start
 			// so that the response will be received asap after the
-			// preliminary render is done (since handleLinks() does not
+			// preliminary render is done (since processLinks() does not
 			// yield control).
 			setTimeout(() => {
 				console.important('Start processing preliminaryLinks');
 				addStatus('Pre-render');
-				handleLinks(preliminaryLinks, preliminaryLinksCancel);
+				processLinks(preliminaryLinks, preliminaryLinksCancel);
 				if (preliminaryLinksCancel()) {
 					console.important('preliminaryLinks have been cancelled');
 				} else {
@@ -4372,26 +4444,122 @@ function loadLinks(forcedownload = false) {
 	}
 
 	// Start download (if defined)
-	// Depending on download, render result or fallbackLinks.
+	// Depending on download and last download (CleanLinks), handle as in table below.
+	//        |          |            || Update |      |   Update   |
+	//  Local | Download | CleanLinks ||  Local | Save | CleanLinks | StatusLine
+	// -------|----------|------------||--------|------|------------|------------
+	//    -   |     A    |      A     ||   yes  |   no |      no    | [No Local]
+	//    -   |     B    |      A     ||   yes  |   no |     yes    | [No Local] [Save Dirty]
+	//    A   |     A    |      A     ||    no  |   no |      no    | [Same]
+	//    B   |     B    |      A     ||    no  |   no |     yes    | [Same]
+	//    A   |     B    |      A     ||   yes  |   no |     yes    | [Render]
+	//    B   |     A    |      A     ||    no  |  yes |      no    | [Save Dirty]
+	//    B   |     C    |      A     ||    no  |   no |      no    | [Conflict], do not render downloaded
+	// Note the following relations between input and output columns:
+	// - Local = Cache, normally that is displayed now as Preliminary Render
+	// - Update Local = Also Re-Render displayed content
+	// - Save = Update content that is downloaded next time
+	// - CleanLinks are the last downloaded Links. This is used as the
+	//   common ancestor for determining if LocalLinks or newly
+	//   DownloadedLinks have changed.
 	let loadPromise = downloadLinks();
 	if (loadPromise != null) {
 		loadPromise
 		.then(value => {
 			// Links have been downloaded successfully
-			if (preliminaryLinks == null || value.trim() != preliminaryLinks.trim()) {
-				console.important('Use downloaded Links');
-				preliminaryLinksCancel.setReturn(true);
-				if (!UrlResolver.getLoadOverrideOptions()) {
-					// Downloaded links are from links= and are different
-					console.log('Update LocalStorage');
-					Data.writeLocalLinks(value);
+			let localLinks;
+			if (forcedownload) {
+				localLinks = null;
+			} else {
+				localLinks = Data.readLocalLinks();
+				localLinks = (localLinks != null) ? localLinks.trim() : '';
+			}
+			let downloadLinks = value.trim();
+			let cleanLinks = Data.readCleanLinks();
+			cleanLinks = (cleanLinks != null) ? cleanLinks.trim() : '';
+			let render = false, updateLocal = false, upload = false, updateClean = false, conflict = false;
+			if (preliminaryLinks == null) {
+				// Nothing yet shown
+				render = true;
+			}
+			if (!localLinks) {
+				// Case -AA, -BA: There are no localLinks
+				if (forcedownload) {
+					console.important('Force downloaded links');
+				} else {
+					console.important('Downloaded links, no local Links');
 				}
+				addStatus('No Local');
+				updateLocal = true;
+				render = true;
+				if (downloadLinks != cleanLinks) {
+					// Case -BA: Update CleanLinks
+					updateClean = true;
+				}
+			} else if (localLinks == downloadLinks) {
+				// Case AAA, BBA: localLinks same as downloadLinks
+				console.important('Downloaded links same as local, keep pre-rendered Links');
+				addStatus('Same');
+				if (downloadLinks != cleanLinks) {
+					// Case BBA: Update CleanLinks
+					updateClean = true;
+				}
+			} else {
+				// Case ABA, BAA, BCA: localLinks different from downloadLinks
+				if (localLinks == cleanLinks) {
+					// Case ABA: downloadLinks different from others
+					console.important('Downloaded Links newer than local, use downloaded Links');
+					render = true;
+					if (!UrlResolver.getLoadOverrideOptions()) {
+						// Downloaded links are from links= and are different
+						updateLocal = true;
+					}
+					updateClean = true;
+				} else if (downloadLinks == cleanLinks) {
+					// Case BAA: localLinks different from others
+					console.important('Local Links newer than downloaded, use local Links');
+					upload = true;
+				} else {
+					// Case BCA: All three are different
+					console.important('Local Links and downloaded Links have both changed, display local');
+					addStatus('Conflict');
+					conflict = true;
+				}
+			}
+
+			// Stop pre-render
+			if (render) {
+				preliminaryLinksCancel.setReturn(true);
+			}
+			// Set conflict state or accept downloaded Links
+			if (conflict) {
+				updateSettingsDirty(true);
+			}
+			// Update LocalStorage
+			if (updateLocal) {
+				console.log('Update LocalLinks');
+				Data.writeLocalLinks(value);
+			}
+			if (updateClean) {
+				console.log('Update CleanLinks');
+				Data.writeCleanLinks(value);
+				updateSettingsDirty(false);
+			}
+			if (upload) {
+				if (UrlResolver.getSaveOptions()) {
+					addStatus('Save Dirty');
+					uploadLinks(value);  //will set CleanLinks after successful upload
+				} else {
+					console.log('No SaveOptions, cannot save');
+					updateSettingsDirty(false);  //no SaveOptions, no dirty
+				}
+			}
+			// Re-render or wait for pre-render
+			if (render) {
 				addStatus('Render');
-				handleLinks(value);
+				processLinks(value);
 				result.resolve(true);
 			} else {
-				console.important('Downloaded links same as preliminary, keep preliminary Links');
-				addStatus('Same');
 				preliminaryLinksRenderPromise.then(() => result.resolve(true));
 			}
 		})
@@ -4413,6 +4581,7 @@ function loadLinks(forcedownload = false) {
 		});
 	} else {
 		// No download, go straight to fallback
+		addStatus('No Download');
 		handleFallbackLinks('No download');
 	}
 

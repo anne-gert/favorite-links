@@ -1,0 +1,105 @@
+// For the syntax description, see help.html.
+
+!title Test
+
+_
+    Search
+        DuckDuckGo https://duckduckgo.com
+        Google Maps https://maps.google.com
+        Wikipedia https://www.wikipedia.org
+        YouTube https://www.youtube.com
+        Google Translate https://translate.google.com/?sl=auto&tl=en&op=translate
+        ChatGPT https://chatgpt.com
+        Wayback Machine https://web.archive.org/
+
+!icondef maps.google.com alt
+
+Checkboxes
+    Tree
+        [ ] Item 1
+        [ ] Item 2
+        [ ] Item 3
+            [ ] Item 3.1
+            [x] Item 3.2
+            [x] Item 3.3
+                [x] Item 3.3.1
+                [x] Item 3.3.2
+                [x] Item 3.3.3
+                    [ ] Item 3.3.3.1
+                    [ ] Item 3.3.3.2
+                    [ ] Item 3.3.3.3
+                    [ ] Item 3.3.3.4
+                [ ] Item 3.3.4
+            [ ] Item 3.4
+        [ ] Item 4
+
+    Test Checkboxes
+
+!checkbox letters A B C
+        letters
+            - [A]:letters Test optie 1
+            - [B]:letters Test optie 2
+            - [C]:letters Test optie 3
+
+!checkbox checks uncheck check cross mcheck
+        checks
+            * [☐]:checks Test optie 1
+            * [☑]:checks Test optie 2
+            * [☒]:checks Test optie 3
+            * [▣]:checks Test optie 4
+
+!checkbox yesno _=char:U+2753 +=U+1F44D -=U+1F44E
+        yesno
+            [ ]:yesno Test optie 1
+            [+]:yesno Test optie 2
+            [-]:yesno Test optie 3
+
+!checkbox yesnoR _=uncheck +=check x=cross ~=mcheck
+        yesnoR
+            [ ]:yesnoR Test optie 1
+            [+]:yesnoR Test optie 2
+            [x]:yesnoR Test optie 3
+            [~]:yesnoR Test optie 4
+                [+]:yesnoR Sub optie 4a
+                [-]:yesnoR Sub optie 4b
+
+!checkbox favicons empty A=agb F=firefox S=sigmax B=mantis O=ovp
+!icondef agb       http://hawaii.uxi.nl/favicon.ico
+!icondef firefox   https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
+!icondef sigmax    https://www.sigmax.nl/wp-content/themes/sigmax/static/images/favicon/favicon-194x194.png
+!icondef mantis    https://mantisbt.org/favicon.ico
+!icondef ovp       https://tst.ovpocket.nl/SigmaxTester/WebBackOfficeClient/assets/ovpocket_favicon.png
+        favicons
+            [ ]:favicons Test optie 1
+            [A]:favicons Test optie 2
+            [F]:favicons Test optie 3
+            [B]:favicons Test optie 4
+
+!checkbox checkross uncheck +=html:<span&sp;style="color:#0c0">&#x2714;</span> -=U+274C
+        checkross
+            [ ]:checkross Test optie 1
+            [+]:checkross Test optie 2
+            [-]:checkross Test optie 3
+
+        default
+            [x] Test optie 1
+            [x] Test optie 2
+            [ ] Test optie 3
+                [x] Sub optie 3a
+                [ ] Sub optie 3b
+
+    [yes]:yesno Small icon, does it fit?
+        [ ]:yesno sub
+
+// Search button definitions
+//      Identifier      | Label   | Tooltip                            | Icon | URL-Template
+!search Duck Duck Go    | Search
+!search Google          | Search
+!search Wikipedia
+!search YouTube
+!search Wayback Machine | Archive | Wayback Machine (Internet Archive) | alt
+!search Google Maps     | Maps
+
+
+// vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
+
