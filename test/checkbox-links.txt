@@ -14,6 +14,9 @@ _
 
 !icondef maps.google.com alt
 
+// Enable this to represent the checked checkbox as a checkmark ✓
+//!icondef check char:U+2714
+
 Checkboxes
     Tree
         [ ] Item 1

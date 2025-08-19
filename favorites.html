@@ -1881,7 +1881,27 @@ function parseLinks(links) {
 		checkboxDefs                 : {},
 		styleBlocks                  : [],
 		scriptBlocks                 : [],
+
+		// Member functions
+
+		// Take icon_url and perform the icondef replacements.
+		// Returns the resolved value or the original value if no icondefs matched.
+		resolveIconDefs(icon_url) {
+			let retval = icon_url;
+			let seen = {};  //to break cycles
+			seen[icon_url] = 1;
+			let override = this.iconDefs[icon_url];
+			while (override !== undefined && !seen[override]) {
+				console.log('Replace icon=' + icon_url + ' by IconDefs ' + override);
+				retval = override;
+				seen[override] = 1;
+				override = this.iconDefs[override];
+			}
+			//console.log('Returning ' + retval);
+			return retval;
+		},
 	};
+	let tempCheckboxDefs = [];  //temporary checkboxDefs, because they need post-processing
 	let textBlock = null;  //used for literal !text ... !endtext blocks
 	let styleBlock = null;  //used for literal !style ... !endstyle blocks
 	let scriptBlock = null;  //used for literal !script ... !endscript blocks
@@ -1993,78 +2013,7 @@ function parseLinks(links) {
 		m = line.match(/^\s*!checkbox\s+(\S+)\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a checkbox definition
-			// Parse the arguments
-			let args = m[2].split(/\s+/);  //split on whitespace
-			let firstOptionName = null, prevOptionName = null;
-			let options = {};
-			for (let i = 0; i < args.length; ++i) {
-				let arg = args[i];
-				//console.devlog('!checkbox arg: ' + arg);
-				let name = null, val = null;
-				let m = arg.match(/^([^=]+)=(.+)$/);
-				if (m) {
-					// It is an name=value option
-					if (m[1][0] == '!') {
-						// It is an argument
-						continue;  //not yet implemented
-					} else {
-						// This is a checkbox option
-						name = m[1];
-						val = m[2];
-					}
-				} else {
-					// It is a single value option
-					val = arg;
-				}
-				if (name == '_') name = ' ';
-				// Check special values
-				let lval = val.toLowerCase();
-				if (lval == '_' || lval == 'empty') {
-					if (name == null) name = ' ';
-					val = 'empty';  //a valid icon
-				} else if (lval == 'uncheck') {
-					val = UNICODE_BALLOT_BOX;
-				} else if (lval == 'check') {
-					val = UNICODE_BALLOT_BOX_WITH_CHECK;
-				} else if (lval == 'cross') {
-					val = UNICODE_BALLOT_BOX_WITH_CROSS;
-				} else if (lval == 'mcheck') {
-					val = UNICODE_WHITE_SQUARE_CONTAINING_BLACK_SMALL_SQUARE;
-				}
-				// Set name if name not yet set
-				if (name == null) name = val;
-				if (val.length == 1 || val.match(/^U\+[0-9a-f]{1,6}$/i)) {
-					// Single characters option, visualize with char:x
-					val = 'char:' + val;
-				}
-				// Add option to options structure
-				if (name != null) {
-					let option = {
-						name  : name,
-						value : val,
-						next  : firstOptionName,  //last points to first
-					}
-					if (firstOptionName == null) {
-						firstOptionName = name;  //first in list
-					} else {
-						options[prevOptionName].next = name;  //prev points to me
-					}
-					options[name] = option;  //add to list
-					prevOptionName = name;  //advance prev
-				}
-			}
-			if (firstOptionName != null) {
-				let def = {
-					name    : m[1],
-					options : options,
-					first   : firstOptionName,
-				};
-				//console.devlog('!checkbox found');
-				//console.log(def);
-				parsed.checkboxDefs[m[1]] = def;
-			} else {
-				console.warn('Ignore !checkbox \'' + m[1] + '\' with no options');
-			}
+			tempCheckboxDefs.push([ m[1], m[2] ]);
 			continue;
 		}
 
@@ -2369,6 +2318,88 @@ function parseLinks(links) {
 				openParents.length = item.level;
 				openParents.push(item);
 			}
+		}
+	}
+
+	// Go through CheckboxDefs and resolve the icons
+	for (let i = 0; i < tempCheckboxDefs.length; ++i) {
+		let name = tempCheckboxDefs[i][0];
+		// Parse the arguments
+		let args = tempCheckboxDefs[i][1].split(/\s+/);  //split on whitespace
+		let firstOptionName = null, prevOptionName = null;
+		let options = {};
+		for (let i = 0; i < args.length; ++i) {
+			let arg = args[i];
+			//console.devlog('!checkbox arg: ' + arg);
+			let name = null, val = null;
+			let m = arg.match(/^([^=]+)=(.+)$/);
+			if (m) {
+				// It is an name=value option
+				if (m[1][0] == '!') {
+					// It is an argument
+					continue;  //not yet implemented
+				} else {
+					// This is a checkbox option
+					name = m[1];
+					val = m[2];
+				}
+			} else {
+				// It is a single value option
+				val = arg;
+			}
+			if (name == '_') name = ' ';
+			// Check icondef
+			let icondef = parsed.resolveIconDefs(val);
+			if (icondef == val) icondef = null;
+			// Check special values
+			let lval = val.toLowerCase();
+			if (lval == '_' || lval == 'empty') {
+				if (name == null) name = ' ';
+				val = 'empty';  //a valid icon
+			} else if (lval == 'uncheck') {
+				val = UNICODE_BALLOT_BOX;
+			} else if (lval == 'check') {
+				val = UNICODE_BALLOT_BOX_WITH_CHECK;
+			} else if (lval == 'cross') {
+				val = UNICODE_BALLOT_BOX_WITH_CROSS;
+			} else if (lval == 'mcheck') {
+				val = UNICODE_WHITE_SQUARE_CONTAINING_BLACK_SMALL_SQUARE;
+			}
+			// Set name if name not yet set
+			if (name == null) name = val;
+			// If icondef, use that value instead, but retain name
+			if (icondef != null) val = icondef;
+			// Represent single char U+xxxxx as char:x
+			if (val.length == 1 || val.match(/^U\+[0-9a-f]{1,6}$/i)) {
+				val = 'char:' + val;
+			}
+			// Add option to options structure
+			if (name != null) {
+				let option = {
+					name  : name,
+					value : val,
+					next  : firstOptionName,  //last points to first
+				}
+				if (firstOptionName == null) {
+					firstOptionName = name;  //first in list
+				} else {
+					options[prevOptionName].next = name;  //prev points to me
+				}
+				options[name] = option;  //add to list
+				prevOptionName = name;  //advance prev
+			}
+		}
+		if (firstOptionName != null) {
+			let def = {
+				name    : name,
+				options : options,
+				first   : firstOptionName,
+			};
+			//console.devlog('!checkbox found');
+			//console.log(def);
+			parsed.checkboxDefs[name] = def;
+		} else {
+			console.warn('Ignore !checkbox \'' + m[1] + '\' with no options');
 		}
 	}
 
@@ -2977,7 +3008,7 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 		let m = target_url.match(/^\w+:\/\/([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+)/);
 		if (m) {
 			let domain = m[1];
-			let replacement = resolveIconDefs(domain);
+			let replacement = parsed.resolveIconDefs(domain);
 			if (replacement != domain) found = replacement;
 		}
 		// If not found, use the default URL
@@ -2989,7 +3020,7 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 
 	// See if icon_url is an IconDef and resolve it
 	if (icon_url != null) {
-		icon_url = resolveIconDefs(icon_url);
+		icon_url = parsed.resolveIconDefs(icon_url);
 	}
 
 	let icon_present = false;
@@ -3137,23 +3168,6 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 		}
 		icon_element = img;
 	}
-
-	// Take icon_url and perform the icondef replacements.
-	// Returns the resolved value or the original value if no icondefs matched.
-	function resolveIconDefs(icon_url) {
-		let retval = icon_url;
-		let seen = {};  //to break cycles
-		seen[icon_url] = 1;
-		let override = parsed.iconDefs[icon_url];
-		while (override !== undefined && !seen[override]) {
-			console.log('Replace icon=' + icon_url + ' by IconDefs ' + override);
-			retval = override;
-			seen[override] = 1;
-			override = parsed.iconDefs[override];
-		}
-		//console.log('Returning ' + retval);
-		return retval;
-	};
 
 	// Return the URL where the default icon should be.
 	function getDefaultIconUrl(site_url) {

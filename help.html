@@ -509,6 +509,9 @@ be used to define a checkbox type with custom options. The allowed options are:
 <li><dt>cross</dt>: Shorthand for <code>U+2612</code> (crossed box, &#x2612;).
 <li><dt>mcheck</dt>: Shorthand for <code>U+25A3</code> (filled box, &#x25A3;).
 </ul>
+The representation of special values can be overridden. E.g. to use a different
+icon for the checkmark, use <code>!icondef check
+http://example.com/icon.png</code>
 </p>
 
 <p>
@@ -559,17 +562,19 @@ and thumbs-down (&#x1F44E;):
 </p>
 
 <p>
-Examples 5: Checkbox with 6 values, empty and 5 icons where '1' and '3' show
-the same icon because of the !icondef and '2' and '5' also show the same icon
-because both options have the same display value:
+Examples 5: Checkbox with 7 values, empty, check and 5 icons where '1' and '3'
+show the same icon because of the !icondef and '2' and '5' also show the same
+icon because both options have the same display value. The check icon
+(&#x2611;) is overriden with a checkmark (&#x2714;).
 <pre>
-!checkbox icons empty 1=icon1 2=icon2 3=icon3 4=icon4 5=icon2
+!checkbox icons empty check 1=icon1 2=icon2 3=icon3 4=icon4 5=icon2
 [1]:icons Option 1
 [2]:icons Option 2
 !icondef icon1 http://example.com/icon1.png
 !icondef icon2 http://example.com/icon2.png
 !icondef icon3 icon1
 !icondef icon4 char:X
+!icondef check char:U+2714
 </pre>
 </p>
 
