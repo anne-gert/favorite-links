@@ -972,6 +972,20 @@ function addClass(widget, className, add) {
 	}
 }
 
+class UserInputError extends Error {
+	constructor(message, lineNumber) {
+		// Update message
+		let fileName = 'configuration';
+		if (lineNumber != null) {
+			message += ' on line ' + lineNumber;
+		}
+
+		// Construct object
+		super(message, fileName, lineNumber);
+		this.name = 'UserInputError';
+	}
+}
+
 // }}}
 
 // Links Data {{{
@@ -1838,37 +1852,36 @@ function uploadLinks(value) {
 
 // Parsing Links {{{
 
-// Global variables in which parseLinks() puts its output.
-var PageTitle = null;  //specified title
-var PageTheme = null;  //specified color theme
-var FontSize = null;  //specified font-size (may be relative, but that doesn't work very well)
-var BlocksCollapsedInitially = false;  //if blocks are initially collapsed by default
-var BlocksCollapsedAlwaysInitial = false;  //if initial is always used or if local value is used
-var SearchButtonDefs = null;  //specified search button declarations
-var RootLinks = null;  //array of Link objects that have no parents (i.e. are roots)
-var IconDefs = null;  //specified icondef declarations
-var CheckBoxDefs = null;  //specified checkbox declarations
-var StyleBlocks = null;  //array of !style...!endstyle blocks
-var ScriptBlocks = null;  //array of !script...!endscript blocks
-
-
-// Parse the string in Links and fills the global variables above.
+// Parse the string in links and returns object with the following fields:
+// - pageTitle: Specified title
+// - pageTheme: Specified color theme
+// - fontSize: Specified font-size (may be relative, but that doesn't work very well)
+// - blocksCollapsedInitially: If blocks are initially collapsed by default
+// - blocksCollapsedAlwaysInitial: If initial is always used or if local value is used
+// - searchButtonDefs: Specified search button declarations
+// - rootLinks: Array of Link objects that have no parents (i.e. are roots)
+// - iconDefs: Specified icondef declarations
+// - checkboxDefs: Specified checkbox declarations
+// - styleBlocks: Array of !style...!endstyle blocks
+// - scriptBlocks: Array of !script...!endscript blocks
 function parseLinks(links) {
 	console.important('Parsing Links...');
 
 	// Parse the input lines and construct a list of objects
 	let allLinks = [];  //specified Link objects
-	PageTitle = null;
-	PageTheme = null;
-	FontSize = null;
-	BlocksCollapsedInitially = false;
-	BlocksCollapsedAlwaysInitial = false;
-	SearchButtonDefs = [];
-	RootLinks = [];
-	IconDefs = {};
-	CheckboxDefs = {};
-	StyleBlocks = null;
-	ScriptBlocks = null;
+	let parsed = {
+		pageTitle                    : null,
+		pageTheme                    : null,
+		fontSize                     : null,
+		blocksCollapsedInitially     : false,
+		blocksCollapsedAlwaysInitial : false,
+		searchButtonDefs             : [],
+		rootLinks                    : [],
+		iconDefs                     : {},
+		checkboxDefs                 : {},
+		styleBlocks                  : [],
+		scriptBlocks                 : [],
+	};
 	let textBlock = null;  //used for literal !text ... !endtext blocks
 	let styleBlock = null;  //used for literal !style ... !endstyle blocks
 	let scriptBlock = null;  //used for literal !script ... !endscript blocks
@@ -1901,9 +1914,8 @@ function parseLinks(links) {
 			m = line.match(/^\s*!endstyle\s*$/i);
 			if (m) {
 				// It is the end, save the object and reset styleBlock.
-				if (StyleBlocks == null) StyleBlocks = [];
 				console.log('Add !style block (' + styleBlock.lines.length + ' lines)');
-				StyleBlocks.push(styleBlock);
+				parsed.styleBlocks.push(styleBlock);
 				styleBlock = null;  //reset
 				continue;
 			}
@@ -1918,9 +1930,8 @@ function parseLinks(links) {
 			m = line.match(/^\s*!endscript\s*$/i);
 			if (m) {
 				// It is the end, save the object and reset scriptBlock.
-				if (ScriptBlocks == null) ScriptBlocks = [];
 				console.log('Add !script block (' + scriptBlock.lines.length + ' lines)');
-				ScriptBlocks.push(scriptBlock);
+				parsed.scriptBlocks.push(scriptBlock);
 				scriptBlock = null;  //reset
 				continue;
 			}
@@ -1940,7 +1951,7 @@ function parseLinks(links) {
 		m = line.match(/^\s*!title\s+(.+?)\s*$/i);
 		if (m) {
 			// This is an title
-			PageTitle = m[1];  //save string
+			parsed.pageTitle = m[1];  //save string
 			continue;
 		}
 
@@ -1948,7 +1959,7 @@ function parseLinks(links) {
 		m = line.match(/^\s*!theme\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a theme
-			PageTheme = m[1];  //save string
+			parsed.pageTheme = m[1];  //save string
 			continue;
 		}
 
@@ -1956,7 +1967,7 @@ function parseLinks(links) {
 		m = line.match(/^\s*!size\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a size
-			FontSize = m[1];  //save string
+			parsed.fontSize = m[1];  //save string
 			continue;
 		}
 
@@ -1965,8 +1976,8 @@ function parseLinks(links) {
 		if (m) {
 			// This is a blocks-closed definition
 			let v = m[1].toLowerCase();
-			BlocksCollapsedInitially = (v == 'always' || v == 'yes');
-			BlocksCollapsedAlwaysInitial = (v == 'always' || v == 'never');
+			parsed.blocksCollapsedInitially = (v == 'always' || v == 'yes');
+			parsed.blocksCollapsedAlwaysInitial = (v == 'always' || v == 'never');
 			continue;
 		}
 
@@ -1974,7 +1985,7 @@ function parseLinks(links) {
 		m = line.match(/^\s*!icondef\s+(\S+)(?:\s+|\s*=\s*)(\S+)\s*$/i);
 		if (m) {
 			// This is an icondef
-			IconDefs[m[1]] = m[2];  //save mapping
+			parsed.iconDefs[m[1]] = m[2];  //save mapping
 			continue;
 		}
 
@@ -2050,7 +2061,7 @@ function parseLinks(links) {
 				};
 				//console.devlog('!checkbox found');
 				//console.log(def);
-				CheckboxDefs[m[1]] = def;
+				parsed.checkboxDefs[m[1]] = def;
 			} else {
 				console.warn('Ignore !checkbox \'' + m[1] + '\' with no options');
 			}
@@ -2062,7 +2073,7 @@ function parseLinks(links) {
 		if (m) {
 			// This is a search button definition
 			let def = m[1].split(/\s*\|\s*/);  //split fields on '|', allowing whitespace
-			SearchButtonDefs.push(def);  //save button def
+			parsed.searchButtonDefs.push(def);  //save button def
 			continue;
 		}
 
@@ -2350,7 +2361,7 @@ function parseLinks(links) {
 				parent.subs.push(item);
 			} else {
 				// This item does not have a parent, it's a root
-				RootLinks.push(item);
+				parsed.rootLinks.push(item);
 			}
 
 			// If this item can be a parent too, replace from this level and below
@@ -2375,369 +2386,19 @@ function parseLinks(links) {
 	// Log all links
 	//for (let i = 0; i < allLinks.length; ++i) console.log('Link=' + allLinks[i]);
 	// Log all roots
-	//for (let i = 0; i < RootLinks.length; ++i) console.log('RootLink=' + RootLinks[i]);
-}
+	//for (let i = 0; i < parsed.rootLinks.length; ++i) console.log('RootLink=' + parsed.rootLinks[i]);
 
-class UserInputError extends Error {
-	constructor(message, lineNumber) {
-		// Update message
-		let fileName = 'configuration';
-		if (lineNumber != null) {
-			message += ' on line ' + lineNumber;
-		}
-
-		// Construct object
-		super(message, fileName, lineNumber);
-		this.name = 'UserInputError';
-	}
+	return parsed;
 }
 
 // }}}
 
 // Rendering Links {{{
 
-// Output Link {{{
-
-// Render Link object, including its children to the container at specified level.
-// Level 1 is called Section and is rendered with a heading.
-// Level 2 is called Block and is rendered as a rectangular block.
-// Level 3 is called Item and is rendered as a line in a Block.
-// Level 4 and higher are called sub-Items and are rendered as indented Items.
-function outputItem(link, level, container, parentPath, cancel) {
-	//console.log('outputItem ' + link.toString());
-	// Copy input data
-	let name = link.name;
-	let url = link.url;
-	let icon = link.icon;
-	let checkType = link.checkType;
-	let checkValue = link.checkValue;
-	let target = link.target;
-	let tooltip = null;
-	let contItems = link.cont;
-	if (contItems != null && contItems.length == 0) contItems = null;
-	let subItems = link.subs;
-	if (subItems != null && subItems.length == 0) subItems = null;
-	if (name == '') name = null;
-	if (url == '') url = null;
-	if (icon == '') icon = null;
-	if (target == '') target = null;
-	let myPath = parentPath + '->' + name;
-	link['output'] = {
-		icon     : null,
-		checkbox : null,
-	};
-	// Fill in defaults for missing elements
-	if (name == null) {
-		if (url != null) {
-			name = url;  //name defaults to url
-		} else {
-			name = '_';  //indicates the name may be hidden
-		}
-	}
-	// Change URL if target=manual
-	if (target == 'manual') {
-		let msg = 'Due to security reasons, this URL cannot be opened automatically.\nCopied URL \'' + url + '\' to clipboard.\n\nManually paste this to the address bar.';
-		msg = msg.replaceAll('\'', '\\\'').replaceAll('\n', '\\n');
-		tooltip = url;  //preserve original URL
-		url = 'javascript:navigator.clipboard.writeText(\'' + url + '\');alert(\'' + encodeURI(msg) + '\');void(0)';
-		target = null;
-	}
-	// Render the item
-	// State variables for this item; will be used in closures
-	let addItemContainer;  //function to add a container to put the Item into
-	let addSubContainer;  //function to add a container to put the subItems into
-	let addClosingElements = null;  //function to add closing elements to the container
-	// Create element container
-	if (level == 1) {
-		// Render Item as Section
-		//console.log('Render Section ' + name);
-		let _itemContainer;
-		let _subContainer;
-		addItemContainer = function() {
-			_itemContainer = document.createElement('h2');
-			_itemContainer.className = 'section-name level1';
-			container.appendChild(_itemContainer);
-			return _itemContainer;
-		}
-		addSubContainer = function() {
-			_subContainer = document.createElement('div');
-			_subContainer.className = 'section';
-			container.appendChild(_subContainer);
-			return _subContainer;
-		};
-		addClosingElements = function() {
-			let closingElements = document.createElement('hr');
-			container.appendChild(closingElements);
-		}
-	} else if (level == 2) {
-		// Render Item as Block
-		//console.log('Render Block ' + name);
-		let _blockContainer;
-		let getBlockContainer = function() {
-			if (_blockContainer) {
-				return _blockContainer;
-			}
-			// Create a new _blockContainer
-			_blockContainer = document.createElement('div');
-			_blockContainer.className = 'block';
-			container.appendChild(_blockContainer);
-			if (subItems != null) {
-				let expandIcon = document.createElement('span');  //container to display '-' or '+'
-				expandIcon.className = 'resize-icon';
-				expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
-				_blockContainer.appendChild(expandIcon);
-				let isExpanded = !BlocksCollapsedInitially;  //true if block is expanded
-				if (!BlocksCollapsedAlwaysInitial) {
-					// Use persistent value if available
-					let v = Data.readItemExpanded(myPath);
-					console.debug('Preset isExpanded for \'' + myPath + '\' to ' + v);
-					if (v == 'false') {
-						isExpanded = false;
-					} else if (v == 'true') {
-						isExpanded = true;
-					}
-				}
-				let displayExpandState = function() {
-					console.debug('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
-					if (isExpanded) {
-						// Expand this block
-						_blockContainer.classList.add('expanding');
-						_blockContainer.onanimationend = function() {
-							_blockContainer.classList.remove('collapsed');
-							_blockContainer.classList.remove('expanding');
-						};
-						// Reflect action of resize-icon
-						expandIcon.title = 'Hide';
-					} else {
-						// Collapse this block
-						_blockContainer.classList.add('collapsing');
-						_blockContainer.onanimationend = function() {
-							_blockContainer.classList.add('collapsed');
-							_blockContainer.classList.remove('collapsing');
-						};
-						// Reflect action of resize-icon
-						expandIcon.title = 'Show';
-					}
-				};
-				expandIcon.onclick = function() {
-					isExpanded = !isExpanded;
-					console.debug('Set isExpanded for \'' + name + '\' to ' + isExpanded);
-					Data.writeItemExpanded(myPath, isExpanded);
-					displayExpandState();
-				};
-				addClosingElements = function() {
-					// Display the initial state
-					//displayExpandState();  //display initial state
-					if (isExpanded) {
-						expandIcon.title = 'Hide';
-					} else {
-						_blockContainer.classList.add('collapsed');
-						expandIcon.title = 'Show';
-					}
-				}
-			}
-			return _blockContainer;
-		}
-		let _itemContainer;
-		let _subContainer;
-		addItemContainer = function() {
-			_itemContainer = document.createElement('span');
-			_itemContainer.className = 'block-name level2';
-			getBlockContainer().appendChild(_itemContainer);
-			return _itemContainer;
-		}
-		addSubContainer = function() {
-			_subContainer = document.createElement('div');
-			_subContainer.className = 'items block-items';
-			let sliderContainer = document.createElement('div');
-			sliderContainer.className = 'slider-container';
-			sliderContainer.appendChild(_subContainer);
-			getBlockContainer().appendChild(sliderContainer);
-			return _subContainer;
-		}
-	} else {
-		// Render Item is (sub-)Item
-		//console.log('Render Item ' + name);
-		let _itemContainer;
-		let _subContainer;
-		addItemContainer = function() {
-			let groupContainer;
-			if (contItems != null) {
-				groupContainer = document.createElement('div');  //make a div for the continuation group
-				groupContainer.className = 'group';
-				container.appendChild(groupContainer);
-			} else {
-				groupContainer = container;  //there is no group, use same container
-			}
-			_itemContainer = document.createElement('div');
-			_itemContainer.className = 'item level' +  level;
-			groupContainer.appendChild(_itemContainer);
-			return _itemContainer;
-		}
-		addSubContainer = function() {
-			_subContainer = document.createElement('div');
-			_subContainer.className = 'items';
-			container.appendChild(_subContainer);
-			return _subContainer;
-		}
-	}
-	// Create element itself
-	if (name == '---') {
-		// Special separator item
-		let item = document.createElement('hr');
-		item.className = 'separator';
-		container.appendChild(item);
-	} else {
-		let itemContainer = addItemContainer();
-		// The containers are structured as follows:
-		// - groupContainer: Only if there are continued Items
-		//     - itemContainer: Holds the entire (Sub)Item
-		//         - checkbox: Only if it is a checkbox item
-		//         - linkContainer: Only if there is a URL
-		//             - icon: In itemContainer if there is no linkContainer
-		//             - textContainer: Only present if there is a name
-		//                              In itemContainer if there is no linkContainer
-		//                 - text: name
-		//         - continued items
-		//     - subContainer: Only if there are subItems
-
-		// Declare textContainer to hold the name/label
-		let textContainer = null;
-		let setTextClass = (className, add) => addClass(textContainer, className, add);
-		let textContainer_maybe = itemContainer;  //null if we must create a separate one
-
-		// Create checkbox
-		let checkbox = outputCheckbox(checkType, checkValue, link.lineNum);
-		if (checkbox.present) {
-			textContainer_maybe = null;  //for styling purposes
-			link.output.checkbox = checkbox;
-		}
-
-		// Create hyperlink
-		let hyperlink = null;
-		if (url != null) {
-			hyperlink = document.createElement('a');
-			hyperlink.href = url;
-			hyperlink.className = 'link';
-			if (target != null)
-				hyperlink.target = target;
-			if (tooltip != null)
-				hyperlink.title = tooltip;
-			textContainer_maybe = hyperlink;  //hyperlink can serve as textContainer
-		}
-
-		// Create icon_control
-		let icon_control = outputIcon(null, icon, url);
-		if (icon_control.present) {
-			textContainer_maybe = null;  //for styling purposes
-			link.output.icon = icon_control;
-		}
-
-		// Determine name/label to display
-		if (name != null) {
-			if (name == '_') {
-				// Name indicates it should not be displayed.
-				// Do this only if this doesn't lead to
-				// unclickable links and the like.
-				if (icon_control.present) {
-					// There is an icon that is clickable too.
-					name = null;
-				} else if (url == null) {
-					// This item is not clickable anyway.
-					name = null
-				} else {
-					// We cannot hide it, give it a better name
-					if (level == 1) name = 'Heading';
-					else if (level == 2) name = 'Block';
-					else name = 'Item';
-				}
-			}
-		}
-
-		// Add checkbox to the itemContainer
-		if (checkbox.present) {
-			itemContainer.appendChild(checkbox.element);
-		}
-
-		// Add hyperlink to itemContainer
-		// Alias linkContainer to hyperlink if it exists, itemContainer otherwise
-		let linkContainer;  //this container holds the link
-		if (hyperlink != null) {
-			itemContainer.appendChild(hyperlink);
-			linkContainer = hyperlink;
-		} else {
-			linkContainer = itemContainer;
-		}
-
-		// Add icon_control to linkContainer
-		if (icon_control.element != null) {
-			linkContainer.appendChild(icon_control.element);
-		}
-
-		// Create a textContainer if necessary and add it to linkContainer
-		if (name != null) {
-			if (textContainer_maybe != null) {
-				// This control can serve as textContainer
-				textContainer = textContainer_maybe;
-			} else {
-				// Create a new control
-				textContainer = document.createElement('span');
-				linkContainer.appendChild(textContainer);
-			}
-			textContainer.appendChild(document.createTextNode(name));
-			if (checkbox.present) {
-				// This is a checkbox item, give the name the correct class
-				setTextClass('checkbox-label', true);
-				checkbox.associateLabel(textContainer);
-			} else {
-				setTextClass('link-name', true);
-			}
-		}
-
-		// If there is continuation, output those items in this itemContainer too
-		if (contItems != null) {
-			outputItems(contItems, level, itemContainer, myPath, cancel);
-		}
-	}
-	// Create sub-Items in container
-	if (subItems != null) {
-		if (addSubContainer) {
-			let subContainer = addSubContainer();
-			outputItems(subItems, level+1, subContainer, myPath, cancel);
-		}
-	}
-	// Add closing elements
-	if (addClosingElements) {
-		addClosingElements();
-	}
-}
-
-// Output a <div> element as next child of the container.
-function outputText(lines, container) {
-	let html = lines.join('\n');
-	let div = document.createElement('div');
-	div.className = 'text-block';
-	div.innerHTML = html;
-	container.appendChild(div);
-}
-
-// Render array of Links to the container at specified level.
-function outputItems(links, level, container, parentPath, cancel) {
-	for (let i = 0; i < links.length; ++i) {
-		let link = links[i];
-		if (link.type == 'link') {
-			outputItem(link, level, container, parentPath, cancel);
-		} else if (link.type == 'text') {
-			outputText(link.lines, container);
-		}
-		if (cancel()) return;
-	}
-}
-
-// Render the RootLinks in the container.
-function outputAllItems(container, cancel) {
+function render(parsed, container, cancel) {
+	// Render the RootLinks in the container.
 	container.textContent = '';
-	outputItems(RootLinks, 1, container, '', cancel);
+	outputItems(parsed.rootLinks, 1, container, '', cancel);
 
 	// Collect all checkboxes in a hierarchy
 	let toplevel = [];
@@ -2760,203 +2421,541 @@ function outputAllItems(container, cancel) {
 			if (link.subs) discover(link.subs, here);  //add these below here
 		}
 	}
-	discover(RootLinks, null);
+	discover(parsed.rootLinks, null);
 	// For all the toplevels, calculate the hierarchical status
 	for (let i = 0; i < toplevel.length; ++i) {
 		toplevel[i].updateSelFirst(true);
 	}
-}
 
-// }}}
-
-// Output Checkbox {{{
-
-// Create element for a checkbox and return that.
-// Arguments:
-// - type: Type of checkbox, null if no checkbox.
-// - value: Current value of checkbox.
-// - lineNum: Linenumber where this checkbox is in the links. This is used
-//   to update the value when the checkbox' value is changed.
-// Returns object with:
-// - present: True if a checkbox was generated.
-// - element: Represents the checkbox, may be null.
-// - associateLabel: Function to call to associate this checkbox with its
-//   label. The single argument should be a DOM element, representing the
-//   label.
-function outputCheckbox(type, value, lineNum) {
-	// If type==null, don't make a checkbox
-	let retval = {
-		present             : false,
-		element             : null,
-		associateLabel      : null,
-		// Transient data
-		selFirstMe          : null,  //true if my current selection is first
-		selFirstAllParents  : null,  //true if all parents have current selection first
-		selFirstAllChildren : null,  //true if all children's current selection is first
-		// parent/children of this checkbox, will be filled in later
-		parent              : null,
-		children            : [],
-		iterateChildren     : iterateChildren,  //iterate the children, calling specified function
-		updateSelFirst      : updateSelFirst,  //propagate selFirstXxx
-	};
-	if (type == null) return retval;
-
-	// Find the checkbox definition for this type
-	let def = CheckboxDefs[type];
-
-	// Placeholder for the associated label
-	let labelElement = null;
-	let setLabelClass = (className, add) => {
-		addClass(labelElement, className, add);
-		addClass(labelElement, 'not-' + className, !add);
-	};
-	let initialSetLabel = null;  //will be set to init function
-	retval.associateLabel = element => {
-		labelElement = element;
-		if (initialSetLabel) initialSetLabel();
-	};
-
-	// Function to update the Links
-	let updateLinks = function(newCheck) {
-		const re = new RegExp('(^(?:[^\\n]*\\n){' + (lineNum - 1) + '}\\s*(?:[-*]\\s*)?)\\[(?:\\s+|\\S+)?\\]');
-		let links = Data.readLocalLinks();
-		let newLinks = links.replace(re, '$1' + newCheck);
-		if (newLinks != links) {
-			links = newLinks;
-			Data.writeLocalLinks(links);
-			uploadLinks(links);
-		} else {
-			console.error('RegExp did not change Links: ', re);
+	// Render array of Links to the container at specified level.
+	function outputItems(links, level, container, parentPath, cancel) {
+		for (let i = 0; i < links.length; ++i) {
+			let link = links[i];
+			if (link.type == 'link') {
+				outputItem(link, level, container, parentPath, cancel);
+			} else if (link.type == 'text') {
+				outputText(link.lines, container);
+			}
+			if (cancel()) return;
 		}
 	}
 
-	// Render the checkbox as specified by the definition
-	let checkbox = null;
-	if (def == null) {
-		// Default checkbox: Use the standard <input> element
-		checkbox = document.createElement('input');
-		checkbox.type = 'checkbox';
-		checkbox.className = 'todo-checkbox';
-		checkbox.onchange = function() {
-			// Update Links
-			let newCheck;
-			if (checkbox.checked) {
-				// Change checkbox to checked
-				console.log('Check checkbox on line ' + lineNum);
-				newCheck = '[x]';
-				retval.selFirstMe = false;
+	// Output Link {{{
+
+	// Render Link object, including its children to the container at specified level.
+	// Level 1 is called Section and is rendered with a heading.
+	// Level 2 is called Block and is rendered as a rectangular block.
+	// Level 3 is called Item and is rendered as a line in a Block.
+	// Level 4 and higher are called sub-Items and are rendered as indented Items.
+	function outputItem(link, level, container, parentPath, cancel) {
+		//console.log('outputItem ' + link.toString());
+		// Copy input data
+		let name = link.name;
+		let url = link.url;
+		let icon = link.icon;
+		let checkType = link.checkType;
+		let checkValue = link.checkValue;
+		let target = link.target;
+		let tooltip = null;
+		let contItems = link.cont;
+		if (contItems != null && contItems.length == 0) contItems = null;
+		let subItems = link.subs;
+		if (subItems != null && subItems.length == 0) subItems = null;
+		if (name == '') name = null;
+		if (url == '') url = null;
+		if (icon == '') icon = null;
+		if (target == '') target = null;
+		let myPath = parentPath + '->' + name;
+		link['output'] = {
+			icon     : null,
+			checkbox : null,
+		};
+		// Fill in defaults for missing elements
+		if (name == null) {
+			if (url != null) {
+				name = url;  //name defaults to url
 			} else {
-				// Change checkbox to checked
-				console.log('Uncheck checkbox on line ' + lineNum);
-				newCheck = '[ ]';
-				retval.selFirstMe = true;
+				name = '_';  //indicates the name may be hidden
 			}
-			updateLinks(newCheck);
-			// Update label
-			setLabelClass('checked', checkbox.checked);
-			// Update parents/children
-			updateSelFirst(true);
-		};
-		let isChecked = value != null && value != '' && value != ' ';
-		checkbox.checked = isChecked;
-		retval.selFirstMe = !isChecked;
-		initialSetLabel = () => setLabelClass('checked', isChecked);
-		// Set return value
-		retval.present = true;
-		retval.element = checkbox;
-	} else {
-		// The checkbox is defined by def
-		let checkbox = document.createElement('span');
-		checkbox.className = 'custom-checkbox';
-		let sel = def.options[value];
-		if (sel == null) sel = def.options[def.first];
-		let isFirst = sel.name == def.first;
-		retval.selFirstMe = isFirst;
-		let icon = outputIcon(null, sel.value);
-		checkbox.appendChild(icon.element);
-		checkbox.onclick = function() {
-			// Determine next value
-			sel = def.options[sel.next];
-			isFirst = sel.name == def.first;
-			retval.selFirstMe = isFirst;
-			// Update Links
-			if (sel != null) {
-				console.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
-				let newCheck = '[' + sel.name + ']';
-				updateLinks(newCheck);
+		}
+		// Change URL if target=manual
+		if (target == 'manual') {
+			let msg = 'Due to security reasons, this URL cannot be opened automatically.\nCopied URL \'' + url + '\' to clipboard.\n\nManually paste this to the address bar.';
+			msg = msg.replaceAll('\'', '\\\'').replaceAll('\n', '\\n');
+			tooltip = url;  //preserve original URL
+			url = 'javascript:navigator.clipboard.writeText(\'' + url + '\');alert(\'' + encodeURI(msg) + '\');void(0)';
+			target = null;
+		}
+		// Render the item
+		// State variables for this item; will be used in closures
+		let addItemContainer;  //function to add a container to put the Item into
+		let addSubContainer;  //function to add a container to put the subItems into
+		let addClosingElements = null;  //function to add closing elements to the container
+		// Create element container
+		if (level == 1) {
+			// Render Item as Section
+			//console.log('Render Section ' + name);
+			let _itemContainer;
+			let _subContainer;
+			addItemContainer = function() {
+				_itemContainer = document.createElement('h2');
+				_itemContainer.className = 'section-name level1';
+				container.appendChild(_itemContainer);
+				return _itemContainer;
 			}
-			// Update icon
-			let newIcon = outputIcon(null, sel.value);
-			checkbox.replaceChild(newIcon.element, icon.element);
-			icon = newIcon;
-			// Update label
-			setLabelClass('first-option', isFirst);
-			// Update parents/children
-			updateSelFirst(true);
-		};
-		initialSetLabel = () => setLabelClass('first-option', isFirst);
-		// Set return value
-		retval.present = true;
-		retval.element = checkbox;
-	}
-
-	// Callbacks if parent/child changed
-	function iterateChildren(func, recurse) {
-		let func2;
-		if (recurse) {
-			func2 = child => {
-				func(child);
-				child.iterateChildren(func, recurse);
+			addSubContainer = function() {
+				_subContainer = document.createElement('div');
+				_subContainer.className = 'section';
+				container.appendChild(_subContainer);
+				return _subContainer;
 			};
+			addClosingElements = function() {
+				let closingElements = document.createElement('hr');
+				container.appendChild(closingElements);
+			}
+		} else if (level == 2) {
+			// Render Item as Block
+			//console.log('Render Block ' + name);
+			let _blockContainer;
+			let getBlockContainer = function() {
+				if (_blockContainer) {
+					return _blockContainer;
+				}
+				// Create a new _blockContainer
+				_blockContainer = document.createElement('div');
+				_blockContainer.className = 'block';
+				container.appendChild(_blockContainer);
+				if (subItems != null) {
+					let expandIcon = document.createElement('span');  //container to display '-' or '+'
+					expandIcon.className = 'resize-icon';
+					expandIcon.textContent = UNICODE_BLACK_RIGHT_POINTING_TRIANGLE;
+					_blockContainer.appendChild(expandIcon);
+					let isExpanded = !parsed.blocksCollapsedInitially;  //true if block is expanded
+					if (!parsed.blocksCollapsedAlwaysInitial) {
+						// Use persistent value if available
+						let v = Data.readItemExpanded(myPath);
+						console.debug('Preset isExpanded for \'' + myPath + '\' to ' + v);
+						if (v == 'false') {
+							isExpanded = false;
+						} else if (v == 'true') {
+							isExpanded = true;
+						}
+					}
+					let displayExpandState = function() {
+						console.debug('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
+						if (isExpanded) {
+							// Expand this block
+							_blockContainer.classList.add('expanding');
+							_blockContainer.onanimationend = function() {
+								_blockContainer.classList.remove('collapsed');
+								_blockContainer.classList.remove('expanding');
+							};
+							// Reflect action of resize-icon
+							expandIcon.title = 'Hide';
+						} else {
+							// Collapse this block
+							_blockContainer.classList.add('collapsing');
+							_blockContainer.onanimationend = function() {
+								_blockContainer.classList.add('collapsed');
+								_blockContainer.classList.remove('collapsing');
+							};
+							// Reflect action of resize-icon
+							expandIcon.title = 'Show';
+						}
+					};
+					expandIcon.onclick = function() {
+						isExpanded = !isExpanded;
+						console.debug('Set isExpanded for \'' + name + '\' to ' + isExpanded);
+						Data.writeItemExpanded(myPath, isExpanded);
+						displayExpandState();
+					};
+					addClosingElements = function() {
+						// Display the initial state
+						//displayExpandState();  //display initial state
+						if (isExpanded) {
+							expandIcon.title = 'Hide';
+						} else {
+							_blockContainer.classList.add('collapsed');
+							expandIcon.title = 'Show';
+						}
+					}
+				}
+				return _blockContainer;
+			}
+			let _itemContainer;
+			let _subContainer;
+			addItemContainer = function() {
+				_itemContainer = document.createElement('span');
+				_itemContainer.className = 'block-name level2';
+				getBlockContainer().appendChild(_itemContainer);
+				return _itemContainer;
+			}
+			addSubContainer = function() {
+				_subContainer = document.createElement('div');
+				_subContainer.className = 'items block-items';
+				let sliderContainer = document.createElement('div');
+				sliderContainer.className = 'slider-container';
+				sliderContainer.appendChild(_subContainer);
+				getBlockContainer().appendChild(sliderContainer);
+				return _subContainer;
+			}
 		} else {
-			func2 = func;
-		}
-		for (let i = 0; i < retval.children.length; ++i) {
-			func2(retval.children[i]);
-		}
-	}
-	function updateSelFirst(down) {
-		//console.devlog('Checkbox on line ' + lineNum + ': updateSelFirst(' + (down ? 'down' : 'up') + ')');
-		// Parent may have set a new value
-		retval.selFirstAllChildren = true;
-		iterateChildren(child => {
-			if (down) {
-				// Propagate selFirstMe and selFirstAllParents down
-				child.selFirstAllParents = retval.selFirstMe && retval.selFirstAllParents;
-				// Recurse down
-				child.updateSelFirst(true);
+			// Render Item is (sub-)Item
+			//console.log('Render Item ' + name);
+			let _itemContainer;
+			let _subContainer;
+			addItemContainer = function() {
+				let groupContainer;
+				if (contItems != null) {
+					groupContainer = document.createElement('div');  //make a div for the continuation group
+					groupContainer.className = 'group';
+					container.appendChild(groupContainer);
+				} else {
+					groupContainer = container;  //there is no group, use same container
+				}
+				_itemContainer = document.createElement('div');
+				_itemContainer.className = 'item level' +  level;
+				groupContainer.appendChild(_itemContainer);
+				return _itemContainer;
 			}
-			// Propagate selFirstAllChildren up
-			if (!child.selFirstMe || !child.selFirstAllChildren) {
-				retval.selFirstAllChildren = false;
+			addSubContainer = function() {
+				_subContainer = document.createElement('div');
+				_subContainer.className = 'items';
+				container.appendChild(_subContainer);
+				return _subContainer;
 			}
-		});
-		// Recurse up
-		if (retval.parent != null) {
-			retval.parent.updateSelFirst(false);
 		}
-		//console.log(retval);
-		// Update Appearance
-		let classes = {};
-		let anyParentChecked = retval.selFirstAllParents === false;
-		classes['any-parent-checked'] = anyParentChecked;
-		let anyChildChecked = retval.selFirstAllChildren === false;
-		classes['any-child-checked'] = anyChildChecked;
-		let selfChecked = !retval.selFirstMe;
-		classes['self-checked'] = selfChecked;
-		// Apply classes
-		let target = retval.element.parentElement;  //the itemContainer
-		for (className in classes) {
-			addClass(target, className, classes[className]);
+		// Create element itself
+		if (name == '---') {
+			// Special separator item
+			let item = document.createElement('hr');
+			item.className = 'separator';
+			container.appendChild(item);
+		} else {
+			let itemContainer = addItemContainer();
+			// The containers are structured as follows:
+			// - groupContainer: Only if there are continued Items
+			//     - itemContainer: Holds the entire (Sub)Item
+			//         - checkbox: Only if it is a checkbox item
+			//         - linkContainer: Only if there is a URL
+			//             - icon: In itemContainer if there is no linkContainer
+			//             - textContainer: Only present if there is a name
+			//                              In itemContainer if there is no linkContainer
+			//                 - text: name
+			//         - continued items
+			//     - subContainer: Only if there are subItems
+
+			// Declare textContainer to hold the name/label
+			let textContainer = null;
+			let setTextClass = (className, add) => addClass(textContainer, className, add);
+			let textContainer_maybe = itemContainer;  //null if we must create a separate one
+
+			// Create checkbox
+			let checkbox = outputCheckbox(checkType, checkValue, link.lineNum);
+			if (checkbox.present) {
+				textContainer_maybe = null;  //for styling purposes
+				link.output.checkbox = checkbox;
+			}
+
+			// Create hyperlink
+			let hyperlink = null;
+			if (url != null) {
+				hyperlink = document.createElement('a');
+				hyperlink.href = url;
+				hyperlink.className = 'link';
+				if (target != null)
+					hyperlink.target = target;
+				if (tooltip != null)
+					hyperlink.title = tooltip;
+				textContainer_maybe = hyperlink;  //hyperlink can serve as textContainer
+			}
+
+			// Create icon_control
+			let icon_control = renderIcon(parsed, null, icon, url);
+			if (icon_control.present) {
+				textContainer_maybe = null;  //for styling purposes
+				link.output.icon = icon_control;
+			}
+
+			// Determine name/label to display
+			if (name != null) {
+				if (name == '_') {
+					// Name indicates it should not be displayed.
+					// Do this only if this doesn't lead to
+					// unclickable links and the like.
+					if (icon_control.present) {
+						// There is an icon that is clickable too.
+						name = null;
+					} else if (url == null) {
+						// This item is not clickable anyway.
+						name = null
+					} else {
+						// We cannot hide it, give it a better name
+						if (level == 1) name = 'Heading';
+						else if (level == 2) name = 'Block';
+						else name = 'Item';
+					}
+				}
+			}
+
+			// Add checkbox to the itemContainer
+			if (checkbox.present) {
+				itemContainer.appendChild(checkbox.element);
+			}
+
+			// Add hyperlink to itemContainer
+			// Alias linkContainer to hyperlink if it exists, itemContainer otherwise
+			let linkContainer;  //this container holds the link
+			if (hyperlink != null) {
+				itemContainer.appendChild(hyperlink);
+				linkContainer = hyperlink;
+			} else {
+				linkContainer = itemContainer;
+			}
+
+			// Add icon_control to linkContainer
+			if (icon_control.element != null) {
+				linkContainer.appendChild(icon_control.element);
+			}
+
+			// Create a textContainer if necessary and add it to linkContainer
+			if (name != null) {
+				if (textContainer_maybe != null) {
+					// This control can serve as textContainer
+					textContainer = textContainer_maybe;
+				} else {
+					// Create a new control
+					textContainer = document.createElement('span');
+					linkContainer.appendChild(textContainer);
+				}
+				textContainer.appendChild(document.createTextNode(name));
+				if (checkbox.present) {
+					// This is a checkbox item, give the name the correct class
+					setTextClass('checkbox-label', true);
+					checkbox.associateLabel(textContainer);
+				} else {
+					setTextClass('link-name', true);
+				}
+			}
+
+			// If there is continuation, output those items in this itemContainer too
+			if (contItems != null) {
+				outputItems(contItems, level, itemContainer, myPath, cancel);
+			}
+		}
+		// Create sub-Items in container
+		if (subItems != null) {
+			if (addSubContainer) {
+				let subContainer = addSubContainer();
+				outputItems(subItems, level+1, subContainer, myPath, cancel);
+			}
+		}
+		// Add closing elements
+		if (addClosingElements) {
+			addClosingElements();
 		}
 	}
 
-	return retval;
+	// Output a <div> element as next child of the container.
+	function outputText(lines, container) {
+		let html = lines.join('\n');
+		let div = document.createElement('div');
+		div.className = 'text-block';
+		div.innerHTML = html;
+		container.appendChild(div);
+	}
+
+	// }}}
+
+	// Output Checkbox {{{
+
+	// Create element for a checkbox and return that.
+	// Arguments:
+	// - type: Type of checkbox, null if no checkbox.
+	// - value: Current value of checkbox.
+	// - lineNum: Linenumber where this checkbox is in the links. This is used
+	//   to update the value when the checkbox' value is changed.
+	// Returns object with:
+	// - present: True if a checkbox was generated.
+	// - element: Represents the checkbox, may be null.
+	// - associateLabel: Function to call to associate this checkbox with its
+	//   label. The single argument should be a DOM element, representing the
+	//   label.
+	function outputCheckbox(type, value, lineNum) {
+		// If type==null, don't make a checkbox
+		let retval = {
+			present             : false,
+			element             : null,
+			associateLabel      : null,
+			// Transient data
+			selFirstMe          : null,  //true if my current selection is first
+			selFirstAllParents  : null,  //true if all parents have current selection first
+			selFirstAllChildren : null,  //true if all children's current selection is first
+			// parent/children of this checkbox, will be filled in later
+			parent              : null,
+			children            : [],
+			iterateChildren     : iterateChildren,  //iterate the children, calling specified function
+			updateSelFirst      : updateSelFirst,  //propagate selFirstXxx
+		};
+		if (type == null) return retval;
+
+		// Find the checkbox definition for this type
+		let def = parsed.checkboxDefs[type];
+
+		// Placeholder for the associated label
+		let labelElement = null;
+		let setLabelClass = (className, add) => {
+			addClass(labelElement, className, add);
+			addClass(labelElement, 'not-' + className, !add);
+		};
+		let initialSetLabel = null;  //will be set to init function
+		retval.associateLabel = element => {
+			labelElement = element;
+			if (initialSetLabel) initialSetLabel();
+		};
+
+		// Function to update the Links
+		let updateLinks = function(newCheck) {
+			const re = new RegExp('(^(?:[^\\n]*\\n){' + (lineNum - 1) + '}\\s*(?:[-*]\\s*)?)\\[(?:\\s+|\\S+)?\\]');
+			let links = Data.readLocalLinks();
+			let newLinks = links.replace(re, '$1' + newCheck);
+			if (newLinks != links) {
+				links = newLinks;
+				Data.writeLocalLinks(links);
+				uploadLinks(links);
+			} else {
+				console.error('RegExp did not change Links: ', re);
+			}
+		}
+
+		// Render the checkbox as specified by the definition
+		let checkbox = null;
+		if (def == null) {
+			// Default checkbox: Use the standard <input> element
+			checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.className = 'todo-checkbox';
+			checkbox.onchange = function() {
+				// Update Links
+				let newCheck;
+				if (checkbox.checked) {
+					// Change checkbox to checked
+					console.log('Check checkbox on line ' + lineNum);
+					newCheck = '[x]';
+					retval.selFirstMe = false;
+				} else {
+					// Change checkbox to checked
+					console.log('Uncheck checkbox on line ' + lineNum);
+					newCheck = '[ ]';
+					retval.selFirstMe = true;
+				}
+				updateLinks(newCheck);
+				// Update label
+				setLabelClass('checked', checkbox.checked);
+				// Update parents/children
+				updateSelFirst(true);
+			};
+			let isChecked = value != null && value != '' && value != ' ';
+			checkbox.checked = isChecked;
+			retval.selFirstMe = !isChecked;
+			initialSetLabel = () => setLabelClass('checked', isChecked);
+			// Set return value
+			retval.present = true;
+			retval.element = checkbox;
+		} else {
+			// The checkbox is defined by def
+			let checkbox = document.createElement('span');
+			checkbox.className = 'custom-checkbox';
+			let sel = def.options[value];
+			if (sel == null) sel = def.options[def.first];
+			let isFirst = sel.name == def.first;
+			retval.selFirstMe = isFirst;
+			let icon = renderIcon(parsed, null, sel.value);
+			checkbox.appendChild(icon.element);
+			checkbox.onclick = function() {
+				// Determine next value
+				sel = def.options[sel.next];
+				isFirst = sel.name == def.first;
+				retval.selFirstMe = isFirst;
+				// Update Links
+				if (sel != null) {
+					console.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
+					let newCheck = '[' + sel.name + ']';
+					updateLinks(newCheck);
+				}
+				// Update icon
+				let newIcon = renderIcon(parsed, null, sel.value);
+				checkbox.replaceChild(newIcon.element, icon.element);
+				icon = newIcon;
+				// Update label
+				setLabelClass('first-option', isFirst);
+				// Update parents/children
+				updateSelFirst(true);
+			};
+			initialSetLabel = () => setLabelClass('first-option', isFirst);
+			// Set return value
+			retval.present = true;
+			retval.element = checkbox;
+		}
+
+		// Callbacks if parent/child changed
+		function iterateChildren(func, recurse) {
+			let func2;
+			if (recurse) {
+				func2 = child => {
+					func(child);
+					child.iterateChildren(func, recurse);
+				};
+			} else {
+				func2 = func;
+			}
+			for (let i = 0; i < retval.children.length; ++i) {
+				func2(retval.children[i]);
+			}
+		}
+		function updateSelFirst(down) {
+			//console.devlog('Checkbox on line ' + lineNum + ': updateSelFirst(' + (down ? 'down' : 'up') + ')');
+			// Parent may have set a new value
+			retval.selFirstAllChildren = true;
+			iterateChildren(child => {
+				if (down) {
+					// Propagate selFirstMe and selFirstAllParents down
+					child.selFirstAllParents = retval.selFirstMe && retval.selFirstAllParents;
+					// Recurse down
+					child.updateSelFirst(true);
+				}
+				// Propagate selFirstAllChildren up
+				if (!child.selFirstMe || !child.selFirstAllChildren) {
+					retval.selFirstAllChildren = false;
+				}
+			});
+			// Recurse up
+			if (retval.parent != null) {
+				retval.parent.updateSelFirst(false);
+			}
+			//console.log(retval);
+			// Update Appearance
+			let classes = {};
+			let anyParentChecked = retval.selFirstAllParents === false;
+			classes['any-parent-checked'] = anyParentChecked;
+			let anyChildChecked = retval.selFirstAllChildren === false;
+			classes['any-child-checked'] = anyChildChecked;
+			let selfChecked = !retval.selFirstMe;
+			classes['self-checked'] = selfChecked;
+			// Apply classes
+			let target = retval.element.parentElement;  //the itemContainer
+			for (className in classes) {
+				addClass(target, className, classes[className]);
+			}
+		}
+
+		return retval;
+	}
+
+	// }}}
 }
 
-// }}}
-
-// Output Icon {{{
+// Render Icon {{{
 
 // Create element for an icon and return that.
 // If alt_text is defined, use that.
@@ -2970,7 +2969,7 @@ function outputCheckbox(type, value, lineNum) {
 // try these alternatives:
 // - http://www.google.com/s2/favicons?domain=<target_url domain>
 // - http://www.google.com/s2/favicons?domain=<icon_url domain>
-function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
+function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = false) {
 	// By default, construct icon_url from target_url
 	if ((icon_url == null || icon_url == 'default') && target_url != null) {
 		// Check if the target domain is in IconDefs
@@ -3139,28 +3138,44 @@ function outputIcon(alt_text, icon_url, target_url, skip_alternatives = false) {
 		icon_element = img;
 	}
 
+	// Take icon_url and perform the icondef replacements.
+	// Returns the resolved value or the original value if no icondefs matched.
+	function resolveIconDefs(icon_url) {
+		let retval = icon_url;
+		let seen = {};  //to break cycles
+		seen[icon_url] = 1;
+		let override = parsed.iconDefs[icon_url];
+		while (override !== undefined && !seen[override]) {
+			console.log('Replace icon=' + icon_url + ' by IconDefs ' + override);
+			retval = override;
+			seen[override] = 1;
+			override = parsed.iconDefs[override];
+		}
+		//console.log('Returning ' + retval);
+		return retval;
+	};
+
+	// Return the URL where the default icon should be.
+	function getDefaultIconUrl(site_url) {
+		return site_url.replace(/(?:(?:(?<!\/)\/(?!\/)|\?|#).*)?$/, '/favicon.ico');  //replace first single '/', '?' or '#' and onwards
+	}
+
+	// Return the URL for an icon of the site_url's domain.
+	// This method uses the Google database.
+	function getGoogleAltIconUrl(site_url) {
+		let domain = site_url
+			.replace(/^[^\/]*\/\//, '')  //remove scheme
+			.replace(/\/.*/, '');  //remove path
+		return 'http://www.google.com/s2/favicons?domain=' + domain;
+	}
+
 	return {
 		present : icon_present,
 		element : icon_element,
 	};
 }
 
-// Take icon_url and perform the icondef replacements.
-// Returns the resolved value or the original value if no icondefs matched.
-function resolveIconDefs(icon_url) {
-	let retval = icon_url;
-	let seen = {};  //to break cycles
-	seen[icon_url] = 1;
-	let override = IconDefs[icon_url];
-	while (override !== undefined && !seen[override]) {
-		console.log('Replace icon=' + icon_url + ' by IconDefs ' + override);
-		retval = override;
-		seen[override] = 1;
-		override = IconDefs[override];
-	}
-	//console.log('Returning ' + retval);
-	return retval;
-};
+// }}}
 
 // Define a ResizeObserver that is used to resize entries to 100% of their
 // parent's size. This is used for icons that are defined with html:<x>.
@@ -3212,22 +3227,6 @@ var FillScaler = new ResizeObserver(function(entries) {
 		}
 	}
 });
-
-// Return the URL where the default icon should be.
-function getDefaultIconUrl(site_url) {
-	return site_url.replace(/(?:(?:(?<!\/)\/(?!\/)|\?|#).*)?$/, '/favicon.ico');  //replace first single '/', '?' or '#' and onwards
-}
-
-// Return the URL for an icon of the site_url's domain.
-// This method uses the Google database.
-function getGoogleAltIconUrl(site_url) {
-	let domain = site_url
-		.replace(/^[^\/]*\/\//, '')  //remove scheme
-		.replace(/\/.*/, '');  //remove path
-	return 'http://www.google.com/s2/favicons?domain=' + domain;
-}
-
-// }}}
 
 // }}}
 
@@ -3404,7 +3403,7 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 // the links as soon as possible.
 // The displayed icon is specified by icon_url. If this is 'alt', the
 // target domain is derived from getSearchUrl().
-function addSearchButton(container, search_box, button_id, label_text, tooltip, icon_url, getSearchUrl, getDomainSearchUrl) {
+function addSearchButton(parsed, container, search_box, button_id, label_text, tooltip, icon_url, getSearchUrl, getDomainSearchUrl) {
 	let btn = document.createElement('button');
 	if (btn) {
 		// Configure the button
@@ -3422,7 +3421,7 @@ function addSearchButton(container, search_box, button_id, label_text, tooltip, 
 		//console.log('favicon=' + getDefaultIconUrl(target_domain));
 		// When determining the icon, don't consider alternatives,
 		// except when icon_url == 'alt...'
-		let icon = outputIcon(tooltip, icon_url, target_domain, true);
+		let icon = renderIcon(parsed, tooltip, icon_url, target_domain, true);
 		if (icon.element != null) btn.appendChild(icon.element);
 
 		// Add link text
@@ -3439,10 +3438,10 @@ function addSearchButton(container, search_box, button_id, label_text, tooltip, 
 	}
 }
 
-function addSearchButtons(searchBox, container) {
-	for (let i = 0; i < SearchButtonDefs.length; ++i) {
+function addSearchButtons(parsed, searchBox, container) {
+	for (let i = 0; i < parsed.searchButtonDefs.length; ++i) {
 		// Get the fields from the definition
-		let def = SearchButtonDefs[i];
+		let def = parsed.searchButtonDefs[i];
 		let f = 0;
 
 		let id = def[f++];
@@ -3516,7 +3515,7 @@ function addSearchButtons(searchBox, container) {
 		//console.debug(SearchFunction);
 
 		// Create the button
-		addSearchButton(container, searchBox, id, label, tooltip, icon, getSearchUrl, getDomainSearchUrl);
+		addSearchButton(parsed, container, searchBox, id, label, tooltip, icon, getSearchUrl, getDomainSearchUrl);
 	}
 }
 
@@ -4177,50 +4176,51 @@ function initMonitorPreferColorScheme(enable) {
 // contains an eval(), that line number is converted and added to the error
 // string. This (optionally modified) error is re-thrown.
 function applyBlocks(blocks, applyFunc) {
-	if (blocks != null) {
-		let contents, lineNums;
-		if ('length' in blocks) {
-			// This is an array, assume of Block objects.
-			// Concatenate and translate line numbers.
-			contents = [];
-			lineNums = [ 0 ];  //eval lineNum -> input lineNum
-			let inputLineNum;
-			for (let i = 0; i < blocks.length; ++i) {
-				let block = blocks[i];
-				inputLineNum = block.lineNum + 1;  //content starts 1 line after block
-				for (let j = 0; j < block.lines.length; ++j) {
-					contents.push(block.lines[j]);
-					lineNums.push(inputLineNum + j);
+	if (blocks == null) return;
+
+	let contents, lineNums;
+	if ('length' in blocks) {
+		// This is an array, assume of Block objects.
+		// Concatenate and translate line numbers.
+		if (blocks.length <= 0) return;
+		contents = [];
+		lineNums = [ 0 ];  //eval lineNum -> input lineNum
+		let inputLineNum;
+		for (let i = 0; i < blocks.length; ++i) {
+			let block = blocks[i];
+			inputLineNum = block.lineNum + 1;  //content starts 1 line after block
+			for (let j = 0; j < block.lines.length; ++j) {
+				contents.push(block.lines[j]);
+				lineNums.push(inputLineNum + j);
+			}
+		}
+		contents = contents.join('\n');
+	} else {
+		contents = blocks;  //single string
+		lineNums = null;  // not available
+	}
+	try {
+		// Try to apply the contents
+		return applyFunc(contents);
+	} catch (error) {
+		if ('stack' in error && lineNums != null) {
+			// There's a stack and line numbers to try to
+			// report on the original input line number.
+			let stack = error.stack.toString();
+			let m = stack.match(/\beval:(\d+)/);  //Firefox syntax
+			if (!m) m = stack.match(/<?\banonymous>?:(\d+)/);  //Edge syntax
+			if (m) {
+				// We got the line number inside an eval
+				// translate it to the input line numbers
+				let lineNum = m[1];
+				if (lineNum >= 1 && lineNum < lineNums.length) {
+					// It in the expected range
+					lineNum = lineNums[lineNum];
+					error.message += ' on line ' + lineNum;
 				}
 			}
-			contents = contents.join('\n');
-		} else {
-			contents = blocks;  //single string
-			lineNums = null;  // not available
 		}
-		try {
-			// Try to apply the contents
-			return applyFunc(contents);
-		} catch (error) {
-			if ('stack' in error && lineNums != null) {
-				// There's a stack and line numbers to try to
-				// report on the original input line number.
-				let stack = error.stack.toString();
-				let m = stack.match(/\beval:(\d+)/);  //Firefox syntax
-				if (!m) m = stack.match(/<?\banonymous>?:(\d+)/);  //Edge syntax
-				if (m) {
-					// We got the line number inside an eval
-					// translate it to the input line numbers
-					let lineNum = m[1];
-					if (lineNum >= 1 && lineNum < lineNums.length) {
-						// It in the expected range
-						lineNum = lineNums[lineNum];
-						error.message += ' on line ' + lineNum;
-					}
-				}
-			}
-			throw error;  //re-throw
-		}
+		throw error;  //re-throw
 	}
 }
 
@@ -4290,7 +4290,7 @@ function processLinks(links, cancel = null) {
 	if (!cancel) cancel = () => false;
 
 	// Parse Links
-	parseLinks(links);
+	let parsed = parseLinks(links);
 
 	if (cancel()) return;
 
@@ -4298,8 +4298,8 @@ function processLinks(links, cancel = null) {
 
 	// First handle scripts and styles (to catch errors quickly)
 	try {
-		setStyleBlocks(StyleBlocks);
-		addScriptBlocks(ScriptBlocks);
+		setStyleBlocks(parsed.styleBlocks);
+		addScriptBlocks(parsed.scriptBlocks);
 	} catch (error) {
 		let newError = new UserInputError(error.message);
 		newError.cause = error;
@@ -4309,20 +4309,19 @@ function processLinks(links, cancel = null) {
 	if (cancel()) return;
 
 	// Set page title, theme and font size
-	setPageTitle(PageTitle);
-	if (PageTheme == null || PageTheme.toLowerCase() == 'auto') {
-		PageTheme = 'auto';
+	setPageTitle(parsed.pageTitle);
+	if (parsed.pageTheme == null || parsed.pageTheme.toLowerCase() == 'auto') {
 		initMonitorPreferColorScheme(true);
 	} else {
 		initMonitorPreferColorScheme(false);
-		setPageTheme(PageTheme);
+		setPageTheme(parsed.pageTheme);
 	}
-	setFontSize(FontSize);
+	setFontSize(parsed.fontSize);
 
 	// Render links
 	console.important('Render Links...');
 	let container = document.getElementById('LinksBox');
-	outputAllItems(container, cancel);
+	render(parsed, container, cancel);
 
 	if (cancel()) return;
 
@@ -4331,9 +4330,9 @@ function processLinks(links, cancel = null) {
 	let searchForm = document.getElementById('SearchForm');
 	// Use a static input field, so that the browser retains its contents
 	// after going back to this page.
-	if (SearchButtonDefs != null && SearchButtonDefs.length > 0) {
+	if (parsed.searchButtonDefs != null && parsed.searchButtonDefs.length > 0) {
 		// There are SearchButtens, fill SearchForm
-		console.log('There are ' + SearchButtonDefs.length + ' SearchButtonDefs');
+		console.log('There are ' + parsed.searchButtonDefs.length + ' SearchButtonDefs');
 		// Focus SearchBox
 		let searchBox = document.getElementById('SearchBox');
 		if (searchBox) {
@@ -4345,7 +4344,7 @@ function processLinks(links, cancel = null) {
 		// Initialize the search buttons
 		let buttonBox = document.getElementById('SearchButtons');
 		buttonBox.textContent = '';
-		addSearchButtons(searchBox, buttonBox);
+		addSearchButtons(parsed, searchBox, buttonBox);
 	} else {
 		// No SearchButtons defined, hide SearchForm
 		console.log('There are no SearchButtonDefs');
