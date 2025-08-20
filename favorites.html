@@ -2357,6 +2357,7 @@ function parseLinks(links) {
 				if (name == null) name = ' ';
 				val = 'empty';  //a valid icon
 			} else if (lval == 'uncheck') {
+				if (name == null) name = ' ';
 				val = UNICODE_BALLOT_BOX;
 			} else if (lval == 'check') {
 				val = UNICODE_BALLOT_BOX_WITH_CHECK;

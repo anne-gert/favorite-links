@@ -504,7 +504,7 @@ be used to define a checkbox type with custom options. The allowed options are:
     is displayed as icon, all <a href="#icons">icon definitions</a> can be
     used. See below for examples.
 <li><dt>empty</dt>: Shorthand for <code>_=empty</code>.
-<li><dt>uncheck</dt>: Shorthand for <code>U+2610</code> (empty box, &#x2610;).
+<li><dt>uncheck</dt>: Shorthand for <code>_=U+2610</code> (empty box, &#x2610;).
 <li><dt>check</dt>: Shorthand for <code>U+2611</code> (checked box, &#x2611;).
 <li><dt>cross</dt>: Shorthand for <code>U+2612</code> (crossed box, &#x2612;).
 <li><dt>mcheck</dt>: Shorthand for <code>U+25A3</code> (filled box, &#x25A3;).
@@ -533,10 +533,10 @@ Examples 1: Simple checkbox with standard Unicode icons:
 Examples 2: Standard checkbox with sub-options:
 <pre>
 !checkbox sub uncheck check mcheck
-[&#x2610;]:sub Option 1
+[ ]:sub Option 1
 [&#x25A3;]:sub Option 2
     [&#x2611;]:sub Option 2-1
-    [&#x2610;]:sub Option 2-2
+    [ ]:sub Option 2-2
 </pre>
 </p>
 
