@@ -371,9 +371,8 @@ following checks are performed:
     <ul>
     <li>Get the value of the x-token header.
     <li>If there is no token, use the an empty string.
-    <li>Verify this token is the same as the contents of the file
-	<code>/etc/favlinks/read-token.</code>
-	The name of this file is defined in data.php and can be changed.
+    <li>Verify this token is allowed for reading in the <a
+        href="#token-file">token file</a>.
     </ul>
 <li>Verify the name
     <ul>
@@ -402,9 +401,8 @@ following checks are performed:
     <ul>
     <li>Get the value of the x-token header.
     <li>Verify if the token is specified and not empty.
-    <li>Verify this token is the same as the contents of the file
-	<code>/etc/favlinks/save-token</code>.
-	The name of this file is defined in data.php and can be changed.
+    <li>Verify this token is allowed for writing in the <a
+        href="#token-file">token file</a>.
     </ul>
 <li>Verify the name
     <ul>
@@ -422,6 +420,40 @@ following checks are performed:
 </ul>
 If all checks returned valid, write the contents into the specified file in the
 same directory as where data.php is.
+</p>
+
+
+<a name="token-file"></a>
+<h3>Token file</h3>
+
+<p>
+The authorized tokens are stored on the server in file
+<code>/etc/favlinks/tokens</code>.
+The name of this file is defined in data.php and can be changed.
+</p>
+
+<p>
+This file contains lines of the format <code>access token</code> with:
+<ul>
+<li><dt>access</dt>: The access that this token grants. May be <code>r</code>
+    (read), <code>w</code> (write) or <code>rw</code> (read and write).
+<li><dt>token</dt>: String that is the token that grants the access. This token
+    may be formatted as <code>&lt;user&gt;:&lt;password&gt;</code>, in which
+    case <i>that</i> is the token string that should be sent in the request.
+</ul>
+Empty lines are skipped as well as lines with just a comment (starting with
+<code>//</code>, <code>#</code> or <code>;</code>).
+</p>
+
+<p>
+Example token file:
+<pre>
+# No token needed for read
+r
+# Write tokens
+w john:password
+w pete:password
+</pre>
 </p>
 
 

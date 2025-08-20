@@ -1,7 +1,6 @@
 <?php
 
-$TokenFile_Read = "/etc/favlinks/read-token";
-$TokenFile_Save = "/etc/favlinks/save-token";
+$TokenFile = "/etc/favlinks/tokens";
 $MaxSize = 512 * 1024;
 
 # Set the CORS headers
@@ -23,16 +22,16 @@ if (!is_dir($path))
 $method = strtoupper($_SERVER['REQUEST_METHOD']);
 #error_log("DEBUG: \$method='$method'");
 $doRead = false; $doWrite = false;
-$tokenFile = null;
+$access = "-";
 if ($method == "GET")
 {
 	$doRead = true;
-	$tokenFile = $TokenFile_Read;
+	$access = "r";
 }
 elseif ($method == "POST")
 {
 	$doWrite = true;
-	$tokenFile = $TokenFile_Save;
+	$access = "w";
 }
 elseif ($method == "OPTIONS")
 {
@@ -45,17 +44,35 @@ else
 	return;
 }
 
-# Read expectedToken from file
-$expectedToken = file_get_contents($tokenFile);
-if ($expectedToken === false)
+# Read valid tokens from file
+$lines = file($TokenFile);
+if ($lines === false)
 {
 	# Token file does not exist or not readable
+	error_log("Token file $TokenFile does not exist");
 	http_response_code(500);  # Internal Server Error
 	return;
 }
-# Remove leading and trailing whitespace
-$expectedToken = preg_replace('/^\s+/', '', preg_replace('/\s+$/', '', $expectedToken));
-#error_log("DEBUG: \$expectedToken='$expectedToken'");
+$tokens = [];
+foreach ($lines as $line)
+{
+	if (preg_match('/^\s*(?:\/\/|#|;|$)/', $line)) continue;  # empty line or comment
+	if (preg_match('/^\s*([rw]+)(?:\s+(.*?))?\s*$/i', $line, $m))
+	{
+		# 'access token' line
+		#error_log('DEBUG: token-line=' . var_export($m, true));
+		$tok = (count($m) >= 3) ? $m[2] : "";
+		$tokens[$tok] = $m[1];
+	}
+	else
+	{
+		# Unrecognized line
+		error_log("Error in tokens: " . $line);
+		http_response_code(500);  # Internal Server Error
+		return;
+	}
+}
+#error_log("DEBUG: \$tokens=" . var_export($tokens, true));
 
 # Find headers: x-name, x-token
 $token = null; $filename = null;
@@ -90,20 +107,24 @@ if ($doWrite)
 		http_response_code(404);  # Not Found
 		return;
 	}
-
-	# Token is mandatory
-	if (strlen($expectedToken) < 4)
-	{
-		# Token is unreasobly short, reject it
-		http_response_code(500);  # Internal Server Error
-		return;
-	}
 }
 
 # Verify $token
-if ($token != $expectedToken)
+if (!array_key_exists($token, $tokens))
 {
 	http_response_code(401);  # Unauthorized
+	return;
+}
+$allowed = strtolower($tokens[$token]);
+if (stripos($allowed, $access) === false)
+{
+	http_response_code(401);  # Unauthorized
+	return;
+}
+if ($doWrite && strlen($token) < 4)
+{
+	# Token is unreasobly short, reject it
+	http_response_code(500);  # Internal Server Error
 	return;
 }
 
