@@ -1848,6 +1848,82 @@ function uploadLinks(value) {
 	return uploadPromise;
 }
 
+// List of pending upload callbacks.
+var PendingUpload = CreatePending('PendingUpload', 3, true);
+
+// Create object to handle pending actions.
+// - name [string]: Name of the object for debugging
+// - timeout [seconds]: Time after which the action should be executed.
+// - onlyLast [bool]: If true, only the last action is maintaind.
+// The action is done after timeout. If the window.onunload is called before
+// the timeout, the action is also executed.
+function CreatePending(name, timeout, onlyLast) {
+	let actions = [];
+	let timer = null;
+	let onunload = false;
+
+	function clearTimer() {
+		if (timer) {
+			window.clearTimeout(timer);
+			timer = null;
+		}
+	}
+
+	function clearActions() {
+		actions.length = 0;
+	}
+
+	function doActions() {
+		console.log(name = ': Execute actions');
+		for (let i = 0; i < actions.length; ++i) actions[i]();
+		clearActions();
+	}
+
+	// Add new action
+	function add(callback) {
+		// (Re)set timer
+		if (timer) window.clearTimeout(timer);
+		timer = window.setTimeout(doActions, timeout*1000);
+		// Update actions
+		if (onlyLast) {
+			console.log(name + ': Set pending action');
+			actions.length = 0;
+		} else {
+			console.log(name + ': Add pending action');
+		}
+		actions.push(callback);
+		// Set unload event
+		if (!onunload) {
+			window.addEventListener('beforeunload', onBeforeUnload);
+			onunload = true;
+		}
+	}
+
+	async function onBeforeUnload(event) {
+		// I don't think onbeforeunload is allowed to perform blocking
+		// actions like uploading. Also, it doesn't seem to be allowed
+		// to await Promises.
+		// I leave this code for now in case a solution is found.
+		// Maybe https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker
+		doActions();
+		dispose();
+	}
+
+	// Function to release resources
+	function dispose() {
+		clearTimer();
+		clearActions();
+		if (onunload) {
+			window.removeEventListener('beforeunload', onBeforeUnload);
+			onunload = false;
+		}
+	}
+
+	return {
+		add : add,
+	};
+}
+
 // }}}
 
 // Parsing Links {{{
@@ -2854,7 +2930,14 @@ function render(parsed, container, cancel) {
 			if (newLinks != links) {
 				links = newLinks;
 				Data.writeLocalLinks(links);
-				uploadLinks(links);
+				if (PendingUpload) {
+					PendingUpload.add(() => {
+						let links = Data.readLocalLinks();
+						uploadLinks(links);
+					});
+				} else {
+					uploadLinks(links);
+				}
 			} else {
 				console.error('RegExp did not change Links: ', re);
 			}
