@@ -4480,12 +4480,12 @@ function loadLinks(forcedownload = false) {
 		loadPromise
 		.then(value => {
 			// Links have been downloaded successfully
-			let localLinks;
+			let localLinks, links;
 			if (forcedownload) {
-				localLinks = null;
+				localLinks = links = null;
 			} else {
-				localLinks = Data.readLocalLinks();
-				localLinks = (localLinks != null) ? localLinks.trim() : '';
+				links = Data.readLocalLinks();
+				localLinks = (links != null) ? links.trim() : '';
 			}
 			let downloadLinks = value.trim();
 			let cleanLinks = Data.readCleanLinks();
@@ -4561,7 +4561,7 @@ function loadLinks(forcedownload = false) {
 			if (upload) {
 				if (UrlResolver.getSaveOptions()) {
 					addStatus('Save Dirty');
-					uploadLinks(value);  //will set CleanLinks after successful upload
+					uploadLinks(links);  //will set CleanLinks after successful upload
 				} else {
 					console.log('No SaveOptions, cannot save');
 					updateSettingsDirty(false);  //no SaveOptions, no dirty
