@@ -23,7 +23,7 @@ ctl.style.color = '#FFFF00';
 
 !script
 {
-	let myConfigName = UrlResolver.getLoadConfigName();
+	let myConfigName = UrlResolver.getLoadOverrideConfigName() || UrlResolver.getLoadConfigName() || 'none';
 	if (!myConfigName.match(/conflict-config/)) {
 		// Copy LoadOptions and SaveOptions
 		let extraConfigs = [];
@@ -33,7 +33,7 @@ ctl.style.color = '#FFFF00';
 			let ds;
 			let ur = CreateUrlResolver('?links=' + configName, () => ds);
 			ds = CreateData(() => ur);
-			let loadOptions = UrlResolver.getLoadOptions();
+			let loadOptions = UrlResolver.getLoadOverrideOptions() || UrlResolver.getLoadOptions();
 			ur.setLoadOptions(loadOptions);
 			ds.writeLoadOptions(loadOptions);
 			let saveOptions = UrlResolver.getSaveOptions() + '=incorrect';
