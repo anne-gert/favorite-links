@@ -1589,20 +1589,24 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 			if (method_url[1]) {
 				// This is the standard syntax method:url
 				_uploadMethod = method_url[1].toUpperCase();
+				console.debug('Explicit method for upload: ' + _uploadMethod);
 			} else {
 				// This is the special save syntax
 				_uploadMethod = 'POST';
+				console.debug('Method for special upload: ' + _uploadMethod);
 				special = true;
 			}
 			if (method_url[2]) {
 				// A URL has been specified
 				saveUrl = method_url[2];
+				console.debug('Specified upload URL: ' + saveUrl);
 			} else if (downloadUrl) {
 				// No URL has been specified, use the URL for reading
-				saveUrl = downloadUrl;
+				saveUrl = null;
+				console.debug('Upload URL is download URL: ' + downloadUrl);
 			} else {
 				// No URL to use
-				console.error('Cannot find read nor write url');
+				console.error('Cannot find read nor write URL');
 				noUploadUrl();
 				return;
 			}
@@ -1616,7 +1620,11 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 		if (downloadUrl) {
 			// downloadUrl may be relative to this script and saveUrl may be relative to downloadUrl
 			let loadUrlAbs = new URL(downloadUrl, window.location).href;
-			_uploadUrl = new URL(saveUrl, loadUrlAbs).href;
+			if (saveUrl === null) {
+				_uploadUrl = loadUrlAbs;
+			} else {
+				_uploadUrl = new URL(saveUrl, loadUrlAbs).href;
+			}
 		} else {
 			// No downloadUrl known, assume base of saveUrl is this script
 			_uploadUrl = new URL(saveUrl, window.location).href;
