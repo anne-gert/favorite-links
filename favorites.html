@@ -1874,7 +1874,7 @@ function CreatePending(name, timeout, onlyLast) {
 	}
 
 	function doActions() {
-		console.log(name = ': Execute actions');
+		console.log(name + ': Execute actions');
 		for (let i = 0; i < actions.length; ++i) actions[i]();
 		clearActions();
 	}
@@ -1886,10 +1886,10 @@ function CreatePending(name, timeout, onlyLast) {
 		timer = window.setTimeout(doActions, timeout*1000);
 		// Update actions
 		if (onlyLast) {
-			console.log(name + ': Set pending action');
+			console.log(name + ': Set pending action (in ' + timeout + 's)');
 			actions.length = 0;
 		} else {
-			console.log(name + ': Add pending action');
+			console.log(name + ': Add pending action (in ' + timeout + 's)');
 		}
 		actions.push(callback);
 		// Set unload event
