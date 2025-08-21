@@ -57,6 +57,13 @@ Checkboxes
             [+]:yesno Test optie 2
             [-]:yesno Test optie 3
 
+!checkbox emo _=❓ 🙁 😐 🙂
+        emo
+            [ ]:emo Option 1
+            [🙁]:emo Option 2
+            [😐]:emo Option 3
+            [🙂]:emo Option 4
+
 !checkbox yesnoR _=uncheck +=check x=cross ~=mcheck
         yesnoR
             [ ]:yesnoR Test optie 1

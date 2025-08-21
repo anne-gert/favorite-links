@@ -2446,8 +2446,10 @@ function parseLinks(links) {
 			if (name == null) name = val;
 			// If icondef, use that value instead, but retain name
 			if (icondef != null) val = icondef;
-			// Represent single char U+xxxxx as char:x
-			if (val.length == 1 || val.match(/^U\+[0-9a-f]{1,6}$/i)) {
+			// Represent single char, surrogate pair or 'U+xxxxx' as char:x
+			if (val.length == 1 ||
+				(val.length == 2 && val.codePointAt(0) >= 0x10000) ||
+				val.match(/^U\+[0-9a-f]{1,6}$/i)) {
 				val = 'char:' + val;
 			}
 			// Add option to options structure

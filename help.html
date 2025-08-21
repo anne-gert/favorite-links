@@ -498,8 +498,16 @@ In addition to standard Checkboxes, <code>!checkbox name options...</code> can
 be used to define a checkbox type with custom options. The allowed options are:
 <ul>
 <li><dt>Single letter</dt>: Instead of <code>[x]</code> and <code>[ ]</code>,
-    use these letters as checkbox values. <code>_</code> has the special
-    meaning that it represents a space character. See below for examples.
+    use these letters as checkbox values. The following notations are supported:
+    <ul>
+    <li><dt>Normal character</dt>: Like 'A', '4', '+', etc.
+    <li><dt>Underscore (_)</dt>: Special character interpreted as a space.
+    <li><dt>Unicode character</dt>: Literal Unicode characters, like '&#x2611;'
+        or '&#x1F44D;'.
+    <li><dt>Unicode codepoint</dt>: Unicode codepoint notation, like 'U+2611'
+        or 'U+1F44D'.
+    </ul>
+    See below for examples.
 <li><dt>Icon</dt>: By using <code>X=icon</code>, the checkbox <code>[X]</code>
     is displayed as icon, all <a href="#icons">icon definitions</a> can be
     used. See below for examples.
@@ -521,7 +529,7 @@ the checkbox.
 </p>
 
 <p>
-Examples 1: Simple checkbox with standard Unicode icons:
+Example 1: Simple checkbox with standard Unicode icons:
 <pre>
 !checkbox standard _=uncheck x=check
 [ ]:standard Option 1
@@ -530,7 +538,7 @@ Examples 1: Simple checkbox with standard Unicode icons:
 </p>
 
 <p>
-Examples 2: Standard checkbox with sub-options:
+Example 2: Standard checkbox with sub-options:
 <pre>
 !checkbox sub uncheck check mcheck
 [ ]:sub Option 1
@@ -541,7 +549,7 @@ Examples 2: Standard checkbox with sub-options:
 </p>
 
 <p>
-Examples 3: Checkbox with 3 values, A, B and C:
+Example 3: Checkbox with 3 values, A, B and C:
 <pre>
 !checkbox letters A B C
 [A]:letters Option 1
@@ -551,7 +559,7 @@ Examples 3: Checkbox with 3 values, A, B and C:
 </p>
 
 <p>
-Examples 4: Checkbox with 3 values, unknown (&#x2753;), thumbs-up (&#x1F44D;)
+Example 4: Checkbox with 3 values, unknown (&#x2753;), thumbs-up (&#x1F44D;)
 and thumbs-down (&#x1F44E;):
 <pre>
 !checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E
@@ -562,7 +570,20 @@ and thumbs-down (&#x1F44E;):
 </p>
 
 <p>
-Examples 5: Checkbox with 7 values, empty, check and 5 icons where '1' and '3'
+Example 5: It is also possible to copy the unicode characters directly into
+the definition. E.g. from <a href="https://www.unicode.org/emoji/charts/full-emoji-list.html">Full Emoji List, v16.0</a>,
+copy the icon in the 'Sample' column for characters U+1F641, U+1F610 and
+U+1F642.
+<pre>
+!checkbox emo 🙁 😐 🙂
+[&#x1F641;]:emo Option 1
+[&#x1F610;]:emo Option 2
+[&#x1F642;]:emo Option 3
+</pre>
+</p>
+
+<p>
+Example 6: Checkbox with 7 values, empty, check and 5 icons where '1' and '3'
 show the same icon because of the !icondef and '2' and '5' also show the same
 icon because both options have the same display value. The check icon
 (&#x2611;) is overriden with a checkmark (&#x2714;).
