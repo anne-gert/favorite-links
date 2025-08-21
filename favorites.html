@@ -4609,20 +4609,36 @@ function loadLinks(forcedownload = false) {
 					// Case ABA: downloadLinks different from others
 					console.important('Downloaded Links newer than local, use downloaded Links');
 					render = true;
-					if (!UrlResolver.getLoadOverrideOptions()) {
-						// Downloaded links are from links= and are different
-						updateLocal = true;
-					}
+					updateLocal = true;
 					updateClean = true;
-				} else if (downloadLinks == cleanLinks) {
-					// Case BAA: localLinks different from others
-					console.important('Local Links newer than downloaded, use local Links');
-					upload = true;
 				} else {
-					// Case BCA: All three are different
-					console.important('Local Links and downloaded Links have both changed, display local');
-					addStatus('Conflict');
-					conflict = true;
+					// Case BAA, BCA
+					if (UrlResolver.getLoadOverrideOptions()) {
+						// Downloaded from links-override=
+						if (downloadLinks == cleanLinks) {
+							// Case BAA: localLinks different from others
+							console.important('Local Links newer than downloaded override Links, use override');
+						} else {
+							// Case BCA: All three are different
+							console.important('Local Links and downloaded override Links have both changed, use override');
+							updateClean = true;
+						}
+						addStatus('Discard Local changes');
+						updateLocal = true;
+						render = true;
+					} else {
+						// Downloaded from links=
+						if (downloadLinks == cleanLinks) {
+							// Case BAA: localLinks different from others
+							console.important('Local Links newer than downloaded, use local Links');
+							upload = true;
+						} else {
+							// Case BCA: All three are different
+							console.important('Local Links and downloaded Links have both changed, display local');
+							addStatus('Conflict');
+							conflict = true;
+						}
+					}
 				}
 			}
 
