@@ -4145,11 +4145,21 @@ function tabInsert(ctl, add) {
 		ctl.selectionEnd = end;
 		ctl.selectionDirection = dir;
 	} else {
-		// There is no selection -> insert 4 spaces
+		// There is no selection -> add/remove N spaces at current position
 		let before = val.substring(0, pos), after = val.substring(pos);
-		ctl.value = before + space.repeat(N) + after;
-		// Put the insertion point after the insertion
-		ctl.selectionStart = ctl.selectionEnd = pos + N;
+		let newBefore;
+		if (add) {
+			// Insert N spaces
+			newBefore = before + space.repeat(N);
+		} else {
+			// Remove max N spaces
+			let re = new RegExp(space + '{1,' + N + '}$');
+			//console.devlog('Applying regex: ' + re);
+			newBefore = before.replace(re, '');
+		}
+		ctl.value = newBefore + after;
+		// Put the insertion point after the change
+		ctl.selectionStart = ctl.selectionEnd = newBefore.length;
 	}
 	return true;
 }
