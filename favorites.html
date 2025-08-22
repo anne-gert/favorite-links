@@ -3643,8 +3643,11 @@ function addSearchButtons(parsed, searchBox, container) {
 
 // Edit Settings {{{
 
-var showSettingsPanel = null;  //will be set later
-var updateSettingsDirty = null;  //will be set later
+// These variables will be set in initSettingsPanel()
+// Function to open the Settings panel
+let showSettingsPanel = null;
+// Function to update the displayed Dirty state
+let updateSettingsDirty = null;
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
@@ -4168,12 +4171,10 @@ function tabInsert(ctl, add) {
 
 // StatusLine {{{
 
-// Add a SatusLine statuement.
-// Will be set in initStatus().
+// These variables will be set in initStatus()
+// Add a SatusLine statement.
 let addStatus = () => {};
-
 // Clear current StatusLine.
-// Will be set in initStatus().
 let clearStatus = () => {};
 
 // Initialize StatusLine functions
@@ -4613,25 +4614,26 @@ function loadLinks(forcedownload = false) {
 	let loadPromise = downloadLinks();
 	if (loadPromise != null) {
 		loadPromise
-		.then(value => {
+		.then(download => {
 			// Links have been downloaded successfully
-			let localLinks, links;
+			let localT, links;
 			if (forcedownload) {
-				localLinks = links = null;
+				localT = links = null;
 			} else {
 				links = Data.readLocalLinks();
-				localLinks = (links != null) ? links.trim() : '';
+				localT = (links != null) ? links.trim() : '';
 			}
-			let downloadLinks = value.trim();
-			let cleanLinks = Data.readCleanLinks();
-			cleanLinks = (cleanLinks != null) ? cleanLinks.trim() : '';
+			let downloadT = download.trim();
+			let cleanT = Data.readCleanLinks();
+			cleanT = (cleanT != null) ? cleanT.trim() : '';
+
 			let render = false, updateLocal = false, upload = false, updateClean = false, conflict = false;
 			if (preliminaryLinks == null) {
 				// Nothing yet shown
 				render = true;
 			}
-			if (!localLinks) {
-				// Case -AA, -BA: There are no localLinks
+			if (!localT) {
+				// Case -AA, -BA: There are no local Links
 				if (forcedownload) {
 					console.important('Force downloaded links');
 				} else {
@@ -4640,22 +4642,22 @@ function loadLinks(forcedownload = false) {
 				addStatus('No Local');
 				updateLocal = true;
 				render = true;
-				if (downloadLinks != cleanLinks) {
+				if (downloadT != cleanT) {
 					// Case -BA: Update CleanLinks
 					updateClean = true;
 				}
-			} else if (localLinks == downloadLinks) {
-				// Case AAA, BBA: localLinks same as downloadLinks
+			} else if (localT == downloadT) {
+				// Case AAA, BBA: local Links same as download Links
 				console.important('Downloaded links same as local, keep pre-rendered Links');
 				addStatus('Same');
-				if (downloadLinks != cleanLinks) {
+				if (downloadT != cleanT) {
 					// Case BBA: Update CleanLinks
 					updateClean = true;
 				}
 			} else {
-				// Case ABA, BAA, BCA: localLinks different from downloadLinks
-				if (localLinks == cleanLinks) {
-					// Case ABA: downloadLinks different from others
+				// Case ABA, BAA, BCA: local Links different from download Links
+				if (localT == cleanT) {
+					// Case ABA: download Links different from others
 					console.important('Downloaded Links newer than local, use downloaded Links');
 					render = true;
 					updateLocal = true;
@@ -4664,8 +4666,8 @@ function loadLinks(forcedownload = false) {
 					// Case BAA, BCA
 					if (UrlResolver.getLoadOverrideOptions()) {
 						// Downloaded from links-override=
-						if (downloadLinks == cleanLinks) {
-							// Case BAA: localLinks different from others
+						if (downloadT == cleanT) {
+							// Case BAA: local Links different from others
 							console.important('Local Links newer than downloaded override Links, use override');
 						} else {
 							// Case BCA: All three are different
@@ -4677,8 +4679,8 @@ function loadLinks(forcedownload = false) {
 						render = true;
 					} else {
 						// Downloaded from links=
-						if (downloadLinks == cleanLinks) {
-							// Case BAA: localLinks different from others
+						if (downloadT == cleanT) {
+							// Case BAA: local Links different from others
 							console.important('Local Links newer than downloaded, use local Links');
 							upload = true;
 						} else {
@@ -4702,11 +4704,11 @@ function loadLinks(forcedownload = false) {
 			// Update LocalStorage
 			if (updateLocal) {
 				console.log('Update LocalLinks');
-				Data.writeLocalLinks(value);
+				Data.writeLocalLinks(download);
 			}
 			if (updateClean) {
 				console.log('Update CleanLinks');
-				Data.writeCleanLinks(value);
+				Data.writeCleanLinks(download);
 				updateSettingsDirty(false);
 			}
 			if (upload) {
@@ -4721,7 +4723,7 @@ function loadLinks(forcedownload = false) {
 			// Re-render or wait for pre-render
 			if (render) {
 				addStatus('Render');
-				processLinks(value);
+				processLinks(download);
 				result.resolve(true);
 			} else {
 				preliminaryLinksRenderPromise.then(() => result.resolve(true));
