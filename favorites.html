@@ -1907,7 +1907,7 @@ function CreatePending(name, timeout, onlyLast) {
 		}
 	}
 
-	async function onBeforeUnload(event) {
+	function onBeforeUnload(event) {
 		// I don't think onbeforeunload is allowed to perform blocking
 		// actions like uploading. Also, it doesn't seem to be allowed
 		// to await Promises.
@@ -1928,7 +1928,10 @@ function CreatePending(name, timeout, onlyLast) {
 	}
 
 	return {
-		add : add,
+		add        : add,
+		getTimeout : () => timeout,
+		setTimeout : value => timeout = value,
+		dispose    : dispose,
 	};
 }
 
@@ -1959,6 +1962,7 @@ function parseLinks(links) {
 		fontSize                     : null,
 		blocksCollapsedInitially     : false,
 		blocksCollapsedAlwaysInitial : false,
+		autoUploadDelay              : null,
 		searchButtonDefs             : [],
 		rootLinks                    : [],
 		iconDefs                     : {},
@@ -2082,6 +2086,14 @@ function parseLinks(links) {
 			let v = m[1].toLowerCase();
 			parsed.blocksCollapsedInitially = (v == 'always' || v == 'yes');
 			parsed.blocksCollapsedAlwaysInitial = (v == 'always' || v == 'never');
+			continue;
+		}
+
+		// Check if it is a upload-delay definition
+		m = line.match(/^\s*!auto-upload-delay\s+(.+?)\s*$/i);
+		if (m) {
+			// This is a delay time
+			parsed.autoUploadDelay = 1*m[1];  //save value
 			continue;
 		}
 
@@ -4425,6 +4437,25 @@ function processLinks(links, cancel = null) {
 		setPageTheme(parsed.pageTheme);
 	}
 	setFontSize(parsed.fontSize);
+
+	// Set AutoUploadDelay if specified
+	if (parsed.autoUploadDelay != null) {
+		if (PendingUpload) {
+			if (parsed.autoUploadDelay > 0) {
+				console.log('Change AutoUploadDelay to ' + parsed.autoUploadDelay);
+				PendingUpload.setTimeout(parsed.autoUploadDelay);
+			} else {
+				console.log('Disable AutoUploadDelay');
+				PendingUpload.dispose();
+				PendingUpload = null;
+			}
+		} else {
+			if (parsed.autoUploadDelay > 0) {
+				console.log('Set AutoUploadDelay to ' + parsed.autoUploadDelay);
+				PendingUpload = CreatePending('PendingUpload', parsed.autoUploadDelay, true);
+			}
+		}
+	}
 
 	// Render links
 	console.important('Render Links...');

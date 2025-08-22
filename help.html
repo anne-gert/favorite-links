@@ -287,6 +287,12 @@ Each line should be one of the following:
       <code>!script</code> and <code>!endscript</code>, which should contain
       JavaScript code that is executed at the beginning of the page. See <a
       href="#search-functions">Search Functions</a> for an example.
+  <li><dt>Automatic Upload Delay</dt>: Some events (like changing a checkbox
+      value) triggers an upload if <a
+      href="external-files.html#save-options">Online Save</a> has been set.
+      To avoid many updates in quick succession, an upload delay can be set
+      with <code>!auto-upload-delay value</code>, where value is a delay in
+      seconds. Default is 3 seconds.
 </ul>
 </p>
 
