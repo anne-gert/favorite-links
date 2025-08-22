@@ -2858,7 +2858,38 @@ function render(parsed, container, cancel) {
 					textContainer = document.createElement('span');
 					linkContainer.appendChild(textContainer);
 				}
-				textContainer.appendChild(document.createTextNode(name));
+				// Process *...* to make bold
+				// Match sequence of *, delimited by non-*, then match
+				// non-* and finally an equal amount of *. Captures:
+				// - 1: * token
+				// - 2: text
+				// - 3: * token
+				let parts = name.split(/(?:(?<!\*)(\*+)(?!\*))(.*?)(?<!\*)(\1)(?!\*)/);
+				// Expected are 3 captures per match and n+1 parts
+				// for n separator matches. This means for n matches,
+				// the array should have 3*n + n+1 = 4*n+1 elements.
+				// Or n = (length-1)/4, which should be integer.
+				if (((parts.length-1) % 4) == 0) {
+					//console.devlog('Found *...*: ' + parts.length + ' elements');
+					//console.log(parts);
+					let i = 0;
+					// Keep first literal
+					let lit = parts[i++];
+					while (i < parts.length) {
+						// Add literal & token
+						textContainer.appendChild(document.createTextNode(lit + parts[i++]));
+						// Add text in <b>
+						let b = document.createElement('b');
+						b.appendChild(document.createTextNode(parts[i++]));
+						textContainer.appendChild(b);
+						// Keep token & next literal
+						lit = parts[i++] + parts[i++];
+					}
+					// Add last literal
+					textContainer.appendChild(document.createTextNode(lit));
+				} else {
+					textContainer.appendChild(document.createTextNode(name));
+				}
 				if (checkbox.present) {
 					// This is a checkbox item, give the name the correct class
 					setTextClass('checkbox-label', true);
