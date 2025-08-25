@@ -23,7 +23,7 @@ Examples
             [x] Presents
         At work
             [x] icon=firefox Install Firefox https://www.mozilla.org/firefox/download
-            [ ] icon=github Start using favorite-links as todo-list
+            [ ] icon=github Start using *favorite-links* as **todo-list**
             []  icon=empty Write review
                 & Goto Blog icon=none url=https://blog.example.com
         Poll
