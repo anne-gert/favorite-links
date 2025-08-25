@@ -4750,8 +4750,14 @@ function loadLinks(forcedownload = false) {
 				}
 			} else if (localT == downloadT) {
 				// Case AAA, BBA: local Links same as download Links
-				console.important('Downloaded links same as local, keep pre-rendered Links');
-				addStatus('Same');
+				if (UrlResolver.getLoadOverrideOptions()) {
+					// Downloaded from links-override=
+					console.important('Downloaded links same as local, no need to update');
+				} else {
+					// Downloaded from links=
+					console.important('Downloaded links same as local, keep pre-rendered Links');
+					addStatus('Same');
+				}
 				if (downloadT != cleanT) {
 					// Case BBA: Update CleanLinks
 					updateClean = true;
