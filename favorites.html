@@ -3891,9 +3891,14 @@ function initSettingsPanel() {
 			entry.type = 'text';
 			container.appendChild(entry);
 			optionsPanel.appendChild(container);
+			let data;
 			let option = {
-				showData : () => entry.value = getData(),
-				saveData : () => saveData(entry.value),
+				showData : () => entry.value = data = getData(),
+				saveData : () => {
+					let oldData = data;
+					saveData(data = entry.value);
+					return data != oldData;
+				},
 				entry    : entry,
 			};
 			optionEntries.push(option);
@@ -4029,13 +4034,14 @@ function initSettingsPanel() {
 		};
 		if (save) {
 			// Update Options
+			let optionsChanged = false;
 			for (let i = 0; i < optionEntries.length; ++i) {
-				optionEntries[i].saveData();
+				if (optionEntries[i].saveData()) optionsChanged = true;
 			}
+			if (optionsChanged) addStatus('Options Changed');
 			// Update Links and close panel
 			let saveLinks = Data.readLocalLinks();
-			if (save == 'clear' || settingsText.value == '') {
-				console.log('Clear settings');
+			let reloadLinks = () => {
 				loadLinks(true)  //re-resolve, download and render Links
 				.then(() => {
 					// Links are correct
@@ -4067,16 +4073,36 @@ function initSettingsPanel() {
 						// it has already been logged.
 					}
 				});
+			};
+			if (save == 'clear' || settingsText.value == '') {
+				console.log('Clear settings');
+				reloadLinks();
 			} else {
 				console.log('Save settings');
 				try {
 					let links = settingsText.value;
-					processLinks(links);  //Render Links
-					// Links are correct
-					Data.writeLocalLinks(links);
-					uploadLinks(links);
-					// Close the panel
-					hide();
+					let linksChanged = true;
+					if (optionsChanged) {
+						// Options (i.e. SaveOptions) have also changed
+						// Only save Links if explicitly changed
+						if (saveLinks != null && links != saveLinks) {
+							addStatus('Links Changed');
+							console.log(saveLinks);
+							console.log(links);
+						} else {
+							linksChanged = false;
+						}
+					}
+					if (linksChanged) {
+						processLinks(links);  //Render Links
+						// Links are correct
+						Data.writeLocalLinks(links);
+						uploadLinks(links);
+						// Close the panel
+						hide();
+					} else {
+						reloadLinks();
+					}
 				} catch (error) {
 					// Always log for debugging
 					console.error(error);
