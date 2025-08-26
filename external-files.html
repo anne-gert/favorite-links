@@ -436,7 +436,7 @@ The name of this file is defined in data.php and can be changed.
 This file contains lines of the format <code>access token</code> with:
 <ul>
 <li><dt>access</dt>: The access that this token grants. May be <code>r</code>
-    (read), <code>w</code> (write) or <code>rw</code> (read and write).
+    (read), <code>w</code> (write), <code>c</code> (create) or any combination.
 <li><dt>token</dt>: String that is the token that grants the access. This token
     may be formatted as <code>&lt;user&gt;:&lt;password&gt;</code>, in which
     case <i>that</i> is the token string that should be sent in the request.
@@ -450,9 +450,13 @@ Example token file:
 <pre>
 # No token needed for read
 r
+
 # Write tokens
 w john:password
 w pete:password
+
+# Create+write token
+cw admin:complicated-password
 </pre>
 </p>
 
