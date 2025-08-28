@@ -1,0 +1,56 @@
+// For the syntax description, see help.html.
+
+!title Test Links
+
+Section
+    Block
+        Item 1
+            SubItem 1
+            & Continuation
+            SubItem 2
+        Item 2
+        Item 3
+
+    Search
+        DuckDuckGo https://duckduckgo.com
+        Google Maps https://maps.google.com
+        Wikipedia https://www.wikipedia.org
+        YouTube https://www.youtube.com
+        Google Translate https://translate.google.com/?sl=auto&tl=en&op=translate
+        ChatGPT https://chatgpt.com
+        Wayback Machine https://web.archive.org/
+
+// Search button definitions
+//      Identifier      | Label   | Tooltip                            | Icon | URL-Template
+!search Duck Duck Go    | Search
+!search Google          | Search
+!search Wikipedia
+!search YouTube
+!search Wayback Machine | Archive | Wayback Machine (Internet Archive) | alt
+!search Google Maps     | Maps
+
+!icondef maps.google.com alt
+
+    Boldness
+        test *bold* and **also** trailing
+        test *1*2* or **1*2**
+        *everything*
+        *Not*this // *is bold* // * not bold * // *NOT**
+
+Other Links
+
+    Other Tests
+        Checkboxes url=?links-override=test/checkbox-links.txt
+        Conflict Tests url=?links-override=test/conflict-links.txt
+
+    Default Pages
+        Example Links url=?links-override=example-links.txt
+        Default Links url=?links-override=does-not-exist
+
+    Help
+        Syntax url=help.html
+        Load/Save url=external-files.html
+
+
+// vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
+

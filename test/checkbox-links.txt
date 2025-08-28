@@ -1,18 +1,6 @@
 // For the syntax description, see help.html.
 
-!title Test
-
-_
-    Search
-        DuckDuckGo https://duckduckgo.com
-        Google Maps https://maps.google.com
-        Wikipedia https://www.wikipedia.org
-        YouTube https://www.youtube.com
-        Google Translate https://translate.google.com/?sl=auto&tl=en&op=translate
-        ChatGPT https://chatgpt.com
-        Wayback Machine https://web.archive.org/
-
-!icondef maps.google.com alt
+!title Test Checkboxes
 
 // Enable this to represent the checked checkbox as a checkmark ✓
 //!icondef check char:U+2714
@@ -21,7 +9,7 @@ _
 //!auto-upload-delay 5
 //!auto-upload-delay 0
 
-Checkboxes
+_
     Tree
         [ ] Item 1
         [ ] Item 2
@@ -104,16 +92,6 @@ Checkboxes
 
     [yes]:yesno Small icon, does it fit?
         [ ]:yesno sub
-
-
-// Search button definitions
-//      Identifier      | Label   | Tooltip                            | Icon | URL-Template
-!search Duck Duck Go    | Search
-!search Google          | Search
-!search Wikipedia
-!search YouTube
-!search Wayback Machine | Archive | Wayback Machine (Internet Archive) | alt
-!search Google Maps     | Maps
 
 
 // Checkbox styles for normal checkboxes with parents and/or children set
