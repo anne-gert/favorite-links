@@ -1739,7 +1739,6 @@ function downloadLinks() {
 	if (url == null) return null;
 	let headers = UrlResolver.getDownloadHeaders();
 
-	UrlResolver.setUploadDisabled(null);
 	console.important('Downloading URL \'' + url + '\'');
 	let downloadPromise;
 	if (window.fetch) {
@@ -1762,6 +1761,7 @@ function downloadLinks() {
 				// Success
 				console.log('downloadLinks: Download successful');
 				addStatus('Load OK');
+				UrlResolver.setUploadDisabled(null);
 				downloadPromise.resolve(text);
 			} else {
 				// Failed
@@ -1791,6 +1791,7 @@ function downloadLinks() {
 						// Success
 						console.log('downloadLinks: Download successful');
 						addStatus('Load OK');
+						UrlResolver.setUploadDisabled(null);
 						resolveFunc(xhr.responseText);
 					} else {
 						// Failed
@@ -3976,22 +3977,24 @@ function initSettingsPanel() {
 		let saveConfigName = UrlResolver.getSaveConfigName();
 		if (saveConfigName) {
 			// Entry for SaveOptions
-			let saveOptionsDisabled = UrlResolver.getUploadDisabled();
 			let option = createOption('Online Save \'' + saveConfigName + '\'',
-				() => UrlResolver.getSaveOptions(),
+				() => {
+					let disabled = UrlResolver.getUploadDisabled();
+					if (disabled) {
+						option.entry.disabled = true;
+						option.entry.title = disabled;  //the text with reason
+					} else {
+						option.entry.disabled = false;
+						option.entry.title = '';
+					}
+					return UrlResolver.getSaveOptions();
+				},
 				(value) => {
-					if (!saveOptionsDisabled) {
+					if (!UrlResolver.getUploadDisabled()) {
 						UrlResolver.setSaveOptions(value);
 						Data.writeSaveOptions(value);
 					}
 				});
-			if (saveOptionsDisabled) {
-				option.entry.disabled = true;
-				option.entry.title = saveOptionsDisabled;  //the text with reason
-			} else {
-				option.entry.disabled = false;
-				option.entry.title = '';
-			}
 		}
 		return true;
 	}
