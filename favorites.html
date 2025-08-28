@@ -1600,34 +1600,30 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 
 		// The first part should specify the method and the URL
 		let saveUrl, special = false;
-		let method_url = parts.shift().match(/^(?:(put|post):)?(.*)$/i);
-		if (method_url) {
-			if (method_url[1]) {
-				// This is the standard syntax method:url
-				_uploadMethod = method_url[1].toUpperCase();
-				console.debug('Explicit method for upload: ' + _uploadMethod);
-			} else {
-				// This is the special save syntax
-				_uploadMethod = 'POST';
-				console.debug('Method for special upload: ' + _uploadMethod);
-				special = true;
-			}
-			if (method_url[2]) {
-				// A URL has been specified
-				saveUrl = method_url[2];
-				console.debug('Specified upload URL: ' + saveUrl);
-			} else if (downloadUrl) {
-				// No URL has been specified, use the URL for reading
-				saveUrl = null;
-				console.debug('Upload URL is download URL: ' + downloadUrl);
-			} else {
-				// No URL to use
-				console.error('Cannot find read nor write URL');
-				noUploadUrl();
-				return;
-			}
+		let method_url = parts.shift();
+		let method_url_parts = method_url.match(/^(put|post)(?::(.*))?$/i);
+		if (method_url_parts) {
+			// This is the standard syntax 'method:url' or 'method' ("Save to URL")
+			_uploadMethod = method_url[1].toUpperCase();
+			console.debug('Explicit method for upload: ' + _uploadMethod);
+			saveUrl = method_url[2];
 		} else {
-			console.error('Incorrect method/url in \'' + saveOptions + '\'');
+			// This is the special syntax 'url' ("Save to data.php")
+			_uploadMethod = 'POST';
+			console.debug('Method for special upload: ' + _uploadMethod);
+			special = true;
+			saveUrl = method_url;
+		}
+		if (saveUrl) {
+			// A URL has been specified
+			console.debug('Specified upload URL: ' + saveUrl);
+		} else if (downloadUrl) {
+			// No URL has been specified, use the URL for reading
+			saveUrl = null;
+			console.debug('Upload URL is download URL: ' + downloadUrl);
+		} else {
+			// No URL to use
+			console.error('Cannot find read nor write URL');
 			noUploadUrl();
 			return;
 		}
