@@ -83,6 +83,12 @@ _
             [+]:checkross Test optie 2
             [-]:checkross Test optie 3
 
+!checkbox yesnoafter _=char:U+2753 +=U+1F44D -=U+1F44E !after
+        yesno after
+            [ ]:yesnoafter icon=mantis Test optie 1
+            [+]:yesnoafter icon=mantis Test optie 2
+            [-]:yesnoafter icon=mantis Test optie 3
+
         default
             [x] Test optie 1
             [x] Test optie 2

@@ -517,13 +517,15 @@ be used to define a checkbox type with custom options. The allowed options are:
     </ul>
     See below for examples.
 <li><dt>Icon</dt>: By using <code>X=icon</code>, the checkbox <code>[X]</code>
-    is displayed as icon, all <a href="#icons">icon definitions</a> can be
-    used. See below for examples.
+    is displayed as icon. 'X' can be any letter or short text and 'icon' can be
+    any valid <a href="#icons">icon definition</a>.  See below for examples.
 <li><dt>empty</dt>: Shorthand for <code>_=empty</code>.
 <li><dt>uncheck</dt>: Shorthand for <code>_=U+2610</code> (empty box, &#x2610;).
 <li><dt>check</dt>: Shorthand for <code>U+2611</code> (checked box, &#x2611;).
 <li><dt>cross</dt>: Shorthand for <code>U+2612</code> (crossed box, &#x2612;).
 <li><dt>mcheck</dt>: Shorthand for <code>U+25A3</code> (filled box, &#x25A3;).
+<li><dt>!front</dt>, <dt>!before</dt>: Places the checkbox in front of the text.
+<li><dt>!back</dt>, <dt>!after</dt>: Places the checkbox after the text.
 </ul>
 The representation of special values can be overridden. E.g. to use a different
 icon for the checkmark, use <code>!icondef check
@@ -604,6 +606,17 @@ icon because both options have the same display value. The check icon
 !icondef icon3 icon1
 !icondef icon4 char:X
 !icondef check char:U+2714
+</pre>
+</p>
+
+<p>
+Example 7: Links to read with the URL icon in front and a checkbox after the
+text. The checkbox can be empty, '+' or '-'
+<pre>
+!checkbox good _ + - !after
+[ ]:good Item 1 http://example.com/item1
+[+]:good Item 2 http://example.com/item2
+[-]:good Item 3 http://example.com/item3
 </pre>
 </p>
 

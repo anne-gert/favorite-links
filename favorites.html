@@ -819,7 +819,7 @@ These are some examples of the available features.
 
 // Checkbox definitions
 !checkbox 3 uncheck check mcheck
-!checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E
+!checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E !after
 
 // Search button definitions
 //      Identifier   | Label  | Tooltip | Icon | URL-Template
@@ -2436,24 +2436,55 @@ function parseLinks(links) {
 		let args = tempCheckboxDefs[i][1].split(/\s+/);  //split on whitespace
 		let firstOptionName = null, prevOptionName = null;
 		let options = {};
+		let place = 'F';  //the default
 		for (let i = 0; i < args.length; ++i) {
 			let arg = args[i];
 			//console.devlog('!checkbox arg: ' + arg);
 			let name = null, val = null;
-			let m = arg.match(/^([^=]+)=(.+)$/);
-			if (m) {
-				// It is an name=value option
-				if (m[1][0] == '!') {
-					// It is an argument
-					continue;  //not yet implemented
+			let m = arg.match(/^(!?)([^=]+)(?:=(.*))?$/);
+			if (!m) {
+				// Unrecognized
+				console.error('Ignore unknown checkbox argument \'' + arg + '\'');
+				continue;
+			} else if (m[1]) {
+				// Pragma
+				name = m[2].toLowerCase();
+				let reFront = /^(?:front|before)$/i;  //front, before
+				let reBack = /^(?:back|after)$/i;  //back, after
+				if (m[3] != null) {
+					// It is a !name=value pragma
+					if (name == 'place') {
+						if (m[3].match(reBack)) {
+							place = 'B';
+						} else if (m[3].match(reFront)) {
+							place = 'F';
+						} else {
+							console.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
+						}
+					} else {
+						console.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
+					}
 				} else {
-					// This is a checkbox option
-					name = m[1];
+					// It is a !pragma
+					if (name.match(reBack)) {
+						place = 'B';
+					} else if (name.match(reFront)) {
+						place = 'F';
+					} else {
+						console.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
+					}
+				}
+				continue;
+			} else {
+				// Option
+				if (m[3] != null) {
+					// It is a name=value option
+					name = m[2];
+					val = m[3];
+				} else {
+					// It is a value option
 					val = m[2];
 				}
-			} else {
-				// It is a single value option
-				val = arg;
 			}
 			if (name == '_') name = ' ';
 			// Check icondef
@@ -2505,6 +2536,7 @@ function parseLinks(links) {
 				name    : name,
 				options : options,
 				first   : firstOptionName,
+				place   : place,
 			};
 			//console.devlog('!checkbox found');
 			//console.log(def);
@@ -2841,7 +2873,7 @@ function render(parsed, container, cancel) {
 			}
 
 			// Add checkbox to the itemContainer
-			if (checkbox.present) {
+			if (checkbox.present && checkbox.place == 'F') {
 				itemContainer.appendChild(checkbox.element);
 			}
 
@@ -2940,6 +2972,11 @@ function render(parsed, container, cancel) {
 				}
 			}
 
+			// Add checkbox to the itemContainer
+			if (checkbox.present && checkbox.place == 'B') {
+				itemContainer.appendChild(checkbox.element);
+			}
+
 			// If there is continuation, output those items in this itemContainer too
 			if (contItems != null) {
 				outputItems(contItems, level, itemContainer, myPath, cancel);
@@ -2983,12 +3020,14 @@ function render(parsed, container, cancel) {
 	// - associateLabel: Function to call to associate this checkbox with its
 	//   label. The single argument should be a DOM element, representing the
 	//   label.
+	// - place: 'F' (front) or 'B' (back).
 	function outputCheckbox(type, value, lineNum) {
 		// If type==null, don't make a checkbox
 		let retval = {
 			present             : false,
 			element             : null,
 			associateLabel      : null,
+			place               : null,
 			// Transient data
 			selFirstMe          : null,  //true if my current selection is first
 			selFirstAllParents  : null,  //true if all parents have current selection first
@@ -3071,6 +3110,7 @@ function render(parsed, container, cancel) {
 			// Set return value
 			retval.present = true;
 			retval.element = checkbox;
+			retval.place = 'F';
 		} else {
 			// The checkbox is defined by def
 			let checkbox = document.createElement('span');
@@ -3105,6 +3145,7 @@ function render(parsed, container, cancel) {
 			// Set return value
 			retval.present = true;
 			retval.element = checkbox;
+			retval.place = def.place;
 		}
 
 		// Callbacks if parent/child changed

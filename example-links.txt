@@ -47,7 +47,7 @@ Examples
 
 // Checkbox definitions
 !checkbox 3 uncheck check mcheck
-!checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E
+!checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E !after
 
 // Search button definitions
 //      Identifier   | Label  | Tooltip | Icon | URL-Template
