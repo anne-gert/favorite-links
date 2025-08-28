@@ -1741,14 +1741,14 @@ function downloadLinks() {
 
 	UrlResolver.setUploadDisabled(null);
 	console.important('Downloading URL \'' + url + '\'');
-	let dowloadPromise;
+	let downloadPromise;
 	if (window.fetch) {
 		//console.devlog('Using fetch() to download');
 		let hdrs = new Headers();
 		for (let i = 0; i < headers.length; ++i) {
 			hdrs.append(headers[i][0], headers[i][1]);
 		}
-		dowloadPromise = new PendingPromise();
+		downloadPromise = new PendingPromise();
 		let status;
 		fetch(url, { headers : hdrs })
 		.then(response => {
@@ -1762,7 +1762,7 @@ function downloadLinks() {
 				// Success
 				console.log('downloadLinks: Download successful');
 				addStatus('Load OK');
-				dowloadPromise.resolve(text);
+				downloadPromise.resolve(text);
 			} else {
 				// Failed
 				console.error('downloadLinks: Download failed');
@@ -1771,14 +1771,14 @@ function downloadLinks() {
 				// saveOptions to not accidentally
 				// overwrite the file.
 				UrlResolver.setUploadDisabled('Saving disabled because downloading \'' + url + '\' failed');
-				dowloadPromise.reject(false);
+				downloadPromise.reject(false);
 			}
 
 		})
-		.catch(error => dowloadPromise.reject(error));
+		.catch(error => downloadPromise.reject(error));
 	} else {
 		//console.devlog('Using XMLHttpRequest to download');
-		dowloadPromise = new Promise((resolveFunc, rejectFunc) => {
+		downloadPromise = new Promise((resolveFunc, rejectFunc) => {
 			let xhr = new XMLHttpRequest();
 			xhr.open('GET', url);
 			for (let i = 0; i < headers.length; ++i) {
@@ -1808,7 +1808,7 @@ function downloadLinks() {
 		});
 	}
 
-	return dowloadPromise;
+	return downloadPromise;
 }
 
 // Save links online by the method specified.
@@ -4148,7 +4148,7 @@ function initSettingsPanel() {
 							.then(success => success || evaluateDirty());
 						} else {
 							// Not uploaded
-							eveluateDirty();
+							evaluateDirty();
 						}
 						// Close the panel
 						hide();
@@ -4912,7 +4912,7 @@ function loadLinks(forcedownload = false) {
 			} else {
 				// It is another error, log it for debugging, but
 				// do a resolve, so that no dialog is triggered.
-				console.error('Download failed with erro', error);
+				console.error('Download failed with error', error);
 				result.resolve(false);
 			}
 		});
