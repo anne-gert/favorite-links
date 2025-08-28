@@ -1815,6 +1815,7 @@ function downloadLinks() {
 // If the value is null, empty or whitespace, save an empty string.
 // CleanLinks and LinksDirty are also updated if save successful.
 // Returns Promise of the upload or false if not saving.
+// The Promise returns true if successful.
 function uploadLinks(value) {
 	let url = UrlResolver.getUploadUrl();
 	if (!url) {
@@ -1852,13 +1853,13 @@ function uploadLinks(value) {
 					console.log('Update CleanLinks');
 					Data.writeCleanLinks(value);  //assume upload & download are same content
 					updateSettingsDirty(false);
-					resolveFunc(this.status);
+					resolveFunc(true);
 				} else {
 					// Failed
 					console.log('Failed to upload Links, good luck next time (' + this.status + ')');
 					addStatus('Save ' + this.status);
 					updateSettingsDirty();
-					resolveFunc(this.status);  //do not see this as a fail
+					resolveFunc(false);  //do not see this as a fail
 				}
 			}
 		};
@@ -4003,6 +4004,7 @@ function initSettingsPanel() {
 		addClass(iconSave, 'alert', dirty);
 		addClass(iconClear, 'alert', dirty);
 		addClass(warningDirty, 'hidden', !dirty);
+		return dirty;
 	}
 
 	// Show the Settings panel.
@@ -4070,18 +4072,24 @@ function initSettingsPanel() {
 			visible = false;
 		};
 		if (save) {
-			// Update Options
+			// Update Links and close panel
+			let saveLinks = Data.readLocalLinks();
+			// Update Options (NB: This might change keys in Data)
 			let optionsChanged = false;
 			for (let i = 0; i < optionEntries.length; ++i) {
 				if (optionEntries[i].saveData()) optionsChanged = true;
 			}
 			if (optionsChanged) addStatus('Options Changed');
-			// Update Links and close panel
-			let saveLinks = Data.readLocalLinks();
-			let reloadLinks = () => {
+			// Update Links
+			let evaluateDirty = () => {
+				if (updateDirty()) addStatus('Dirty');
+			};
+			if (save == 'clear' || settingsText.value == '') {
+				console.log('Clear settings');
 				loadLinks(true)  //re-resolve, download and render Links
 				.then(() => {
 					// Links are correct
+					saveLinks = 'DISCARD';
 					let links = Data.readLocalLinks();
 					settingsText.value = links;
 					Data.writeLocalLinks(links);
@@ -4110,35 +4118,58 @@ function initSettingsPanel() {
 						// it has already been logged.
 					}
 				});
-			};
-			if (save == 'clear' || settingsText.value == '') {
-				console.log('Clear settings');
-				reloadLinks();
 			} else {
 				console.log('Save settings');
 				try {
 					let links = settingsText.value;
 					let linksChanged = true;
 					if (optionsChanged) {
-						// Options (i.e. SaveOptions) have also changed
+						// Options (i.e. SaveOptions) have (also) changed
 						// Only save Links if explicitly changed
 						if (saveLinks != null && links != saveLinks) {
 							addStatus('Links Changed');
-							console.log(saveLinks);
-							console.log(links);
+							//console.log(saveLinks, links);
+						} else if (Data.linksDirty()) {
+							addStatus('Save Dirty');
 						} else {
 							linksChanged = false;
 						}
 					}
 					if (linksChanged) {
-						processLinks(links);  //Render Links
-						// Links are correct
+						// Check and save Links
+						processLinks(links);  //parse en render Links
+						// If no exception, Links are correct
+						saveLinks = 'DISCARD';
 						Data.writeLocalLinks(links);
-						uploadLinks(links);
+						let uploadPromise = uploadLinks(links);  //also updates CleanLinks and DirtyStatus
+						if (uploadPromise) {
+							// Uploading
+							uploadPromise
+							.then(success => success || evaluateDirty());
+						} else {
+							// Not uploaded
+							eveluateDirty();
+						}
 						// Close the panel
 						hide();
 					} else {
-						reloadLinks();
+						// Local Links not have changed.
+						saveLinks = 'DISCARD';
+						// Download new CleanLinks (because LoadOptions might
+						// have changed) and update DirtyStatus
+						downloadLinks()
+						.then(cleanLinks => {
+							Data.writeCleanLinks(cleanLinks);
+						})
+						.catch(error => {
+							// There was an error
+							// Always log for debugging
+							console.error(error);
+							// Ignore the error
+						})
+						.then(evaluateDirty);
+						// Close the panel
+						hide();
 					}
 				} catch (error) {
 					// Always log for debugging
@@ -4755,13 +4786,8 @@ function loadLinks(forcedownload = false) {
 		loadPromise
 		.then(download => {
 			// Links have been downloaded successfully
-			let localT, links;
-			if (forcedownload) {
-				localT = links = null;
-			} else {
-				links = Data.readLocalLinks();
-				localT = (links != null) ? links.trim() : '';
-			}
+			let links = Data.readLocalLinks();
+			let localT = (links != null) ? links.trim() : '';
 			let downloadT = download.trim();
 			let cleanT = Data.readCleanLinks();
 			cleanT = (cleanT != null) ? cleanT.trim() : '';
@@ -4771,14 +4797,14 @@ function loadLinks(forcedownload = false) {
 				// Nothing yet shown
 				render = true;
 			}
-			if (!localT) {
+			if (forcedownload || !localT) {
 				// Case -AA, -BA: There are no local Links
 				if (forcedownload) {
 					console.important('Force downloaded links');
 				} else {
 					console.important('Downloaded links, no local Links');
+					addStatus('No Local');
 				}
-				addStatus('No Local');
 				updateLocal = true;
 				render = true;
 				if (downloadT != cleanT) {
