@@ -640,6 +640,22 @@ body {
 <script>
 // Some constants {{{
 
+const LogUnicode = CreateLogger();
+const LogStorage = CreateLogger();
+const LogUrlResolver = CreateLogger('log');
+const LogUpDownload = CreateLogger();
+const LogUpDownloadDefer = CreateLogger();
+const LogParse = CreateLogger();
+const LogRender = CreateLogger();
+const LogBlockExpand = CreateLogger();
+const LogCheckbox = CreateLogger();
+const LogIcon = CreateLogger();
+const LogSearch = CreateLogger();
+const LogSettings = CreateLogger('log');
+const LogStatusLine = CreateLogger();
+const LogInit = CreateLogger();
+const LogLinksUpdate = CreateLogger('debug');
+
 // Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
 // Unicode Block: Arrows
 const UNICODE_LEFTWARDS_ARROW_WITH_HOOK = '\u{21A9}';  //a 'swoosh' arrow
@@ -681,7 +697,9 @@ const UNICODE_CANCELLATION = '\u{1F5D9}';  //cross
 const UNICODE_LIGHT_CHECK_MARK = '\u{1F5F8}';
 
 // DefaultLinks is a textual part with a copy of example-links.txt at the end.
-const DefaultLinks = `// For the syntax description, see help.html.
+const DefaultLinks =
+// {{{
+`// For the syntax description, see help.html.
 
 !title Example Favorites
 
@@ -828,27 +846,80 @@ These are some examples of the available features.
 !search YouTube
 !search Google Maps  | Maps
 `;
+// }}}
 
 // }}}
 
 // Utility Functions {{{
 
-// Add extra logging function.
-// To make important steps stand out more.
-console.important = (message) => {
-	console.log('%c' + message, 'color:cyan;font-weight:bold');
-}
+// This function returns a reference to a console-like object with the
+// following methods:
+// - error
+// - warn
+// - important
+// - log
+// - debug
+// - devlog
+// Depending on the value of level, these methods log or do nothing:
+// - level=='none': only error and warn
+// - level=='important': important and above
+// - level=='log': log and above
+// - level=='debug': debug and above
+// - level=='devlog': devlog and above
+// - level=='all': all available functions
+function CreateLogger(level = 'important') {
+	let levels = { none: 0, important: 1, log: 2, debug: 3, devlog: 4, all: 9999 };
+	let _level;
+	function setLevel(level = 'all') {
+		_level = levels[level];
+		if (_level == null) {
+			console.error('Unknown log level: ' + level);
+			_level = levels.none;
+		}
+	}
+	setLevel(level);
 
-// Add extra logging function.
-// To make distinction between log links and less important debug messages.
-console.debug = (message) => {
-	console.log('%c' + message, 'color:#666666;font-weight:bold');
-}
+	// Log the first line in the given style, the rest is logged normally.
+	function logColor(style, args) {
+		if (style != null) {
+			let format = [];
+			let args2 = [];
+			for (let i = 0; i < args.length; ++i) {
+				let type = typeof args[i];
+				if (type === 'object') {
+					// Render as object, see https://developer.mozilla.org/en-US/docs/Web/API/console
+					format.push('%o');
+					args2.push(args[i]);
+				} else {
+					// Render as string with style
+					format.push('%c%s');
+					args2.push(style, args[i]);
+				}
+			}
+			args2.unshift(format.join(' '));
+			console.log.apply(console, args2);
+		} else {
+			console.log.apply(console, args);
+		}
+	}
 
-// Add extra logging function. For temporary use only.
-// To make logging during development easier to find.
-console.devlog = (message) => {
-	console.log('%c' + message, 'color:black;background-color:#008888');
+	function Func(level, style) {
+		function logger(...args) {
+			if (level <= _level) logColor(style, args);
+		}
+		return logger;
+	}
+	let obj = {
+		setLevel    : setLevel,
+		defineLevel : (name, level, style) => obj[name] = Func(level, style),
+		error       : console.error,
+		warn        : console.warn,
+		important   : Func(1, 'color:cyan;font-weight:bold'),
+		log         : Func(2, null),
+		debug       : Func(3, 'color:#888888'),
+		devlog      : Func(4, 'color:black;background-color:#008888'),
+	};
+	return obj;
 }
 
 // Constructor function to construct a Promise in a pending state with
@@ -961,11 +1032,11 @@ function setIfSupported(control, character, property = 'textContent') {
 // above) are less supported than lower ones (Basic Multilangual Plan).
 // Therefore, try to end with a lower codepoint.
 function setUnicodeText(control, unicodeCharacter, /* more unicodeCharacters, */ altText) {
-	//console.log('setUnicodeText', arguments);
+	//LogUnicode.log('setUnicodeText', arguments);
 	for (let i = 1; i < arguments.length - 1; ++i) {
 		let ch = arguments[i];
 		if (setIfSupported(control, ch)) {
-			console.log('setUnicodeText: character #' + i + ' supported: \'' + ch + '\'');
+			LogUnicode.log('setUnicodeText: character #' + i + ' supported: \'' + ch + '\'');
 			return;
 		}
 	}
@@ -1032,7 +1103,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	// Read value from Storage.
 	// Return value or undefined in case of error or if it does not exist.
 	function readStorage(key) {
-		console.debug('Read storage key \'' + key + '\'');
+		LogStorage.debug('Read storage key \'' + key + '\'');
 		let v = storage.getItem(key);
 		return (v != null) ? v : undefined;
 	}
@@ -1041,10 +1112,10 @@ function CreateData(getResolver = () => UrlResolver) {
 	// If value is null, empty or whitespace, delete key from Storage.
 	function writeStorage(key, value) {
 		if (value == null || value.toString().match(/^\s*$/)) {
-			console.debug('Remove storage key \'' + key + '\'');
+			LogStorage.debug('Remove storage key \'' + key + '\'');
 			storage.removeItem(key);
 		} else {
-			console.debug('Write storage key \'' + key + '\'');
+			LogStorage.debug('Write storage key \'' + key + '\'');
 			storage.setItem(key, value);
 		}
 	}
@@ -1071,7 +1142,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	// Returns null if not available.
 	function readLocalLinks() {
 		let key = getLinksLSKey();
-		console.log('localLinks: Read from ' + key);
+		LogStorage.log('localLinks: Read from ' + key);
 		let links = readStorage(key);
 		if (links === undefined) links = null;
 		return links;
@@ -1196,7 +1267,7 @@ const UrlResolver = CreateUrlResolver();
 // Data is used.
 // It returns a UrlResolver object with LoadOptions, SaveOptions and URLs.
 function CreateUrlResolver(queryString = location.search, getData = () => Data) {
-	console.important('Resolving Links source...');
+	LogUrlResolver.important('Resolving Links source...');
 
 	// Parse links=, links-override= and save= and set internal variables
 	// loadOptions, loadOverrideOptions and saveOptions.
@@ -1217,7 +1288,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 	let loadOverrideArg = params.get('links-override');
 	let loadArg = params.get('links');
 	let saveArg = params.get('save');
-	//console.log(params);
+	//LogUrlResolver.log(params);
 	const reConfigName = /^([^\s\/\\.]+)$/;  //config-name is non-emtpy and contains no space, '/', '\' or '.'
 
 	// Resolve the config names
@@ -1227,7 +1298,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 		if (m) {
 			// This is a config name
 			loadOverrideConfigName = m[1];
-			console.debug('Found loadOverrideConfigName=' + loadOverrideConfigName);
+			LogUrlResolver.debug('Found loadOverrideConfigName=' + loadOverrideConfigName);
 			// Use the same config name for save unless already set
 			if (saveArg == null) saveArg = loadOverrideConfigName;
 		}
@@ -1238,7 +1309,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 		if (m) {
 			// This is a config name
 			loadConfigName = m[1];
-			console.debug('Found loadConfigName=' + loadConfigName);
+			LogUrlResolver.debug('Found loadConfigName=' + loadConfigName);
 			// Use the same config name for save unless already set
 			if (saveArg == null) saveArg = loadConfigName;
 		}
@@ -1249,7 +1320,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 		if (m) {
 			// This is a config name
 			saveConfigName = m[1];
-			console.debug('Found saveConfigName=' + saveConfigName);
+			LogUrlResolver.debug('Found saveConfigName=' + saveConfigName);
 		}
 	}
 
@@ -1282,7 +1353,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 	}
 	function setLoadOverrideOptions(value) {
 		if (_loadOverrideOptions !== value) {
-			console.log('Change _loadOverrideOptions to \'' + value + '\'');
+			LogUrlResolver.log('Change _loadOverrideOptions to \'' + value + '\'');
 			_loadOverrideOptions = value;
 			resetDownloadUrl();
 		}
@@ -1304,7 +1375,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 	}
 	function setLoadOptions(value) {
 		if (_loadOptions !== value) {
-			console.log('Change _loadOptions to \'' + value + '\'');
+			LogUrlResolver.log('Change _loadOptions to \'' + value + '\'');
 			_loadOptions = value;
 			resetDownloadUrl();
 		}
@@ -1328,7 +1399,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 	}
 	function setSaveOptions(value) {
 		if (_saveOptions !== value) {
-			console.log('Change _saveOptions to \'' + value + '\'');
+			LogUrlResolver.log('Change _saveOptions to \'' + value + '\'');
 			_saveOptions = value;
 			resetDownloadUrl();
 			resetUploadUrl();
@@ -1392,7 +1463,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 		let loadUrlMsg;
 		if (loadOverrideOptions) {
 			// Source selection: override - default  (do not consider LoadOptions or LocalStorage)
-			console.log('loadOverrideOptions set');
+			LogUrlResolver.log('loadOverrideOptions set');
 			preliminaryIsLocal = false;
 			// Note: The override might be te same as localLinks, in which case
 			// preliminary-render would have helped.
@@ -1405,10 +1476,10 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 		} else if (loadOptions) {
 			if (saveOptions) {
 				// Source selection: download - local - default  (LoadOptions before LocalStorage, because saveOptions is set)
-				console.log('Both loadOptions and saveOptions set');
+				LogUrlResolver.log('Both loadOptions and saveOptions set');
 			} else {
 				// Source selection: local - download - default
-				console.log('loadOptions without saveOptions set');
+				LogUrlResolver.log('loadOptions without saveOptions set');
 				localBeforeDownload = true;
 			}
 			_loadUrl = loadOptions;
@@ -1416,22 +1487,22 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 			_usedLoadConfigName = loadConfigName;
 		} else {
 			// Source selection: local - default
-			console.log('Both loadOverrideOptions and loadOptions not set');
+			LogUrlResolver.log('Both loadOverrideOptions and loadOptions not set');
 			_loadUrl = null;
 			loadUrlMsg = 'none';
 			_usedLoadConfigName = null;
 			addStatus('Local');
 		}
 		console.assert(_usedLoadConfigName !== undefined);
-		console.log('_usedLoadConfigName=' + _usedLoadConfigName);
-		console.log('_loadUrl=' + _loadUrl);
+		LogUrlResolver.log('_usedLoadConfigName=' + _usedLoadConfigName);
+		LogUrlResolver.log('_loadUrl=' + _loadUrl);
 
 		// Derive loadToken and loadName
 		_loadName = null;
 		_downloadHeaders = [];
 		if (_loadUrl != null) {
 			let parts = _loadUrl.split('\\');
-			//console.log(parts);
+			//LogUrlResolver.log(parts);
 			_loadUrl = parts.shift();
 			// The other parts are additional headers in either value or
 			// name:value format
@@ -1448,7 +1519,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 						_downloadHeaders.push([ name, parts[i] ]);
 						if (name == 'x-name') _loadName = parts[i];
 					} else {
-						console.error('Too many implicit headers in ' + _loadUrl);
+						LogUrlResolver.error('Too many implicit headers in ' + _loadUrl);
 						// Just discard this header
 					}
 				}
@@ -1459,8 +1530,8 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 			_loadName = _loadUrl.replace(/[?#].*$/, '').replace(/^[^\/]*\//, '');
 		}
 		console.assert(_loadName !== undefined);
-		console.log('_loadName=' + _loadName);
-		//console.log('HTTP headers=' + _downloadHeaders);
+		LogUrlResolver.log('_loadName=' + _loadName);
+		//LogUrlResolver.log('HTTP headers=' + _downloadHeaders);
 
 		// Get Links from LocalStorage (needs _usedConfigName and _loadName)
 		// Derive _preliminaryLinks and _fallbackLinks.
@@ -1492,14 +1563,14 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 			fallbackLinksMsg = 'default (LocalStorage is empty)';
 		}
 
-		console.log('* preliminaryLinks: Use ' + preliminaryLinksMsg);
-		console.log('* loadUrl: Use ' + loadUrlMsg);
-		console.log('* fallbackLinks: Use ' + fallbackLinksMsg);
+		LogUrlResolver.log('* preliminaryLinks: Use ' + preliminaryLinksMsg);
+		LogUrlResolver.log('* loadUrl: Use ' + loadUrlMsg);
+		LogUrlResolver.log('* fallbackLinks: Use ' + fallbackLinksMsg);
 
 		// If _loadUrl set, check special cases
 		if (_loadUrl != null) {
 			let matchTargetUrl = _loadUrl.match(/^\s*((https?:\/\/)?(.*?))\s*$/i);  //always matches
-			//console.log(matchTargetUrl);
+			//LogUrlResolver.log(matchTargetUrl);
 			// Captured:
 			// 1: url
 			// 2: protocol
@@ -1508,7 +1579,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 			if (!matchTargetUrl[2]) {
 				// URL is relative, check if we need to adjust it
 				let matchBaseUrl = window.location.href.match(/^([^\/]*?:\/\/)([^\/]*\bhtml-?preview\.github\.[^\/]*)([^?#]*)/i);
-				//console.log(matchBaseUrl);
+				//LogUrlResolver.log(matchBaseUrl);
 				// Captured:
 				// 1: protocol
 				// 2: host ('html-preview.github.io')
@@ -1517,9 +1588,9 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 					// The current URL is html-preview.github.io (or similar)
 					// This should have a url= parameter that contains the real location
 					let referredUrl = params.get('url');
-					//console.log(referredUrl);
+					//LogUrlResolver.log(referredUrl);
 					let matchReferredUrl = referredUrl.match(/^([^\/]*:\/\/)([^\/]*\bgithub\.[^\/]*)([^?#]*)/i);
-					//console.log(matchReferredUrl);
+					//LogUrlResolver.log(matchReferredUrl);
 					// Captured:
 					// 1: protocol
 					// 2: host ('github.com')
@@ -1537,11 +1608,11 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 						// html-preview.github.io is used, it uses
 						// raw-githubcontent.com and serves it with
 						// Content-Type=text/html.
-						console.log('Fix _loadUrl relative URL for GitHub');
+						LogUrlResolver.log('Fix _loadUrl relative URL for GitHub');
 						// To make this relative link work, it should be grafted
 						// onto githubusercontent.
 						let matchReferredPath = matchReferredUrl[3].match(/(.*?)([^\/]*)$/);
-						//console.log(matchReferredPath);
+						//LogUrlResolver.log(matchReferredPath);
 						// Captured:
 						// 1: directory
 						// 2: filename (everything after last '/')
@@ -1583,13 +1654,13 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 	function calcUploadUrl() {
 		let saveOptions = getSaveOptions();
 		if (saveOptions.match(/^\s*$/)) {
-			console.log('SaveOptions empty, no UploadUrl');
+			LogUrlResolver.log('SaveOptions empty, no UploadUrl');
 			noUploadUrl();
 			return;
 		}
 		let uploadDisabled = getSaveOptionsDisabled();
 		if (uploadDisabled) {
-			console.log('SaveOptions disabled, no UploadUrl');
+			LogUrlResolver.log('SaveOptions disabled, no UploadUrl');
 			noUploadUrl();
 			return;
 		}
@@ -1605,25 +1676,25 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 		if (method_url_parts) {
 			// This is the standard syntax 'method:url' or 'method' ("Save to URL")
 			_uploadMethod = method_url[1].toUpperCase();
-			console.debug('Explicit method for upload: ' + _uploadMethod);
+			LogUrlResolver.debug('Explicit method for upload: ' + _uploadMethod);
 			saveUrl = method_url[2];
 		} else {
 			// This is the special syntax 'url' ("Save to data.php")
 			_uploadMethod = 'POST';
-			console.debug('Method for special upload: ' + _uploadMethod);
+			LogUrlResolver.debug('Method for special upload: ' + _uploadMethod);
 			special = true;
 			saveUrl = method_url;
 		}
 		if (saveUrl) {
 			// A URL has been specified
-			console.debug('Specified upload URL: ' + saveUrl);
+			LogUrlResolver.debug('Specified upload URL: ' + saveUrl);
 		} else if (downloadUrl) {
 			// No URL has been specified, use the URL for reading
 			saveUrl = null;
-			console.debug('Upload URL is download URL: ' + downloadUrl);
+			LogUrlResolver.debug('Upload URL is download URL: ' + downloadUrl);
 		} else {
 			// No URL to use
-			console.error('Cannot find read nor write URL');
+			LogUrlResolver.error('Cannot find read nor write URL');
 			noUploadUrl();
 			return;
 		}
@@ -1654,7 +1725,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 			if (loadName) {
 				_uploadHeaders.push([ 'x-name', loadName ]);
 			} else {
-				console.error('Special save cannot find loadName for x-name');
+				LogUrlResolver.error('Special save cannot find loadName for x-name');
 				noUploadUrl();
 				return;
 			}
@@ -1665,11 +1736,11 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 			if (name_value) {
 				_uploadHeaders.push(name_value.slice(1,3));
 			} else {
-				console.warn('Expected header: ' + parts[i]);
+				LogUrlResolver.warn('Expected header: ' + parts[i]);
 			}
 		}
 
-		//console.log('Request headers: ', _uploadHeaders);
+		//LogUrlResolver.log('Request headers: ', _uploadHeaders);
 	}
 
 	// Handling of SaveOptionsDisabled
@@ -1679,7 +1750,7 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 	}
 	function setSaveOptionsDisabled(value) {
 		if (_saveOptionsDisabled !== value) {
-			console.log('Change _saveOptionsDisabled to \'' + value + '\'');
+			LogUrlResolver.log('Change _saveOptionsDisabled to \'' + value + '\'');
 			_saveOptionsDisabled = value;
 			resetUploadUrl();
 		}
@@ -1739,10 +1810,10 @@ function downloadLinks() {
 	if (url == null) return null;
 	let headers = UrlResolver.getDownloadHeaders();
 
-	console.important('Downloading URL \'' + url + '\'');
+	LogUpDownload.important('Downloading URL \'' + url + '\'');
 	let downloadPromise;
 	if (window.fetch) {
-		//console.devlog('Using fetch() to download');
+		//LogUpDownload.devlog('Using fetch() to download');
 		let hdrs = new Headers();
 		for (let i = 0; i < headers.length; ++i) {
 			hdrs.append(headers[i][0], headers[i][1]);
@@ -1751,21 +1822,21 @@ function downloadLinks() {
 		let status;
 		fetch(url, { headers : hdrs })
 		.then(response => {
-			//console.devlog('downloadLinks: Request sent');
+			//LogUpDownload.devlog('downloadLinks: Request sent');
 			status = response.status;
 			return response.text();
 		})
 		.then(text => {
-			//console.devlog('downloadLinks: Response received');
+			//LogUpDownload.devlog('downloadLinks: Response received');
 			if (status == 200) {
 				// Success
-				console.log('downloadLinks: Download successful');
+				LogUpDownload.log('downloadLinks: Download successful');
 				addStatus('Load OK');
 				UrlResolver.setUploadDisabled(null);
 				downloadPromise.resolve(text);
 			} else {
 				// Failed
-				console.error('downloadLinks: Download failed');
+				LogUpDownload.error('downloadLinks: Download failed');
 				addStatus('Load ' + status);
 				// If the download failed, disable
 				// saveOptions to not accidentally
@@ -1777,7 +1848,7 @@ function downloadLinks() {
 		})
 		.catch(error => downloadPromise.reject(error));
 	} else {
-		//console.devlog('Using XMLHttpRequest to download');
+		//LogUpDownload.devlog('Using XMLHttpRequest to download');
 		downloadPromise = new Promise((resolveFunc, rejectFunc) => {
 			let xhr = new XMLHttpRequest();
 			xhr.open('GET', url);
@@ -1789,13 +1860,13 @@ function downloadLinks() {
 					// Request has been handled
 					if (this.status == 200) {
 						// Success
-						console.log('downloadLinks: Download successful');
+						LogUpDownload.log('downloadLinks: Download successful');
 						addStatus('Load OK');
 						UrlResolver.setUploadDisabled(null);
 						resolveFunc(xhr.responseText);
 					} else {
 						// Failed
-						console.error('downloadLinks: Download failed');
+						LogUpDownload.error('downloadLinks: Download failed');
 						addStatus('Load ' + this.status);
 						// If the download failed, disable
 						// saveOptions to not accidentally
@@ -1820,12 +1891,12 @@ function downloadLinks() {
 function uploadLinks(value) {
 	let url = UrlResolver.getUploadUrl();
 	if (!url) {
-		console.warn('No UploadUrl, skip saving');
+		LogUpDownload.warn('No UploadUrl, skip saving');
 		return false;
 	}
 	let method = UrlResolver.getUploadMethod();
 	if (!method) {
-		console.warn('No UploadMethod, skip saving');
+		LogUpDownload.warn('No UploadMethod, skip saving');
 		return false;
 	}
 	let headers = UrlResolver.getUploadHeaders();
@@ -1835,7 +1906,7 @@ function uploadLinks(value) {
 		value = '';
 	}
 
-	console.important('Uploading to URL ' + url + ': ' + method + ' ' + value.length + ' characters');
+	LogUpDownload.important('Uploading to URL ' + url + ': ' + method + ' ' + value.length + ' characters');
 
 	// Create the Promise for uploading
 	let uploadPromise = new Promise((resolveFunc, rejectFunc) => {
@@ -1849,15 +1920,15 @@ function uploadLinks(value) {
 				// Request has been handled
 				if (this.status == 200) {
 					// Success
-					console.log('Uploaded links successfully');
+					LogUpDownload.log('Uploaded links successfully');
 					addStatus('Save OK');
-					console.log('Update CleanLinks');
+					LogUpDownload.log('Update CleanLinks');
 					Data.writeCleanLinks(value);  //assume upload & download are same content
 					updateSettingsDirty(false);
 					resolveFunc(true);
 				} else {
 					// Failed
-					console.log('Failed to upload Links, good luck next time (' + this.status + ')');
+					LogUpDownload.error('Failed to upload Links, good luck next time (' + this.status + ')');
 					addStatus('Save ' + this.status);
 					updateSettingsDirty();
 					resolveFunc(false);  //do not see this as a fail
@@ -1896,7 +1967,7 @@ function CreatePending(name, timeout, onlyLast) {
 	}
 
 	function doActions() {
-		console.log(name + ': Execute actions');
+		LogUpDownloadDefer.log(name + ': Execute actions');
 		for (let i = 0; i < actions.length; ++i) actions[i]();
 		clearActions();
 	}
@@ -1908,10 +1979,10 @@ function CreatePending(name, timeout, onlyLast) {
 		timer = window.setTimeout(doActions, timeout*1000);
 		// Update actions
 		if (onlyLast) {
-			console.log(name + ': Set pending action (in ' + timeout + 's)');
+			LogUpDownloadDefer.log(name + ': Set pending action (in ' + timeout + 's)');
 			actions.length = 0;
 		} else {
-			console.log(name + ': Add pending action (in ' + timeout + 's)');
+			LogUpDownloadDefer.log(name + ': Add pending action (in ' + timeout + 's)');
 		}
 		actions.push(callback);
 		// Set unload event
@@ -1966,7 +2037,7 @@ function CreatePending(name, timeout, onlyLast) {
 // - styleBlocks: Array of !style...!endstyle blocks
 // - scriptBlocks: Array of !script...!endscript blocks
 function parseLinks(links) {
-	console.important('Parsing Links...');
+	LogParse.important('Parsing Links...');
 
 	// Parse the input lines and construct a list of objects
 	let allLinks = [];  //specified Link objects
@@ -1994,12 +2065,12 @@ function parseLinks(links) {
 			seen[icon_url] = 1;
 			let override = this.iconDefs[icon_url];
 			while (override !== undefined && !seen[override]) {
-				console.log('Replace icon=' + icon_url + ' by IconDefs ' + override);
+				LogIcon.log('Replace icon=' + icon_url + ' by IconDefs ' + override);
 				retval = override;
 				seen[override] = 1;
 				override = this.iconDefs[override];
 			}
-			//console.log('Returning ' + retval);
+			//LogIcon.log('Returning ' + retval);
 			return retval;
 		},
 	};
@@ -2012,7 +2083,7 @@ function parseLinks(links) {
 	let lines = links.split(/\r?\n\r?/);  //lines with Link specifications
 	for (let i = 0; i < lines.length; ++i) {
 		let line = lines[i];
-		//console.log('Line=\'' + line + '\'');
+		//LogParse.log('Line=\'' + line + '\'');
 		let m;  //for regex matches
 
 		// If we're in a !text block, add this line to the block
@@ -2036,7 +2107,7 @@ function parseLinks(links) {
 			m = line.match(/^\s*!endstyle\s*$/i);
 			if (m) {
 				// It is the end, save the object and reset styleBlock.
-				console.log('Add !style block (' + styleBlock.lines.length + ' lines)');
+				LogParse.log('Add !style block (' + styleBlock.lines.length + ' lines)');
 				parsed.styleBlocks.push(styleBlock);
 				styleBlock = null;  //reset
 				continue;
@@ -2052,7 +2123,7 @@ function parseLinks(links) {
 			m = line.match(/^\s*!endscript\s*$/i);
 			if (m) {
 				// It is the end, save the object and reset scriptBlock.
-				console.log('Add !script block (' + scriptBlock.lines.length + ' lines)');
+				LogParse.log('Add !script block (' + scriptBlock.lines.length + ' lines)');
 				parsed.scriptBlocks.push(scriptBlock);
 				scriptBlock = null;  //reset
 				continue;
@@ -2267,7 +2338,7 @@ function parseLinks(links) {
 			subs       : [],
 			toString   : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', check=' + check + ', #SubItems=' + this.subs.length + ' }' },
 		};
-		//console.log('Indentation=' + indent + ', Link=' + link);
+		//LogParse.log('Indentation=' + indent + ', Link=' + link);
 
 		// Add this Link
 		if (cont) {
@@ -2345,10 +2416,10 @@ function parseLinks(links) {
 					subs       : [],
 					toString   : function() { return '{ Dummy Block }' },
 				};
-				console.log('Add dummy Block');
+				LogParse.log('Add dummy Block');
 				allLinks.unshift(block);
 			}
-			console.log('Add dummy Section');
+			LogParse.log('Add dummy Section');
 			allLinks.unshift(section);
 			// Increase level of all existing items
 			//  maxLevel | num items added | start original items | increase
@@ -2365,7 +2436,7 @@ function parseLinks(links) {
 			}
 		}
 	}
-	//console.log(allLinks);
+	//LogParse.log(allLinks);
 
 	// Go through allLinks and adjust the level if needed
 	for (let i = 0; i < allLinks.length; ++i) {
@@ -2441,12 +2512,12 @@ function parseLinks(links) {
 		let place = 'F';  //the default
 		for (let i = 0; i < args.length; ++i) {
 			let arg = args[i];
-			//console.devlog('!checkbox arg: ' + arg);
+			//LogParse.devlog('!checkbox arg: ' + arg);
 			let name = null, val = null;
 			let m = arg.match(/^(!?)([^=]+)(?:=(.*))?$/);
 			if (!m) {
 				// Unrecognized
-				console.error('Ignore unknown checkbox argument \'' + arg + '\'');
+				LogParse.error('Ignore unknown checkbox argument \'' + arg + '\'');
 				continue;
 			} else if (m[1]) {
 				// Pragma
@@ -2461,10 +2532,10 @@ function parseLinks(links) {
 						} else if (m[3].match(reFront)) {
 							place = 'F';
 						} else {
-							console.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
+							LogParse.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
 						}
 					} else {
-						console.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
+						LogParse.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
 					}
 				} else {
 					// It is a !pragma
@@ -2473,7 +2544,7 @@ function parseLinks(links) {
 					} else if (name.match(reFront)) {
 						place = 'F';
 					} else {
-						console.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
+						LogParse.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
 					}
 				}
 				continue;
@@ -2540,11 +2611,11 @@ function parseLinks(links) {
 				first   : firstOptionName,
 				place   : place,
 			};
-			//console.devlog('!checkbox found');
-			//console.log(def);
+			//LogParse.devlog('!checkbox found');
+			//LogParse.log(def);
 			parsed.checkboxDefs[name] = def;
 		} else {
-			console.warn('Ignore !checkbox \'' + m[1] + '\' with no options');
+			LogParse.warn('Ignore !checkbox \'' + m[1] + '\' with no options');
 		}
 	}
 
@@ -2560,9 +2631,9 @@ function parseLinks(links) {
 	}
 
 	// Log all links
-	//for (let i = 0; i < allLinks.length; ++i) console.log('Link=' + allLinks[i]);
+	//for (let i = 0; i < allLinks.length; ++i) LogParse.log('Link=' + allLinks[i]);
 	// Log all roots
-	//for (let i = 0; i < parsed.rootLinks.length; ++i) console.log('RootLink=' + parsed.rootLinks[i]);
+	//for (let i = 0; i < parsed.rootLinks.length; ++i) LogParse.log('RootLink=' + parsed.rootLinks[i]);
 
 	return parsed;
 }
@@ -2624,7 +2695,7 @@ function render(parsed, container, cancel) {
 	// Level 3 is called Item and is rendered as a line in a Block.
 	// Level 4 and higher are called sub-Items and are rendered as indented Items.
 	function outputItem(link, level, container, parentPath, cancel) {
-		//console.log('outputItem ' + link.toString());
+		//LogRender.log('outputItem ' + link.toString());
 		// Copy input data
 		let name = link.name;
 		let url = link.url;
@@ -2670,7 +2741,7 @@ function render(parsed, container, cancel) {
 		// Create element container
 		if (level == 1) {
 			// Render Item as Section
-			//console.log('Render Section ' + name);
+			//LogRender.log('Render Section ' + name);
 			let _itemContainer;
 			let _subContainer;
 			addItemContainer = function() {
@@ -2691,7 +2762,7 @@ function render(parsed, container, cancel) {
 			}
 		} else if (level == 2) {
 			// Render Item as Block
-			//console.log('Render Block ' + name);
+			//LogRender.log('Render Block ' + name);
 			let _blockContainer;
 			let getBlockContainer = function() {
 				if (_blockContainer) {
@@ -2710,7 +2781,7 @@ function render(parsed, container, cancel) {
 					if (!parsed.blocksCollapsedAlwaysInitial) {
 						// Use persistent value if available
 						let v = Data.readItemExpanded(myPath);
-						console.debug('Preset isExpanded for \'' + myPath + '\' to ' + v);
+						LogBlockExpand.debug('Preset isExpanded for \'' + myPath + '\' to ' + v);
 						if (v == 'false') {
 							isExpanded = false;
 						} else if (v == 'true') {
@@ -2718,7 +2789,7 @@ function render(parsed, container, cancel) {
 						}
 					}
 					let displayExpandState = function() {
-						console.debug('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
+						LogBlockExpand.debug('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
 						if (isExpanded) {
 							// Expand this block
 							_blockContainer.classList.add('expanding');
@@ -2741,7 +2812,7 @@ function render(parsed, container, cancel) {
 					};
 					expandIcon.onclick = function() {
 						isExpanded = !isExpanded;
-						console.debug('Set isExpanded for \'' + name + '\' to ' + isExpanded);
+						LogBlockExpand.debug('Set isExpanded for \'' + name + '\' to ' + isExpanded);
 						Data.writeItemExpanded(myPath, isExpanded);
 						displayExpandState();
 					};
@@ -2777,7 +2848,7 @@ function render(parsed, container, cancel) {
 			}
 		} else {
 			// Render Item is (sub-)Item
-			//console.log('Render Item ' + name);
+			//LogRender.log('Render Item ' + name);
 			let _itemContainer;
 			let _subContainer;
 			addItemContainer = function() {
@@ -2949,8 +3020,7 @@ function render(parsed, container, cancel) {
 				// Or n = (length-1)/4, which should be integer.
 				let parts = name.split(reSG);
 				if (parts.length > 1 && ((parts.length-1) % 4) == 0) {
-					//console.devlog('Found *...*: ' + parts.length + ' elements');
-					//console.log(parts);
+					//LogRender.devlog('Found *...*: ' + parts.length + ' elements', parts);
 					let i = 0;
 					// Add first literal
 					addElem(parts[i++]);
@@ -3074,7 +3144,7 @@ function render(parsed, container, cancel) {
 					uploadLinks(links);
 				}
 			} else {
-				console.error('RegExp did not change Links: ', re);
+				LogCheckbox.error('RegExp did not change Links: ', re);
 			}
 		}
 
@@ -3090,12 +3160,12 @@ function render(parsed, container, cancel) {
 				let newCheck;
 				if (checkbox.checked) {
 					// Change checkbox to checked
-					console.log('Check checkbox on line ' + lineNum);
+					LogCheckbox.log('Check checkbox on line ' + lineNum);
 					newCheck = '[x]';
 					retval.selFirstMe = false;
 				} else {
 					// Change checkbox to checked
-					console.log('Uncheck checkbox on line ' + lineNum);
+					LogCheckbox.log('Uncheck checkbox on line ' + lineNum);
 					newCheck = '[ ]';
 					retval.selFirstMe = true;
 				}
@@ -3130,7 +3200,7 @@ function render(parsed, container, cancel) {
 				retval.selFirstMe = isFirst;
 				// Update Links
 				if (sel != null) {
-					console.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
+					LogCheckbox.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
 					let newCheck = '[' + sel.name + ']';
 					updateLinks(newCheck);
 				}
@@ -3166,7 +3236,7 @@ function render(parsed, container, cancel) {
 			}
 		}
 		function updateSelFirst(down) {
-			//console.devlog('Checkbox on line ' + lineNum + ': updateSelFirst(' + (down ? 'down' : 'up') + ')');
+			//LogCheckbox.devlog('Checkbox on line ' + lineNum + ': updateSelFirst(' + (down ? 'down' : 'up') + ')');
 			// Parent may have set a new value
 			retval.selFirstAllChildren = true;
 			iterateChildren(child => {
@@ -3185,7 +3255,7 @@ function render(parsed, container, cancel) {
 			if (retval.parent != null) {
 				retval.parent.updateSelFirst(false);
 			}
-			//console.log(retval);
+			//LogCheckbox.log(retval);
 			// Update Appearance
 			let classes = {};
 			let anyParentChecked = retval.selFirstAllParents === false;
@@ -3250,9 +3320,9 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 	// Render icon_url
 	let m;  //for regex matches
 	if (icon_url == null) {
-		console.debug('Loading icon for target \'' + target_url + '\': null');
+		LogIcon.debug('Loading icon for target \'' + target_url + '\': null');
 	} else if (icon_url == 'none') {
-		console.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
+		LogIcon.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
 	} else if (m = icon_url.match(/^html:(.+)/i)) {
 		let html = m[1].replace(/&(?:sp|spc|space);/ig, ' ');
 		// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
@@ -3265,7 +3335,7 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 		icon_element = iconDiv;
 		icon_present = true;
 	} else {
-		console.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
+		LogIcon.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
 		let img = document.createElement('img');
 		img.className = 'item-icon';
 		icon_present = true;
@@ -3331,8 +3401,8 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 					}
 				}
 			}
-			//console.log('All methods for ' + icon_url); console.log(methods);
-			//console.log('All urls for ' + icon_url); console.log(urls);
+			//LogIcon.log('All methods for ' + icon_url, methods);
+			//LogIcon.log('All urls for ' + icon_url, urls);
 			// Go through methods and urls and add alternatives
 			for (let m = 0; m < methods.length; ++m) {
 				let method = methods[m];
@@ -3340,11 +3410,11 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 					if (method == 'google') {
 						alternatives.push(getGoogleAltIconUrl(urls[u]));
 					} else {
-						console.error('Unknown alt icon method: ' + method);
+						LogIcon.error('Unknown alt icon method: ' + method);
 					}
 				}
 			}
-			//console.log('All alternatives for ' + icon_url); console.log(alternatives);
+			//LogIcon.log('All alternatives for ' + icon_url, alternatives);
 			// Remove duplicates
 			let seen = {};
 			let alt_list = alternatives;  //may have duplicates
@@ -3355,22 +3425,20 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 					alternatives.push(alt_list[a]);
 				}
 			}
-			//console.log('All unique alternatives for ' + icon_url); console.log(alternatives);
+			//LogIcon.log('All unique alternatives for ' + icon_url, alternatives);
 			// Set the icon urls until we find one that works
 			let try_next = function() {
 				if (alternatives.length > 0) {
 					// Try next alternative
-					//console.log('alternatives.length=' + alternatives.length);
-					//console.log('alternatives[0]=' + alternatives[0]);
+					//LogIcon.log('alternatives.length=' + alternatives.length);
 					let alt = alternatives.shift();
-					//console.log('alternatives.length=' + alternatives.length);
 					if (img.src != null && img.src != '') {
-						console.warn('Cannot load icon \'' + img.src + '\', try \'' + alt + '\'');
+						LogIcon.warn('Cannot load icon \'' + img.src + '\', try \'' + alt + '\'');
 					}
 					img.src = alt;
 				} else {
 					// Stop trying
-					console.error('Cannot load icon: ' + img.src);
+					LogIcon.error('Cannot load icon: ' + img.src);
 					if (alt_text != null) {
 						// prepare to show the alt text
 						img.src = '';
@@ -3422,7 +3490,7 @@ var FillScaler = new ResizeObserver(function(entries) {
 		if (entry.borderBoxSize) {
 			let rect = entry.borderBoxSize[0];  //area of 1st (and only) fragment
 			let writingMode = element.style.writingMode;
-			//console.log('FillScaler: Writing mode ' + writingMode);
+			//LogRender.log('FillScaler: Writing mode ' + writingMode);
 			if (writingMode.match(/^vertical/i)) {
 				// Vertical writing-mode, so inline direction is vertical
 				h = rect.inlineSize;
@@ -3437,28 +3505,28 @@ var FillScaler = new ResizeObserver(function(entries) {
 			w = entry.contentRect.width;
 			h = entry.contentRect.height;
 		}
-		console.log('FillScaler: Element size ' + w + ' x ' + h);
+		LogRender.log('FillScaler: Element size ' + w + ' x ' + h);
 		// Get parent's current size
 		let parent = element.parentElement;
 		let pw = parent.offsetWidth;
 		let ph = parent.offsetHeight;
-		//console.log('FillScaler: Parent size ' + pw + ' x ' + ph);
+		//LogRender.log('FillScaler: Parent size ' + pw + ' x ' + ph);
 		// Calculate new scaling factor
 		let scaleX = pw / w;
 		let scaleY = ph / h;
-		//console.log('FillScaler: Scale with ' + scaleX + ' x ' + scaleY);
+		//LogRender.log('FillScaler: Scale with ' + scaleX + ' x ' + scaleY);
 		// Check if the change is big enough
 		let changeX = element._scaleX / scaleX;
 		let changeY = element._scaleY / scaleY;
-		//console.log('FillScaler: Scale change ' + changeX + ' x ' + changeY);
+		//LogRender.log('FillScaler: Scale change ' + changeX + ' x ' + changeY);
 		if (isNaN(changeX) || changeX < 0.98 || changeX > 1.02 || isNaN(changeY) || changeY < 0.98 || changeY > 1.02) {
 			// More than 2% change
-			console.log('FillScaler: Set scale ' + scaleX + ' x ' + scaleY);
+			LogRender.debug('FillScaler: Set scale ' + scaleX + ' x ' + scaleY);
 			element._scaleX = scaleX;
 			element._scaleY = scaleY;
 			entry.target.style.scale = scaleX + ' ' + scaleY;
 		} else {
-			console.log('FillScaler: Scale change too small ' + changeX + ' x ' + changeY);
+			LogRender.debug('FillScaler: Scale change too small ' + changeX + ' x ' + changeY);
 		}
 	}
 });
@@ -3605,28 +3673,28 @@ function getWaybackTimestamp(date = new Date()) {
 function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWithSchemaUrl) {
 	let input = searchBox.value;
 	if (input.match(/^\s*$/)) {
-		console.log('Empty search string');
+		LogSearch.log('Empty search string');
 		// Set the blink animated style
 		searchBox.classList.add('blink');
 		searchBox.onanimationend = function() {
-			//console.log('animation end');
+			//LogSearch.log('animation end');
 			searchBox.classList.remove('blink');
 		};
 	} else {
 		let m = input.match(/^\s*(\S+\.\S+)\s*$/);
 		let url = null;
 		if (m && getDomainSearchUrl) {
-			//console.log('Looks like URL');
+			//LogSearch.log('Looks like URL');
 			url = getDomainSearchUrl(m[1]);
-			console.log('Go to URL \'' + url + '\'');
+			LogSearch.log('Go to URL \'' + url + '\'');
 		} else {
 			url = getSearchUrl(input);
-			console.log('Search \'' + url + '\'');
+			LogSearch.log('Search \'' + url + '\'');
 		}
 		if (url) {
 			window.location.href = url;
 		} else {
-			console.log('No URL to go to');
+			LogSearch.log('No URL to go to');
 		}
 	}
 }
@@ -3652,8 +3720,8 @@ function addSearchButton(parsed, container, search_box, button_id, label_text, t
 
 		// Add icon
 		let target_domain = getSearchUrl('__favicon_check__');
-		//console.log('target_domain=' + target_domain);
-		//console.log('favicon=' + getDefaultIconUrl(target_domain));
+		//LogSearch.log('target_domain=' + target_domain);
+		//LogSearch.log('favicon=' + getDefaultIconUrl(target_domain));
 		// When determining the icon, don't consider alternatives,
 		// except when icon_url == 'alt...'
 		let icon = renderIcon(parsed, tooltip, icon_url, target_domain, true);
@@ -3740,14 +3808,14 @@ function addSearchButtons(parsed, searchBox, container) {
 		}
 
 		// Log the fields
-		console.log('addSearchButtons: Identifier=\'' + id + '\'');
-		console.debug('addSearchButtons: Label=\'' + label + '\'');
-		console.debug('addSearchButtons: Tooltip=\'' + tooltip + '\'');
-		console.debug('addSearchButtons: Icon=\'' + icon + '\'');
-		console.debug('addSearchButtons: UrlTemplate=\'' + urlTemplate + '\'');
-		console.debug('addSearchButtons: getSearchUrl=\'' + getSearchUrl + '\'');
-		console.debug('addSearchButtons: getDomainSearchUrl=\'' + getDomainSearchUrl + '\'');
-		//console.debug(SearchFunction);
+		LogSearch.log('addSearchButtons: Identifier=\'' + id + '\'');
+		LogSearch.debug('addSearchButtons: Label=\'' + label + '\'');
+		LogSearch.debug('addSearchButtons: Tooltip=\'' + tooltip + '\'');
+		LogSearch.debug('addSearchButtons: Icon=\'' + icon + '\'');
+		LogSearch.debug('addSearchButtons: UrlTemplate=\'' + urlTemplate + '\'');
+		LogSearch.debug('addSearchButtons: getSearchUrl=\'' + getSearchUrl + '\'');
+		LogSearch.debug('addSearchButtons: getDomainSearchUrl=\'' + getDomainSearchUrl + '\'');
+		//LogSearch.debug(SearchFunction);
 
 		// Create the button
 		addSearchButton(parsed, container, searchBox, id, label, tooltip, icon, getSearchUrl, getDomainSearchUrl);
@@ -3766,7 +3834,7 @@ let updateSettingsDirty = null;
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
-	console.important('Initialize Settings panel...');
+	LogSettings.important('Initialize Settings panel...');
 
 	// Assign iconBarClosed, iconBarOpen and settingsPanel variables
 	let iconBarClosed = document.getElementById('SettingsIconBarClosed');  //iconbar for closed status
@@ -3854,7 +3922,7 @@ function initSettingsPanel() {
 
 		// Configure settingsPanel
 		settingsPanel.onkeydown = function(e) {
-			//console.log('KeyCode=' + e.keyCode);
+			//LogSettings.log('KeyCode=' + e.keyCode);
 			if (e.ctrlKey && e.key == 's') {
 				if (visible) hideSettings(true);
 				return false;  //stop default button action
@@ -3863,7 +3931,7 @@ function initSettingsPanel() {
 		};
 		// Bind entire document
 		//window.addEventListener('keydown', function(e) {
-		//	//console.log('KeyCode=' + e.keyCode);
+		//	//LogSettings.log('KeyCode=' + e.keyCode);
 		//	if (e.keyCode == 27) {
 		//		// This is the Esc key
 		//		if (visible) {  //only if Settings visible
@@ -3896,7 +3964,7 @@ function initSettingsPanel() {
 		settingsText.placeholder = 'Settings';
 		settingsText.className = 'textbox';
 		settingsText.onkeydown = function(e) {
-			//console.log('KeyCode=' + e.keyCode);
+			//LogSettings.log('KeyCode=' + e.keyCode);
 			if (e.keyCode == 9) {
 				// This is the TAB key
 				tabInsert(this, !e.shiftKey);
@@ -4002,7 +4070,7 @@ function initSettingsPanel() {
 	function updateDirty(dirty) {
 		if (dirty == null) dirty = UrlResolver.getSaveOptions() && Data.linksDirty();
 		// Change visibility
-		console.important('Set Links Dirty=' + dirty);
+		LogSettings.important('Set Links Dirty=' + dirty);
 		addClass(iconOpen, 'alert', dirty);
 		addClass(iconSave, 'alert', dirty);
 		addClass(iconClear, 'alert', dirty);
@@ -4088,7 +4156,7 @@ function initSettingsPanel() {
 				if (updateDirty()) addStatus('Dirty');
 			};
 			if (save == 'clear' || settingsText.value == '') {
-				console.log('Clear settings');
+				LogSettings.log('Clear settings');
 				loadLinks(true)  //re-resolve, download and render Links
 				.then(() => {
 					// Links are correct
@@ -4105,7 +4173,7 @@ function initSettingsPanel() {
 				.catch(error => {
 					// There was an error
 					// Always log for debugging
-					console.error(error);
+					LogSettings.error(error);
 					// Put newly read value in settingsText to correct.
 					// Restore old value in Links in case of cancel.
 					settingsText.value = Data.readLocalLinks();
@@ -4122,7 +4190,7 @@ function initSettingsPanel() {
 					}
 				});
 			} else {
-				console.log('Save settings');
+				LogSettings.log('Save settings');
 				try {
 					let links = settingsText.value;
 					let linksChanged = true;
@@ -4131,7 +4199,7 @@ function initSettingsPanel() {
 						// Only save Links if explicitly changed
 						if (saveLinks != null && links != saveLinks) {
 							addStatus('Links Changed');
-							//console.log(saveLinks, links);
+							//LogSettings.log(saveLinks, links);
 						} else if (Data.linksDirty()) {
 							addStatus('Save Dirty');
 						} else {
@@ -4167,7 +4235,7 @@ function initSettingsPanel() {
 						.catch(error => {
 							// There was an error
 							// Always log for debugging
-							console.error(error);
+							LogSettings.error(error);
 							// Ignore the error
 						})
 						.then(evaluateDirty);
@@ -4176,7 +4244,7 @@ function initSettingsPanel() {
 					}
 				} catch (error) {
 					// Always log for debugging
-					console.error(error);
+					LogSettings.error(error);
 					if (error instanceof UserInputError) {
 						// It is a UserInputError, show a dialog,
 						// because the user can fix it.
@@ -4281,7 +4349,7 @@ function tabInsert(ctl, add) {
 				let n = N;
 				let ch = parts[i].charAt(0);
 				if (ch == '\r' || ch == '\n' || ch == '') n = 0;
-				//console.devlog('Part ' + i + ': Add ' + n + ' spaces');
+				//LogSettings.devlog('Part ' + i + ': Add ' + n + ' spaces');
 				if (n > 0) {
 					parts[i] = space.repeat(n) + parts[i];
 					// Adjust the selection
@@ -4300,7 +4368,7 @@ function tabInsert(ctl, add) {
 					++n;
 				}
 				// Remove n spaces
-				//console.devlog('Part ' + i + ': Remove ' + n + ' spaces');
+				//LogSettings.devlog('Part ' + i + ': Remove ' + n + ' spaces');
 				if (n > 0) {
 					parts[i] = parts[i].substring(n);
 					if (i == 1) {
@@ -4330,7 +4398,7 @@ function tabInsert(ctl, add) {
 		} else {
 			// Remove max N spaces
 			let re = new RegExp(space + '{1,' + N + '}$');
-			//console.devlog('Applying regex: ' + re);
+			//LogSettings.devlog('Applying regex: ' + re);
 			newBefore = before.replace(re, '');
 		}
 		ctl.value = newBefore + after;
@@ -4417,7 +4485,7 @@ function setPageTheme(theme) {
 	// Determine value or default
 	if (theme == null) theme = 'dark-theme';
 	// Overwrite the current values
-	console.log('Set PageTheme to \'' + theme + '\'');
+	LogInit.log('Set PageTheme to \'' + theme + '\'');
 	document.body.className = theme;
 }
 
@@ -4425,7 +4493,7 @@ function setPageTheme(theme) {
 function initMonitorPreferColorScheme(enable) {
 	// Remove existing listener
 	if (PrefersColorSchemeListener) {
-		console.log('call PrefersColorSchemeListener.finit()');
+		LogInit.log('call PrefersColorSchemeListener.finit()');
 		PrefersColorSchemeListener.finit();
 		PrefersColorSchemeListener = null;
 	}
@@ -4440,12 +4508,12 @@ function initMonitorPreferColorScheme(enable) {
 			dark : window.matchMedia('(prefers-color-scheme: dark)'),
 			light : window.matchMedia('(prefers-color-scheme: light)'),
 			init : function() {
-				console.log('Install prefers-color-scheme listener');
+				LogInit.log('Install prefers-color-scheme listener');
 				this.dark.addEventListener('change', this.handler);
 				this.light.addEventListener('change', this.handler);
 			},
 			finit : function() {
-				console.log('Remove prefers-color-scheme listener');
+				LogInit.log('Remove prefers-color-scheme listener');
 				this.dark.removeEventListener('change', this.handler);
 				this.light.removeEventListener('change', this.handler);
 			},
@@ -4455,22 +4523,22 @@ function initMonitorPreferColorScheme(enable) {
 				// to *that* object.
 				if (!PrefersColorSchemeListener) return;
 				if (PrefersColorSchemeListener.dark.matches) {
-					console.log('User prefers dark mode.');
+					LogInit.log('User prefers dark mode.');
 					setPageTheme('dark-theme');
 				} else if (PrefersColorSchemeListener.light.matches) {
-					console.log('User prefers light mode.');
+					LogInit.log('User prefers light mode.');
 					setPageTheme('light-theme');
 				} else {
-					console.log('No specific preference detected, use default.');
+					LogInit.log('No specific preference detected, use default.');
 					setPageTheme(null);
 				}
 			},
 		};
-		//console.log('call PrefersColorSchemeListener.init()');
+		//LogInit.log('call PrefersColorSchemeListener.init()');
 		PrefersColorSchemeListener.init();
 
 		// Set the current theme
-		//console.log('call PrefersColorSchemeListener.handler()');
+		//LogInit.log('call PrefersColorSchemeListener.handler()');
 		PrefersColorSchemeListener.handler();
 	}
 }
@@ -4557,7 +4625,7 @@ function addScriptBlocks(script) {
 		// Do an indirect eval().
 		// According to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval ,
 		// indirect eval() is safer.
-		//console.log('Eval script: ', contents, lineNums);
+		//LogInit.log('Eval script: ', contents, lineNums);
 		eval?.(str);
 	});
 	// Note: Script is added and I don't know of a way to remove script
@@ -4578,7 +4646,7 @@ function setPageTitle(title) {
 	// Determine value or default
 	if (title == null) title = 'Favorites';
 	// Set the title
-	console.log('Set PageTitle to \'' + title + '\'');
+	LogInit.log('Set PageTitle to \'' + title + '\'');
 	document.title = title;
 	let titleCtl = document.getElementById('Title');
 	if (titleCtl)
@@ -4590,7 +4658,7 @@ function setFontSize(size) {
 	// Determine value or default
 	if (size == null) size = '100%';
 	// Set the --font-size variable that is used in the CSS classes
-	console.log('Set FontSize to \'' + size + '\'');
+	LogInit.log('Set FontSize to \'' + size + '\'');
 	document.documentElement.style.setProperty('--font-size', size);
 }
 
@@ -4605,7 +4673,7 @@ function processLinks(links, cancel = null) {
 
 	if (cancel()) return;
 
-	console.important('Render styles, scripts, title, etc');
+	LogInit.important('Render styles, scripts, title, etc');
 
 	// First handle scripts and styles (to catch errors quickly)
 	try {
@@ -4633,40 +4701,40 @@ function processLinks(links, cancel = null) {
 	if (parsed.autoUploadDelay != null) {
 		if (PendingUpload) {
 			if (parsed.autoUploadDelay > 0) {
-				console.log('Change AutoUploadDelay to ' + parsed.autoUploadDelay);
+				LogInit.log('Change AutoUploadDelay to ' + parsed.autoUploadDelay);
 				PendingUpload.setTimeout(parsed.autoUploadDelay);
 			} else {
-				console.log('Disable AutoUploadDelay');
+				LogInit.log('Disable AutoUploadDelay');
 				PendingUpload.dispose();
 				PendingUpload = null;
 			}
 		} else {
 			if (parsed.autoUploadDelay > 0) {
-				console.log('Set AutoUploadDelay to ' + parsed.autoUploadDelay);
+				LogInit.log('Set AutoUploadDelay to ' + parsed.autoUploadDelay);
 				PendingUpload = CreatePending('PendingUpload', parsed.autoUploadDelay, true);
 			}
 		}
 	}
 
 	// Render links
-	console.important('Render Links...');
+	LogInit.important('Render Links...');
 	let container = document.getElementById('LinksBox');
 	render(parsed, container, cancel);
 
 	if (cancel()) return;
 
 	// Fill SearchForm
-	console.important('Render SearchButtons...');
+	LogInit.important('Render SearchButtons...');
 	let searchForm = document.getElementById('SearchForm');
 	// Use a static input field, so that the browser retains its contents
 	// after going back to this page.
 	if (parsed.searchButtonDefs != null && parsed.searchButtonDefs.length > 0) {
 		// There are SearchButtens, fill SearchForm
-		console.log('There are ' + parsed.searchButtonDefs.length + ' SearchButtonDefs');
+		LogInit.log('There are ' + parsed.searchButtonDefs.length + ' SearchButtonDefs');
 		// Focus SearchBox
 		let searchBox = document.getElementById('SearchBox');
 		if (searchBox) {
-			console.log('Hide & focus SearchForm');
+			LogInit.log('Hide & focus SearchForm');
 			searchForm.classList.remove('hidden');
 			searchBox.focus();
 			searchBox.select();
@@ -4677,9 +4745,9 @@ function processLinks(links, cancel = null) {
 		addSearchButtons(parsed, searchBox, buttonBox);
 	} else {
 		// No SearchButtons defined, hide SearchForm
-		console.log('There are no SearchButtonDefs');
+		LogInit.log('There are no SearchButtonDefs');
 		if (searchForm) {
-			console.log('Hide SearchForm');
+			LogInit.log('Hide SearchForm');
 			searchForm.classList.add('hidden');
 		}
 	}
@@ -4718,15 +4786,15 @@ function loadLinks(forcedownload = false) {
 		let fallbackLinks = UrlResolver.getFallbackLinks();
 		if (fallbackLinks != null) {
 			if (preliminaryLinks == null || fallbackLinks.trim() != preliminaryLinks.trim()) {
-				console.important(reason + ', use fallback Links');
+				LogInit.important(reason + ', use fallback Links');
 				addStatus('Render fallback');
 				Data.writeLocalLinks(fallbackLinks);
 				processLinks(fallbackLinks);
 			} else {
-				console.important(reason + ' and fallback same as preliminary, keep preliminary Links');
+				LogInit.important(reason + ' and fallback same as preliminary, keep preliminary Links');
 			}
 		} else {
-			console.important(reason + ', keep preliminary Links');
+			LogInit.important(reason + ', keep preliminary Links');
 		}
 	}
 
@@ -4759,13 +4827,13 @@ function loadLinks(forcedownload = false) {
 			// preliminary render is done (since processLinks() does not
 			// yield control).
 			setTimeout(() => {
-				console.important('Start processing preliminaryLinks');
+				LogInit.important('Start processing preliminaryLinks');
 				addStatus('Pre-render');
 				processLinks(preliminaryLinks, preliminaryLinksCancel);
 				if (preliminaryLinksCancel()) {
-					console.important('preliminaryLinks have been cancelled');
+					LogInit.important('preliminaryLinks have been cancelled');
 				} else {
-					console.important('preliminaryLinks finished successfully');
+					LogInit.important('preliminaryLinks finished successfully');
 				}
 				resolveFunc();
 			}, 50);
@@ -4810,9 +4878,9 @@ function loadLinks(forcedownload = false) {
 			if (forcedownload || !localT) {
 				// Case -AA, -BA: There are no local Links
 				if (forcedownload) {
-					console.important('Force downloaded links');
+					LogInit.important('Force downloaded links');
 				} else {
-					console.important('Downloaded links, no local Links');
+					LogInit.important('Downloaded links, no local Links');
 					addStatus('No Local');
 				}
 				updateLocal = true;
@@ -4825,10 +4893,10 @@ function loadLinks(forcedownload = false) {
 				// Case AAA, BBA: local Links same as download Links
 				if (UrlResolver.getLoadOverrideOptions()) {
 					// Downloaded from links-override=
-					console.important('Downloaded links same as local, no need to update');
+					LogInit.important('Downloaded links same as local, no need to update');
 				} else {
 					// Downloaded from links=
-					console.important('Downloaded links same as local, keep pre-rendered Links');
+					LogInit.important('Downloaded links same as local, keep pre-rendered Links');
 					addStatus('Same');
 				}
 				if (downloadT != cleanT) {
@@ -4839,7 +4907,7 @@ function loadLinks(forcedownload = false) {
 				// Case ABA, BAA, BCA: local Links different from download Links
 				if (localT == cleanT) {
 					// Case ABA: download Links different from others
-					console.important('Downloaded Links newer than local, use downloaded Links');
+					LogInit.important('Downloaded Links newer than local, use downloaded Links');
 					render = true;
 					updateLocal = true;
 					updateClean = true;
@@ -4849,10 +4917,10 @@ function loadLinks(forcedownload = false) {
 						// Downloaded from links-override=
 						if (downloadT == cleanT) {
 							// Case BAA: local Links different from others
-							console.important('Local Links newer than downloaded override Links, use override');
+							LogInit.important('Local Links newer than downloaded override Links, use override');
 						} else {
 							// Case BCA: All three are different
-							console.important('Local Links and downloaded override Links have both changed, use override');
+							LogInit.important('Local Links and downloaded override Links have both changed, use override');
 							updateClean = true;
 						}
 						addStatus('Discard Local changes');
@@ -4862,11 +4930,11 @@ function loadLinks(forcedownload = false) {
 						// Downloaded from links=
 						if (downloadT == cleanT) {
 							// Case BAA: local Links different from others
-							console.important('Local Links newer than downloaded, use local Links');
+							LogInit.important('Local Links newer than downloaded, use local Links');
 							upload = true;
 						} else {
 							// Case BCA: All three are different
-							console.important('Local Links and downloaded Links have both changed, display local');
+							LogInit.important('Local Links and downloaded Links have both changed, display local');
 							addStatus('Conflict');
 							conflict = true;
 						}
@@ -4884,11 +4952,11 @@ function loadLinks(forcedownload = false) {
 			}
 			// Update LocalStorage
 			if (updateLocal) {
-				console.log('Update LocalLinks');
+				LogInit.log('Update LocalLinks');
 				Data.writeLocalLinks(download);
 			}
 			if (updateClean) {
-				console.log('Update CleanLinks');
+				LogInit.log('Update CleanLinks');
 				Data.writeCleanLinks(download);
 				updateSettingsDirty(false);
 			}
@@ -4897,7 +4965,7 @@ function loadLinks(forcedownload = false) {
 					addStatus('Save Dirty');
 					uploadLinks(links);  //will set CleanLinks after successful upload
 				} else {
-					console.log('No SaveOptions, cannot save');
+					LogInit.log('No SaveOptions, cannot save');
 					updateSettingsDirty(false);  //no SaveOptions, no dirty
 				}
 			}
@@ -4917,12 +4985,12 @@ function loadLinks(forcedownload = false) {
 			} else if (error instanceof UserInputError) {
 				// It is a UserInputError, trigger reject, because
 				// the user can fix it.
-				console.log('Download failed with UserInputError');
+				LogInit.log('Download failed with UserInputError');
 				result.reject(error);
 			} else {
 				// It is another error, log it for debugging, but
 				// do a resolve, so that no dialog is triggered.
-				console.error('Download failed with error', error);
+				LogInit.error('Download failed with error', error);
 				result.resolve(false);
 			}
 		});
@@ -4943,7 +5011,7 @@ function init() {
 	.catch(error => {
 		// There is an error, report and open Settings
 		// Always log for debugging
-		console.error(error);
+		LogInit.error(error);
 		if (error instanceof UserInputError) {
 			// It is a UserInputError, show a dialog,
 			// and open Settings, because the user can fix it.

@@ -23,13 +23,14 @@ ctl.style.color = '#FFFF00';
 
 !script
 {
+	let LogTest = CreateLogger('all');
 	let myConfigName = UrlResolver.getLoadOverrideConfigName() || UrlResolver.getLoadConfigName() || 'none';
 	if (!myConfigName.match(/conflict-config/)) {
 		// Copy LoadOptions and SaveOptions
 		let extraConfigs = [];
 		for (let i = 1; i <= 2; ++i) {
 			let configName = 'conflict-config-' + i;
-			console.important('Set Load/SaveOptions for Config ' + configName);
+			LogTest.important('Set Load/SaveOptions for Config ' + configName);
 			let ds;
 			let ur = CreateUrlResolver('?links=' + configName, () => ds);
 			ds = CreateData(() => ur);
@@ -43,17 +44,17 @@ ctl.style.color = '#FFFF00';
 		}
 		// Add onunload listener for cleanup
 		addEventListener('beforeunload', event => {
-			console.important('Cleanup extraConfigs');
+			LogTest.important('Cleanup extraConfigs');
 			for (let i = 0; i < extraConfigs.length; ++i) {
 				let ur = extraConfigs[i];
-				console.log('Cleanup Config ' + ur.getLoadConfigName());
+				LogTest.log('Cleanup Config ' + ur.getLoadConfigName());
 				ur.setLoadOptions('');
-				console.log('Cleanup Config ' + ur.getSaveConfigName());
+				LogTest.log('Cleanup Config ' + ur.getSaveConfigName());
 				ur.setSaveOptions('');
 			}
 		});
 	} else {
-		console.important('Do not change configs in \'' + myConfigName + '\'');
+		LogTest.important('Do not change configs in \'' + myConfigName + '\'');
 	}
 }
 !endscript
