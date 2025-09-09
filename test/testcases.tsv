@@ -1,0 +1,100 @@
+name	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideOpt	iniLoadOpt	iniSaveOpt	expLinks	expDispLinks	expCleanLinks	expConflict	expUplDisabled	expRemoteFile	configAction	config	loadOpt1	loadOpt2	saveOpt
+
+# Edit Config in Settings -LoadOptions -SaveOptions
+"1.1 Set Config A, no Load/Save"	NULL	X	NULL	NULL	NULL	NULL	A	A	NULL	FALSE	FALSE	X	save	A			
+"1.2 Set Config B, no Load/Save"	A	X	NULL	NULL	NULL	NULL	B	B	NULL	FALSE	FALSE	X	save	B			
+"1.3 Set Config C, no Load/Save"	B	X	NULL	NULL	NULL	NULL	B	B	NULL	FALSE	FALSE	X	cancel	C			
+
+# Just LocalStorage -LoadOptions -SaveOption
+# - No Download, so no change in CleanLinks.
+"[--] Has config"	A	X	NULL	NULL	NULL	NULL	A	A	NULL	FALSE	FALSE	X					
+"[--] No config"	NULL	X	NULL	NULL	NULL	NULL	DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE	X					
+
+# All cases in updateLinks() +LoadOptions +SaveOptions
+# - Always Download, then merge 3 inputs.
+# - If no Download, then Clean not changed.
+# - Update Remote if Local newer.
+"[LS] Case A-A No download"	A	NOT_EXIST	A	NULL	links.txt	links.txt	A	A	A	FALSE	FALSE						
+"[LS] Case B-A Local changed"	B	NOT_EXIST	A	NULL	links.txt	links.txt	B	B	B	FALSE	FALSE	B					
+"[LS] Case A-- Never downloaded"	A	NOT_EXIST	NULL	NULL	links.txt	links.txt	A	A	NULL	FALSE	FALSE						
+"[LS] Case -AA Download same"	NULL	A	A	NULL	links.txt	links.txt	A	A	A	FALSE	FALSE	A					
+"[LS] Case eAA Clear"		A	A	NULL	links.txt	links.txt	A	A	A	FALSE	FALSE	A					
+"[LS] Case -BA Download changed"	NULL	B	A	NULL	links.txt	links.txt	B	B	B	FALSE	FALSE	B					
+"[LS] Case -A- Download fresh"	NULL	A	NULL	NULL	links.txt	links.txt	A	A	A	FALSE	FALSE	A					
+"[LS] Case eBA Clear"		B	A	NULL	links.txt	links.txt	B	B	B	FALSE	FALSE	B					
+"[LS] Case eA- New Download"		A	NULL	NULL	links.txt	links.txt	A	A	A	FALSE	FALSE	A					
+"[LS] Case AAA No change"	A	A	A	NULL	links.txt	links.txt	A	A	A	FALSE	FALSE	A					
+"[LS] Case BBA Clean outdated"	B	B	A	NULL	links.txt	links.txt	B	B	B	FALSE	FALSE	B					
+"[LS] Case AA- Clean empty"	A	A	NULL	NULL	links.txt	links.txt	A	A	A	FALSE	FALSE	A					
+"[LS] Case ABA Download changed"	A	B	A	NULL	links.txt	links.txt	B	B	B	FALSE	FALSE	B					
+"[LS] Case BAA Local changed"	B	A	A	NULL	links.txt	links.txt	B	B	B	FALSE	FALSE	B					
+"[LS] Case BCA Download conflict"	B	C	A	NULL	links.txt	links.txt	B	B	A	TRUE	FALSE	C					
+"[LS] Case AB- Missing Clean"	A	B	NULL	NULL	links.txt	links.txt	A	A	NULL	TRUE	FALSE	B					
+
+# Only download if no local links +LoadOptions -SaveOptions
+# - Merge 3 inputs as described by updateLinks(), except
+# - No SaveOptions, so if Local set, then no Download.
+# - If no Download, then Clean not changed.
+# - No SaveOptions, so Conflict never displayed.
+# - No SaveOptions, never update Remote.
+"[L-] Case A-A No download"	A	NOT_EXIST	A	NULL	links.txt	NULL	A	A	A	FALSE	FALSE						
+"[L-] Case B-A Local changed"	B	NOT_EXIST	A	NULL	links.txt	NULL	B	B	A	FALSE	FALSE						
+"[L-] Case A-- Never downloaded"	A	NOT_EXIST	NULL	NULL	links.txt	NULL	A	A	NULL	FALSE	FALSE						
+"[L-] Case -AA Download same"	NULL	A	A	NULL	links.txt	NULL	A	A	A	FALSE	FALSE	A					
+"[L-] Case eAA Clear"		A	A	NULL	links.txt	NULL	A	A	A	FALSE	FALSE	A					
+"[L-] Case -BA Download changed"	NULL	B	A	NULL	links.txt	NULL	B	B	B	FALSE	FALSE	B					
+"[L-] Case -A- Download fresh"	NULL	A	NULL	NULL	links.txt	NULL	A	A	A	FALSE	FALSE	A					
+"[L-] Case eBA Clear"		B	A	NULL	links.txt	NULL	B	B	B	FALSE	FALSE	B					
+"[L-] Case eA- New Download"		A	NULL	NULL	links.txt	NULL	A	A	A	FALSE	FALSE	A					
+"[L-] Case AAA Not Download"	A	A	A	NULL	links.txt	NULL	A	A	A	FALSE	FALSE	A					
+"[L-] Case BBA Not Download"	B	B	A	NULL	links.txt	NULL	B	B	A	FALSE	FALSE	B					
+"[L-] Case AA- Not Download"	A	A	NULL	NULL	links.txt	NULL	A	A	NULL	FALSE	FALSE	A					
+"[L-] Case ABA Not Download"	A	B	A	NULL	links.txt	NULL	A	A	A	FALSE	FALSE	B					
+"[L-] Case BAA Not Download"	B	A	A	NULL	links.txt	NULL	B	B	A	FALSE	FALSE	A					
+"[L-] Case BCA Not Download"	B	C	A	NULL	links.txt	NULL	B	B	A	FALSE	FALSE	C					
+"[L-] Case AB- Not Download"	A	B	NULL	NULL	links.txt	NULL	A	A	NULL	FALSE	FALSE	B					
+
+# All cases in updateLinks() +OverrideOptions +SaveOptions
+# - Always Download, update Clean if success.
+# - Always update Local (like cache).
+# - Never use Local to render.
+"[OS] Case A-A No download"	A	NOT_EXIST	A	links.txt	NULL	links.txt	DEFAULT_LINKS	DEFAULT_LINKS	A	FALSE	FALSE						
+"[OS] Case B-A Local changed"	B	NOT_EXIST	A	links.txt	NULL	links.txt	DEFAULT_LINKS	DEFAULT_LINKS	A	FALSE	FALSE						
+"[OS] Case A-- Never downloaded"	A	NOT_EXIST	NULL	links.txt	NULL	links.txt	DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE						
+"[OS] Case -AA Download same"	NULL	A	A	links.txt	NULL	links.txt	A	A	A	FALSE	FALSE	A					
+"[OS] Case eAA Clear"		A	A	links.txt	NULL	links.txt	A	A	A	FALSE	FALSE	A					
+"[OS] Case -BA Download changed"	NULL	B	A	links.txt	NULL	links.txt	B	B	B	FALSE	FALSE	B					
+"[OS] Case -A- Download fresh"	NULL	A	NULL	links.txt	NULL	links.txt	A	A	A	FALSE	FALSE	A					
+"[OS] Case eBA Clear"		B	A	links.txt	NULL	links.txt	B	B	B	FALSE	FALSE	B					
+"[OS] Case eA- New Download"		A	NULL	links.txt	NULL	links.txt	A	A	A	FALSE	FALSE	A					
+"[OS] Case AAA No change"	A	A	A	links.txt	NULL	links.txt	A	A	A	FALSE	FALSE	A					
+"[OS] Case BBA Clean outdated"	B	B	A	links.txt	NULL	links.txt	B	B	B	FALSE	FALSE	B					
+"[OS] Case AA- Clean empty"	A	A	NULL	links.txt	NULL	links.txt	A	A	A	FALSE	FALSE	A					
+"[OS] Case ABA Download changed"	A	B	A	links.txt	NULL	links.txt	B	B	B	FALSE	FALSE	B					
+"[OS] Case BAA Ignore Local"	B	A	A	links.txt	NULL	links.txt	A	A	A	FALSE	FALSE	A					
+"[OS] Case BCA Ignore Local"	B	C	A	links.txt	NULL	links.txt	C	C	C	FALSE	FALSE	C					
+"[OS] Case AB- Ignore Local"	A	B	NULL	links.txt	NULL	links.txt	B	B	B	FALSE	FALSE	B					
+
+# Always download override +OverrideOptions -SaveOptions
+# - Same as with SaveOptions, because remote file is always taken, there is no need to change it.
+# - Config is now readonly in Settings.
+"[O-] Case A-A No download"	A	NOT_EXIST	A	links.txt	NULL	NULL	DEFAULT_LINKS	DEFAULT_LINKS	A	FALSE	FALSE						
+"[O-] Case B-A Local changed"	B	NOT_EXIST	A	links.txt	NULL	NULL	DEFAULT_LINKS	DEFAULT_LINKS	A	FALSE	FALSE						
+"[O-] Case A-- Never downloaded"	A	NOT_EXIST	NULL	links.txt	NULL	NULL	DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE						
+"[O-] Case -AA Download same"	NULL	A	A	links.txt	NULL	NULL	A	A	A	FALSE	FALSE	A					
+"[O-] Case eAA Clear"		A	A	links.txt	NULL	NULL	A	A	A	FALSE	FALSE	A					
+"[O-] Case -BA Download changed"	NULL	B	A	links.txt	NULL	NULL	B	B	B	FALSE	FALSE	B					
+"[O-] Case -A- Download fresh"	NULL	A	NULL	links.txt	NULL	NULL	A	A	A	FALSE	FALSE	A					
+"[O-] Case eBA Clear"		B	A	links.txt	NULL	NULL	B	B	B	FALSE	FALSE	B					
+"[O-] Case eA- New Download"		A	NULL	links.txt	NULL	NULL	A	A	A	FALSE	FALSE	A					
+"[O-] Case AAA Not Download"	A	A	A	links.txt	NULL	NULL	A	A	A	FALSE	FALSE	A					
+"[O-] Case BBA Not Download"	B	B	A	links.txt	NULL	NULL	B	B	B	FALSE	FALSE	B					
+"[O-] Case AA- Not Download"	A	A	NULL	links.txt	NULL	NULL	A	A	A	FALSE	FALSE	A					
+"[O-] Case ABA Not Download"	A	B	A	links.txt	NULL	NULL	B	B	B	FALSE	FALSE	B					
+"[O-] Case BAA Not Download"	B	A	A	links.txt	NULL	NULL	A	A	A	FALSE	FALSE	A					
+"[O-] Case BCA Not Download"	B	C	A	links.txt	NULL	NULL	C	C	C	FALSE	FALSE	C					
+"[O-] Case AB- Not Download"	A	B	NULL	links.txt	NULL	NULL	B	B	B	FALSE	FALSE	B					
+
+
+# vim: set filetype=tsv vartabstop=35,15 nowrap:
+

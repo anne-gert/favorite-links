@@ -646,6 +646,70 @@ body {
 /* }}} */
 </style>
 
+<!-- Unit test hooks {{{ -->
+
+<script>
+// The following variables do nothing if they are not set.
+// If they are set, they provide hook functions for unit tests.
+
+// Define a function to be called just before init() is executed.
+// This can be used to preset elements for the test.
+let HOOK_Init = null;
+
+// Define a function to be called instead of rendering the Links.
+// Note: This may be an async function.
+let HOOK_Run = null;
+
+// Define an object that contains the QueryString to be used instead of
+// location.search. This object contains the following fields:
+// - get(): Returns the value for the QueryString.
+// - onreset(callback): Register an event that should be called in test
+//   situations when values should be recalculated.
+let HOOK_QueryString = null;
+
+// Define an object that is used for localStorage. This object contains the
+// following fields:
+// - getItem(key): Returns the value for the key.
+// - setItem(key, value): Sets the value for the key.
+// - removeItem(key): Removes the key.
+// - onreset(callback): Register an event that should be called in test
+//   situations when values should be recalculated.
+let HOOK_LocalStorage = null;
+
+// Define an object that describes the next response of the downloadLinks()
+// call. This object contains the following fields:
+// - response(url, headers, body): Method to return a Promise for a the
+//   response for the url + headers + body. This response object contains the
+//   following fields:
+//   - status: Status code of the response.
+//   - text: Contents of the response.
+let HOOK_Download = null;
+
+// Define an object that describes the next response of the uploadLinks() call.
+// Fields are the same as HOOK_Download.
+let HOOK_Upload = null;
+
+// Define an object that controls the next access to Settings. This object
+// contains the following fields:
+// - update(config, loadOptions, saveOptions, hideFunction): Method to be
+//   called with the current controls for the fields. Should modify the
+//   controls and then call the hideFunction() to 'save', 'clear' or 'cancel'.
+let HOOK_ChangeSettings = null;
+
+// Define an object with the following methods:
+// - start(): Called before a Promise operation is started.
+// - stop(): Called after the Promise resolved.
+// This object can contain a wait() function that can wait for the stop() call
+// that matches the first start() call.
+// The operation is one of:
+// - Open-Change-Close Settings.
+// - downloadUploadLinks(), also covers download.
+let HOOK_Ready = null;
+</script>
+<!--script src="test/unittest.js"></script-->
+
+<!-- }}} -->
+
 <script>
 // Constants {{{
 
@@ -1100,7 +1164,10 @@ function CreateData(getResolver = () => UrlResolver) {
 	const LSKey_Prefix = 'favlist_';
 
 	let storage;
-	if (localStorage) {
+	if (HOOK_LocalStorage != null) {
+		storage = HOOK_LocalStorage;
+		HOOK_LocalStorage.onreset(reset);
+	} else if (localStorage) {
 		storage = localStorage;
 	} else {
 		// Dummy implementation of LocalStorage
@@ -1110,6 +1177,12 @@ function CreateData(getResolver = () => UrlResolver) {
 			setItem : (key, value) => data[key] = value,
 			removeItem : key => delete data[key],
 		};
+	}
+
+	// Clear all the cached values
+	function reset() {
+		displayedLinks = null;
+		conflictState = false;
 	}
 
 	// Read value from Storage.
@@ -1182,10 +1255,37 @@ function CreateData(getResolver = () => UrlResolver) {
 	// Return true if LocalLinks is different from CleanLinks.
 	function linksDirty() {
 		let localLinks = readLocalLinks();
-		localLinks = (localLinks != null) ? localLinks.trim() : '';
 		let cleanLinks = readCleanLinks();
-		cleanLinks = (cleanLinks != null) ? cleanLinks.trim() : '';
-		return localLinks != cleanLinks;
+		if (localLinks != null && cleanLinks != null) {
+			// Both Local and Clean are set
+			return localLinks.trim() != cleanLinks.trim();
+		} else {
+			return false;
+		}
+	}
+
+	// Get/Set ConflictState. This is not saved in Storage, but exists
+	// only in memory. ConflictState s true if the current Links are in a
+	// state where there is no automatic resolution of the 'current' value
+	// and the user should take action..
+	let conflictState = false;
+	function getConflictState() {
+		return conflictState;
+	}
+	function setConflictState(state) {
+		conflictState = state;
+	}
+
+	// Get/Set DisplayedLinks. This is not saved in Storage, but exists
+	// only in memory. DisplayLinks is the contents currently being
+	// displayed. This is used to determine if the display should be
+	// re-rendered
+	let displayedLinks = null;
+	function getDisplayedLinks() {
+		return displayedLinks;
+	}
+	function setDisplayedLinks(value) {
+		displayedLinks = value;
 	}
 
 	// Read/write expanded/collapsed status of this itemPath.
@@ -1250,6 +1350,10 @@ function CreateData(getResolver = () => UrlResolver) {
 		readCleanLinks : readCleanLinks,
 		writeCleanLinks : writeCleanLinks,
 		linksDirty : linksDirty,
+		getConflictState : getConflictState,
+		setConflictState : setConflictState,
+		getDisplayedLinks : getDisplayedLinks,
+		setDisplayedLinks : setDisplayedLinks,
 
 		// Functions to read/write expanded/collapsed state of Items
 		readItemExpanded : readItemExpanded,
@@ -1274,11 +1378,10 @@ const UrlResolver = CreateUrlResolver();
 
 // This function retrieves the parameters, parses them and determines which
 // URLs to use for loading and saving.
-// If queryString is set, that is used, otherwise the current location is used.
 // If getData is set, call that to get the persistent storage object. Else,
 // Data is used.
 // It returns a UrlResolver object with LoadOptions, SaveOptions and URLs.
-function CreateUrlResolver(queryString = location.search, getData = () => Data) {
+function CreateUrlResolver(getData = () => Data) {
 	LogUrlResolver.important('Resolving Links source...');
 
 	// Parse links=, links-override= and save= and set internal variables
@@ -1296,44 +1399,78 @@ function CreateUrlResolver(queryString = location.search, getData = () => Data) 
 	// 2) links=
 	// 3) LocalStorage
 
-	let params = new URLSearchParams(queryString);
-	let loadOverrideArg = params.get('links-override');
-	let loadArg = params.get('links');
-	let saveArg = params.get('save');
-	//LogUrlResolver.log(params);
-	const reConfigName = /^([^\s\/\\.]+)$/;  //config-name is non-emtpy and contains no space, '/', '\' or '.'
+	let queryString;
+	if (HOOK_QueryString != null) {
+		queryString = HOOK_QueryString.get();
+		HOOK_QueryString.onreset(reset);
+	} else {
+		queryString = location.search;
+	}
 
-	// Resolve the config names
-	let loadOverrideConfigName = null;
-	if (loadOverrideArg) {
-		let m = loadOverrideArg.match(reConfigName);
-		if (m) {
-			// This is a config name
-			loadOverrideConfigName = m[1];
-			LogUrlResolver.debug('Found loadOverrideConfigName=' + loadOverrideConfigName);
-			// Use the same config name for save unless already set
-			if (saveArg == null) saveArg = loadOverrideConfigName;
+	let loadOverrideArg, loadArg, saveArg;
+	let loadOverrideConfigName, loadConfigName, saveConfigName;
+	init();
+
+	function init() {
+		// Get arguments
+		let params = new URLSearchParams(queryString);
+		loadOverrideArg = params.get('links-override');
+		loadArg = params.get('links');
+		saveArg = params.get('save');
+		//LogUrlResolver.log(params);
+
+		// Resolve the config names
+		const reConfigName = /^([^\s\/\\.]+)$/;  //config-name is non-emtpy and contains no space, '/', '\' or '.'
+
+		loadOverrideConfigName = null;
+		if (loadOverrideArg) {
+			let m = loadOverrideArg.match(reConfigName);
+			if (m) {
+				// This is a config name
+				loadOverrideConfigName = m[1];
+				LogUrlResolver.debug('Found loadOverrideConfigName=' + loadOverrideConfigName);
+				// Use the same config name for save unless already set
+				if (saveArg == null) saveArg = loadOverrideConfigName;
+			}
+		}
+
+		loadConfigName = null;
+		if (loadArg) {
+			let m = loadArg.match(reConfigName);
+			if (m) {
+				// This is a config name
+				loadConfigName = m[1];
+				LogUrlResolver.debug('Found loadConfigName=' + loadConfigName);
+				// Use the same config name for save unless already set
+				if (saveArg == null) saveArg = loadConfigName;
+			}
+		}
+
+		saveConfigName = null;
+		if (saveArg) {
+			let m = saveArg.match(reConfigName);
+			if (m) {
+				// This is a config name
+				saveConfigName = m[1];
+				LogUrlResolver.debug('Found saveConfigName=' + saveConfigName);
+			}
 		}
 	}
-	let loadConfigName = null;
-	if (loadArg) {
-		let m = loadArg.match(reConfigName);
-		if (m) {
-			// This is a config name
-			loadConfigName = m[1];
-			LogUrlResolver.debug('Found loadConfigName=' + loadConfigName);
-			// Use the same config name for save unless already set
-			if (saveArg == null) saveArg = loadConfigName;
-		}
-	}
-	let saveConfigName = null;
-	if (saveArg) {
-		let m = saveArg.match(reConfigName);
-		if (m) {
-			// This is a config name
-			saveConfigName = m[1];
-			LogUrlResolver.debug('Found saveConfigName=' + saveConfigName);
-		}
+
+	// Clear all the cached values
+	function reset() {
+		queryString = HOOK_QueryString.get();
+
+		_loadOverrideOptions = undefined;
+		_loadOptions = undefined;
+		_saveOptions = undefined;
+
+		resetDownloadUrl();
+		resetUploadUrl();
+
+		_saveOptionsDisabled = null;
+
+		init();
 	}
 
 	let _usedLoadConfigName = undefined;
@@ -1823,8 +1960,48 @@ function downloadLinks() {
 	let headers = UrlResolver.getDownloadHeaders();
 
 	LogUpDownload.important('Downloading URL \'' + url + '\'');
+	if (HOOK_Ready != null) HOOK_Ready.start();
+
+	function handleResponse(status, text, resolveFunc, rejectFunc) {
+		//LogUpDownload.devlog('downloadLinks: Response received');
+		if (status == 200) {
+			// Success
+			LogUpDownload.log('downloadLinks: Download successful');
+			addStatus('Load OK');
+			UrlResolver.setUploadDisabled(null);
+			resolveFunc(text);
+		} else {
+			// Failed
+			LogUpDownload.error('downloadLinks: Download failed');
+			addStatus('Load ' + status);
+			if (status == 404) {
+				// If download failed because the file doesn
+				// not exist, allow upload to create it.
+				UrlResolver.setUploadDisabled(null);
+				resolveFunc(null);  //triggers the file does not exist
+			} else {
+				// If the download failed because of another
+				// reason, disable upload to not accidentally
+				// overwrite the file.
+				UrlResolver.setUploadDisabled('Saving disabled because downloading \'' + url + '\' failed');
+				rejectFunc(false);
+			}
+		}
+	};
+
 	let downloadPromise;
-	if (window.fetch) {
+	if (HOOK_Download != null) {
+		downloadPromise = new PendingPromise();
+		HOOK_Download.response(url, headers, null)
+		.then(response => {
+			handleResponse(response.status, response.text, downloadPromise.resolve, downloadPromise.reject);
+			if (HOOK_Ready != null) HOOK_Ready.stop();
+		})
+		.catch(error => {
+			downloadPromise.reject(error);
+			if (HOOK_Ready != null) HOOK_Ready.stop();
+		});
+	} else if (window.fetch) {
 		//LogUpDownload.devlog('Using fetch() to download');
 		let hdrs = new Headers();
 		for (let i = 0; i < headers.length; ++i) {
@@ -1839,26 +2016,13 @@ function downloadLinks() {
 			return response.text();
 		})
 		.then(text => {
-			//LogUpDownload.devlog('downloadLinks: Response received');
-			if (status == 200) {
-				// Success
-				LogUpDownload.log('downloadLinks: Download successful');
-				addStatus('Load OK');
-				UrlResolver.setUploadDisabled(null);
-				downloadPromise.resolve(text);
-			} else {
-				// Failed
-				LogUpDownload.error('downloadLinks: Download failed');
-				addStatus('Load ' + status);
-				// If the download failed, disable
-				// saveOptions to not accidentally
-				// overwrite the file.
-				UrlResolver.setUploadDisabled('Saving disabled because downloading \'' + url + '\' failed');
-				downloadPromise.reject(false);
-			}
-
+			handleResponse(status, text, downloadPromise.resolve, downloadPromise.reject);
+			if (HOOK_Ready != null) HOOK_Ready.stop();
 		})
-		.catch(error => downloadPromise.reject(error));
+		.catch(error => {
+			downloadPromise.reject(error);
+			if (HOOK_Ready != null) HOOK_Ready.stop();
+		});
 	} else {
 		//LogUpDownload.devlog('Using XMLHttpRequest to download');
 		downloadPromise = new Promise((resolveFunc, rejectFunc) => {
@@ -1870,22 +2034,8 @@ function downloadLinks() {
 			xhr.onreadystatechange = function() {
 				if (this.readyState == 4) {
 					// Request has been handled
-					if (this.status == 200) {
-						// Success
-						LogUpDownload.log('downloadLinks: Download successful');
-						addStatus('Load OK');
-						UrlResolver.setUploadDisabled(null);
-						resolveFunc(xhr.responseText);
-					} else {
-						// Failed
-						LogUpDownload.error('downloadLinks: Download failed');
-						addStatus('Load ' + this.status);
-						// If the download failed, disable
-						// saveOptions to not accidentally
-						// overwrite the file.
-						UrlResolver.setUploadDisabled('Saving disabled because downloading \'' + url + '\' failed');
-						rejectFunc(false);
-					}
+					handleResponse(this.status, xhr.responseText, resolveFunc, rejectFunc);
+					if (HOOK_Ready != null) HOOK_Ready.stop();
 				}
 			};
 			xhr.send();  //send the request
@@ -1919,36 +2069,56 @@ function uploadLinks(value) {
 	}
 
 	LogUpDownload.important('Uploading to URL ' + url + ': ' + method + ' ' + value.length + ' characters');
+	if (HOOK_Ready != null) HOOK_Ready.start();
 
-	// Create the Promise for uploading
-	let uploadPromise = new Promise((resolveFunc, rejectFunc) => {
-		let xhr = new XMLHttpRequest();
-		xhr.open(method, url);
-		for (let i = 0; i < headers.length; ++i) {
-			xhr.setRequestHeader(headers[i][0], headers[i][1]);
+	function handleResponse(status, resolveFunc, rejectFunc) {
+		//LogUpDownload.devlog('downloadLinks: Response received');
+		if (status == 200) {
+			// Success
+			LogUpDownload.log('Uploaded links successfully');
+			addStatus('Save OK');
+			LogUpDownload.log('Update CleanLinks');
+			Data.writeCleanLinks(value);  //assume upload & download are same content
+			updateSettingsConflict(false);
+			resolveFunc(true);
+		} else {
+			// Failed
+			LogUpDownload.error('Failed to upload Links, better luck next time (' + this.status + ')');
+			addStatus('Save ' + this.status);
+			updateSettingsConflict(Data.linksDirty());
+			resolveFunc(false);  //do not see this as a fail
 		}
-		xhr.onreadystatechange = function() {
-			if (this.readyState == 4) {
-				// Request has been handled
-				if (this.status == 200) {
-					// Success
-					LogUpDownload.log('Uploaded links successfully');
-					addStatus('Save OK');
-					LogUpDownload.log('Update CleanLinks');
-					Data.writeCleanLinks(value);  //assume upload & download are same content
-					updateSettingsDirty(false);
-					resolveFunc(true);
-				} else {
-					// Failed
-					LogUpDownload.error('Failed to upload Links, good luck next time (' + this.status + ')');
-					addStatus('Save ' + this.status);
-					updateSettingsDirty();
-					resolveFunc(false);  //do not see this as a fail
-				}
+	};
+
+	let uploadPromise;
+	if (HOOK_Upload != null) {
+		uploadPromise = new PendingPromise();
+		HOOK_Upload.response(url, headers, value)
+		.then(response => {
+			handleResponse(response.status, uploadPromise.resolve, uploadPromise.reject);
+			if (HOOK_Ready != null) HOOK_Ready.stop();
+		})
+		.catch(error => {
+			downloadPromise.reject(error);
+			if (HOOK_Ready != null) HOOK_Ready.stop();
+		});
+	} else {
+		uploadPromise = new Promise((resolveFunc, rejectFunc) => {
+			let xhr = new XMLHttpRequest();
+			xhr.open(method, url);
+			for (let i = 0; i < headers.length; ++i) {
+				xhr.setRequestHeader(headers[i][0], headers[i][1]);
 			}
-		};
-		xhr.send(value);  //send the request
-	});
+			xhr.onreadystatechange = function() {
+				if (this.readyState == 4) {
+					// Request has been handled
+					handleResponse(this.status, resolveFunc, rejectFunc);
+					if (HOOK_Ready != null) HOOK_Ready.stop();
+				}
+			};
+			xhr.send(value);  //send the request
+		});
+	}
 
 	return uploadPromise;
 }
@@ -1966,6 +2136,7 @@ function CreatePending(name, timeout, onlyLast) {
 	let actions = [];
 	let timer = null;
 	let onunload = false;
+	let has_ready_lock = false;
 
 	function clearTimer() {
 		if (timer) {
@@ -1982,10 +2153,18 @@ function CreatePending(name, timeout, onlyLast) {
 		LogUpDownloadDefer.log(name + ': Execute actions');
 		for (let i = 0; i < actions.length; ++i) actions[i]();
 		clearActions();
+		if (has_ready_lock) {
+			HOOK_Ready.stop();
+			has_ready_lock = false;
+		}
 	}
 
 	// Add new action
 	function add(callback) {
+		if (HOOK_Ready != null && !has_ready_lock) {
+			HOOK_Ready.start();
+			has_ready_lock = true;
+		}
 		// (Re)set timer
 		if (timer) window.clearTimeout(timer);
 		timer = window.setTimeout(doActions, timeout*1000);
@@ -2021,6 +2200,10 @@ function CreatePending(name, timeout, onlyLast) {
 		if (onunload) {
 			window.removeEventListener('beforeunload', onBeforeUnload);
 			onunload = false;
+		}
+		if (has_ready_lock) {
+			HOOK_Ready.stop();
+			has_ready_lock = false;
 		}
 	}
 
@@ -2826,6 +3009,7 @@ function render(parsed, container, cancel) {
 							// Expand this block
 							_blockContainer.classList.add('expanding');
 							_blockContainer.onanimationend = function() {
+								_blockContainer.onanimationend = null;
 								_blockContainer.classList.remove('collapsed');
 								_blockContainer.classList.remove('expanding');
 							};
@@ -2835,6 +3019,7 @@ function render(parsed, container, cancel) {
 							// Collapse this block
 							_blockContainer.classList.add('collapsing');
 							_blockContainer.onanimationend = function() {
+								_blockContainer.onanimationend = null;
 								_blockContainer.classList.add('collapsed');
 								_blockContainer.classList.remove('collapsing');
 							};
@@ -3160,13 +3345,14 @@ function render(parsed, container, cancel) {
 		};
 
 		// Function to update the Links
-		let updateLinks = function(newCheck) {
+		let updateCb = function(newCheck) {
 			const re = new RegExp('(^(?:[^\\n]*\\n){' + (lineNum - 1) + '}\\s*(?:[-*]\\s*)?)\\[(?:\\s+|\\S+)?\\]');
 			let links = Data.readLocalLinks();
 			let newLinks = links.replace(re, '$1' + newCheck);
 			if (newLinks != links) {
 				links = newLinks;
 				Data.writeLocalLinks(links);
+				Data.setDisplayedLinks(links);
 				if (PendingUpload) {
 					PendingUpload.add(() => {
 						let links = Data.readLocalLinks();
@@ -3201,7 +3387,7 @@ function render(parsed, container, cancel) {
 					newCheck = '[ ]';
 					retval.selFirstMe = true;
 				}
-				updateLinks(newCheck);
+				updateCb(newCheck);
 				// Update label
 				setLabelClass('checked', checkbox.checked);
 				// Update parents/children
@@ -3234,7 +3420,7 @@ function render(parsed, container, cancel) {
 				if (sel != null) {
 					LogCheckbox.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
 					let newCheck = '[' + sel.name + ']';
-					updateLinks(newCheck);
+					updateCb(newCheck);
 				}
 				// Update icon
 				let newIcon = renderIcon(parsed, null, sel.value);
@@ -3723,7 +3909,7 @@ function processSearchInput(searchBox, getSearchUrl, getDomainSearchUrl = getWit
 		// Set the blink animated style
 		searchBox.classList.add('blink');
 		searchBox.onanimationend = function() {
-			//LogSearch.log('animation end');
+			searchBox.onanimationend = null;
 			searchBox.classList.remove('blink');
 		};
 	} else {
@@ -3875,8 +4061,8 @@ function addSearchButtons(parsed, searchBox, container) {
 // These variables will be set in initSettingsPanel()
 // Function to open the Settings panel
 let showSettingsPanel = null;
-// Function to update the displayed Dirty state
-let updateSettingsDirty = null;
+// Function to update the displayed Conflict state
+let updateSettingsConflict = null;
 // Function to make Settings TextArea readonly
 let setSettingsReadOnly = null;
 
@@ -3896,11 +4082,11 @@ function initSettingsPanel() {
 
 	// Other global variables for Settings (will be assigned in createSettings())
 	let settingsText;
-	let optionEntries = [];
+	let loadOptionEntries = [], saveOptionEntries = [];
 
 	// Create the minimal hooks (expose functions) and defer rest at first showing
 	showSettingsPanel = showSettings;
-	updateSettingsDirty = updateDirty;
+	updateSettingsConflict = updateConflict;
 	setSettingsReadOnly = setReadOnly;
 	// Create iconOpen
 	iconOpen = document.createElement('span');
@@ -4037,7 +4223,7 @@ function initSettingsPanel() {
 		optionsPanel.className = 'options';
 		settingsArea.appendChild(optionsPanel);
 
-		// Create optionEntries
+		// Create OptionEntries
 		function createOption(labelText, getData, saveData) {
 			let label = document.createElement('div');
 			label.className = 'label';
@@ -4059,38 +4245,40 @@ function initSettingsPanel() {
 				},
 				entry    : entry,
 			};
-			optionEntries.push(option);
 			return option;
 		}
 		let loadConfigName = UrlResolver.getLoadConfigName();
 		let loadOverrideConfigName = UrlResolver.getLoadOverrideConfigName();
 		if (loadOverrideConfigName && loadConfigName == loadOverrideConfigName) {
 			// One entry for both LoadOverrideOptions and LoadOptions
-			createOption('Config \'' + loadOverrideConfigName + '\'',
+			let option = createOption('Config \'' + loadOverrideConfigName + '\'',
 				() => UrlResolver.getLoadOverrideOptions(),
 				(value) => {
 					UrlResolver.setLoadOptions(value);
 					UrlResolver.setLoadOverrideOptions(value);
 					Data.writeLoadOverrideOptions(value);
 				});
+			loadOptionEntries.push(option);
 		} else {
 			if (loadOverrideConfigName) {
 				// Entry for LoadOverrideOptions
-				createOption('Config \'' + loadOverrideConfigName + '\'',
+				let option = createOption('Config \'' + loadOverrideConfigName + '\'',
 					() => UrlResolver.getLoadOverrideOptions(),
 					(value) => {
 						UrlResolver.setLoadOverrideOptions(value);
 						Data.writeLoadOverrideOptions(value);
 					});
+				loadOptionEntries.push(option);
 			}
 			if (loadConfigName) {
 				// Entry for LoadOptions
-				createOption('Config \'' + loadConfigName + '\'',
+				let option = createOption('Config \'' + loadConfigName + '\'',
 					() => UrlResolver.getLoadOptions(),
 					(value) => {
 						UrlResolver.setLoadOptions(value);
 						Data.writeLoadOptions(value);
 					});
+				loadOptionEntries.push(option);
 			}
 		}
 		let saveConfigName = UrlResolver.getSaveConfigName();
@@ -4114,19 +4302,26 @@ function initSettingsPanel() {
 						Data.writeSaveOptions(value);
 					}
 				});
+			saveOptionEntries.push(option);
 		}
 		return true;
 	}
 
-	function updateDirty(dirty) {
-		if (dirty == null) dirty = UrlResolver.getSaveOptions() && Data.linksDirty();
+	function updateConflict(conflicted) {
+		if (conflicted == null) {
+			// Determine the default value for ConflictState:
+			// - Clean should be set (there was once a remote file)
+			// - Local should be different (Dirty)
+			// - SaveOptions set (so the User can actually fix it)
+			conflicted = UrlResolver.getSaveOptions() && Data.linksDirty();
+		}
+		Data.setConflictState(conflicted);
 		// Change visibility
-		LogSettings.important('Set Links Dirty=' + dirty);
-		addClass(iconOpen, 'alert', dirty);
-		addClass(iconSave, 'alert', dirty);
-		addClass(iconClear, 'alert', dirty);
-		addClass(warningDirty, 'hidden', !dirty);
-		return dirty;
+		LogSettings.important('Set Links Conflicted=' + conflicted);
+		addClass(iconOpen, 'alert', conflicted);
+		addClass(iconSave, 'alert', conflicted);
+		addClass(iconClear, 'alert', conflicted);
+		addClass(warningDirty, 'hidden', !conflicted);
 	}
 
 	function setReadOnly(textReadOnly) {
@@ -4136,41 +4331,61 @@ function initSettingsPanel() {
 		}
 	}
 
+	// Note on onanimationend:
+	// This class initiates multiple animations and thus multiple
+	// onanimationend calls, one for each animation. Therefore, remove the
+	// handler after fhe first time.
+
 	// Show the Settings panel.
 	function showSettings() {
-		if (visible) return;  //do nothing if already visible
+		if (HOOK_Ready != null) HOOK_Ready.start();
+		if (visible) {
+			if (HOOK_Ready != null) HOOK_Ready.stop();
+			return;  //do nothing if already visible
+		}
 		// Create panel at first showing
 		if (settingsPanel == null) {
 			// Panel not yet initialized, create it
 			if (!createSettings()) {
 				// Creating panel failed, disable button and return
 				iconBarClosed.classList.add('hidden');
+				if (HOOK_Ready != null) HOOK_Ready.stop();
 				return;
 			}
 		}
-		// Display items for dirty Settings
-		updateDirty();
+		// Display items for conflicted Settings
+		updateConflict();
 		// Update the contents
 		settingsText.value = Data.readLocalLinks();
-		for (let i = 0; i < optionEntries.length; ++i) {
-			optionEntries[i].showData();
+		for (let i = 0; i < loadOptionEntries.length; ++i) {
+			loadOptionEntries[i].showData();
+		}
+		for (let i = 0; i < saveOptionEntries.length; ++i) {
+			saveOptionEntries[i].showData();
 		}
 		// Slide panel to visible
 		settingsPanel.classList.add('expanding');
 		settingsPanel.classList.add('show');
 		settingsPanel.onanimationend = function() {
+			settingsPanel.onanimationend = null;
 			settingsPanel.classList.remove('expanding');
+			if (HOOK_ChangeSettings != null) {
+				// Call the hook function to handle the settings
+				HOOK_ChangeSettings.update(settingsText, loadOptionEntries, saveOptionEntries, hideSettings);
+			}
 		};
 		// Slide iconBarClosed out and iconBarOpen in
 		let going = iconBarClosed, coming = iconBarOpen;
 		going.classList.add('slide-out');
 		going.onanimationend = function() {
+			going.onanimationend = null;
 			going.classList.add('hidden');
 			going.classList.remove('slide-out');
 			coming.classList.remove('hidden');
 			coming.classList.add('slide-in');
 		};
 		coming.onanimationend = function() {
+			coming.onanimationend = null;
 			coming.classList.remove('slide-in');
 		};
 		visible = true;
@@ -4183,19 +4398,23 @@ function initSettingsPanel() {
 			// slide panel to hidden
 			settingsPanel.classList.add('collapsing');
 			settingsPanel.onanimationend = function() {
+				settingsPanel.onanimationend = null;
 				settingsPanel.classList.remove('show');
 				settingsPanel.classList.remove('collapsing');
+				if (HOOK_Ready != null) HOOK_Ready.stop();
 			};
 			// Slide iconBarOpen out and iconBarClosed in
 			let going = iconBarOpen, coming = iconBarClosed;
 			going.classList.add('slide-out');
 			going.onanimationend = function() {
+				going.onanimationend = null;
 				going.classList.add('hidden');
 				going.classList.remove('slide-out');
 				coming.classList.remove('hidden');
 				coming.classList.add('slide-in');
 			};
 			coming.onanimationend = function() {
+				coming.onanimationend = null;
 				coming.classList.remove('slide-in');
 			};
 			visible = false;
@@ -4204,30 +4423,20 @@ function initSettingsPanel() {
 			// Update Links and close panel
 			let saveLinks = Data.readLocalLinks();
 			// Update Options (NB: This might change keys in Data)
-			let optionsChanged = false;
-			for (let i = 0; i < optionEntries.length; ++i) {
-				if (optionEntries[i].saveData()) optionsChanged = true;
+			let loadOptionsChanged = false;
+			for (let i = 0; i < loadOptionEntries.length; ++i) {
+				if (loadOptionEntries[i].saveData()) loadOptionsChanged = true;
 			}
-			if (optionsChanged) addStatus('Options Changed');
+			let saveOptionsChanged = false;
+			for (let i = 0; i < saveOptionEntries.length; ++i) {
+				if (saveOptionEntries[i].saveData()) saveOptionsChanged = true;
+			}
+			if (loadOptionsChanged || saveOptionsChanged) addStatus('Options Changed');
 			// Update Links
-			let evaluateDirty = () => {
-				if (updateDirty()) addStatus('Dirty');
-			};
 			if (save == 'clear' || settingsText.value == '') {
 				LogSettings.log('Clear settings');
-				loadLinks(true)  //re-resolve, download and render Links
-				.then(() => {
-					// Links are correct
-					saveLinks = 'DISCARD';
-					let links = Data.readLocalLinks();
-					settingsText.value = links;
-					Data.writeLocalLinks(links);
-					Data.writeCleanLinks(links);
-					updateDirty(false);
-					// Just read from URL, don't call uploadLinks().
-					// Close the panel
-					hide();
-				})
+				downloadUpdateLinks('', saveOptionsChanged, null, null)  //download and render updated Links
+				.then(hide)
 				.catch(error => {
 					// There was an error
 					// Always log for debugging
@@ -4250,56 +4459,16 @@ function initSettingsPanel() {
 			} else {
 				LogSettings.log('Save settings');
 				try {
-					let links = settingsText.value;
-					let linksChanged = true;
-					if (optionsChanged) {
-						// Options (i.e. SaveOptions) have (also) changed
-						// Only save Links if explicitly changed
-						if (saveLinks != null && links != saveLinks) {
-							addStatus('Links Changed');
-							//LogSettings.log(saveLinks, links);
-						} else if (Data.linksDirty()) {
-							addStatus('Save Dirty');
-						} else {
-							linksChanged = false;
-						}
-					}
-					if (linksChanged) {
-						// Check and save Links
-						processLinks(links);  //parse en render Links
-						// If no exception, Links are correct
-						saveLinks = 'DISCARD';
-						Data.writeLocalLinks(links);
-						let uploadPromise = uploadLinks(links);  //also updates CleanLinks and DirtyStatus
-						if (uploadPromise) {
-							// Uploading
-							uploadPromise
-							.then(success => success || evaluateDirty());
-						} else {
-							// Not uploaded
-							evaluateDirty();
-						}
-						// Close the panel
-						hide();
+					let editLinks = settingsText.value;
+					parseLinks(editLinks);  //throws error if invalid
+					// If no exception, editLinks are correct
+					if (loadOptionsChanged) {
+						downloadUpdateLinks(editLinks, saveOptionsChanged, null, null);  //download and render updated Links
 					} else {
-						// Local Links not have changed.
-						saveLinks = 'DISCARD';
-						// Download new CleanLinks (because LoadOptions might
-						// have changed) and update DirtyStatus
-						downloadLinks()
-						.then(cleanLinks => {
-							Data.writeCleanLinks(cleanLinks);
-						})
-						.catch(error => {
-							// There was an error
-							// Always log for debugging
-							LogSettings.error(error);
-							// Ignore the error
-						})
-						.then(evaluateDirty);
-						// Close the panel
-						hide();
+						updateLinks(editLinks, null, saveOptionsChanged, null);
 					}
+					// Close the panel
+					hide();
 				} catch (error) {
 					// Always log for debugging
 					LogSettings.error(error);
@@ -4727,9 +4896,17 @@ function processLinks(links, cancel = null) {
 	if (!cancel) cancel = () => false;
 
 	// Parse Links
-	let parsed = parseLinks(links);
+	let parsed = parseLinks(links);  //throws exception if invalid
 
-	setSettingsReadOnly(parsed.noEdit);
+	// Set readonly if:
+	// - !no-edit is in the config.
+	let readonly = parsed.noEdit;
+	// - LoadOverrideOptons without SaveOptions are used. In this case,
+	//   edits cannot be saved and a refresh would overwrite them with the
+	//   LoadOverride. This would be confusing. Therefore, make it so the
+	//   config can not be changed to start with.
+	readonly ||= UrlResolver.getLoadOverrideOptions() && !UrlResolver.getSaveOptions();
+	setSettingsReadOnly(readonly);
 
 	if (cancel()) return;
 
@@ -4813,6 +4990,322 @@ function processLinks(links, cancel = null) {
 	}
 }
 
+// Integrate newly downloaded and/or edited configuration into local- and
+// clean in Data. Also uploads if necessary.
+// Arguments:
+// - editLinks: Update for LocalLinks, null if no change, empty string ('') to
+//   clear.
+// - downloadLinks: Newly downloaded links, null if none.
+// - forceUpload: True if the caller already determined that the configuration
+//   should be uploaded.
+// - preRenderCancel: Object to cancel ongoing pre-render, null if not set.
+// Render will be done synchronously, upload asynchronously, but this function
+// does not return anything.
+function updateLinks(editLinks, downloadLinks, forceUpload, preRenderCancel) {
+	// We now have 4 sources:
+	// - Local Links: This is the current configuration.  This is the
+	//   configuration that was last displayed.
+	// - Clean Links: This is the last downloaded configuration.  This acts
+	//   as a common ancestor for Local and Download.
+	// - Download Links: This is the configuration that has just been
+	//   downloaded.
+	// - Edit Links: Locally updated Links.
+	//
+	// The tables below use the following characters:
+	// - -: null
+	// - e: Empty string ('')
+	// - A, B, C: A non-null value
+	// - ?: Any value or a 'don't care'
+	//
+	// First, integrate Edit and Local according to the following table:
+	//       |       || Update |
+	//  Edit | Local ||  Local | StatusLine | Remarks
+	// ------|-------||--------|------------|-----------------
+	//    -  |   ?   ||    no  |            | No update
+	//    e  |   ?   ||    no  |            | Clear
+	//    A  |   -   ||   yes  |            | Update
+	//    A  |   A   ||    no  |            |
+	//    B  |   A   ||   yes  |            | Update
+	//
+	// Then integrate the remaining sources according to the following table:
+	//        |          |            || Update |        |   Update   |
+	//  Local | Download | CleanLinks ||  Local | Upload | CleanLinks | StatusLine   | Remarks
+	// -------|----------|------------||--------|--------|------------|--------------|-------------
+	//    A   |     -    |      A     ||    no  |    no  |      no    |              |
+	//    B   |     -    |      A     ||    no  |   yes  |     yes    |              |
+	//    A   |     -    |      -     ||    no  |   yes  |     yes    | [New]        | New Local
+	//    -   |     A    |      A     ||   yes  |    no  |      no    | [No Local]   |
+	//    e   |     A    |      A     ||   yes  |    no  |      no    | [Clear]      |
+	//    -   |     B    |      A     ||   yes  |    no  |     yes    | [No Local]   |
+	//    -   |     A    |      -     ||   yes  |    no  |     yes    | [No Local]   | New Download
+	//    e   |     B    |      A     ||   yes  |    no  |     yes    | [Clear]      |
+	//    e   |     A    |      -     ||   yes  |    no  |     yes    | [No Local]   | New Download
+	//    A   |     A    |      A     ||    no  |    no  |      no    | [Same]       |
+	//    B   |     B    |      A     ||    no  |    no  |     yes    | [Same]       |
+	//    A   |     A    |      -     ||    no  |    no  |     yes    | [Same]       |
+	//    A   |     B    |      A     ||   yes  |    no  |     yes    | [Render]     |
+	//    B   |     A    |      A     ||    no  |   yes  |      no    | [Save Dirty] |
+	//    B   |     C    |      A     ||    no  |    no  |      no    | [Conflict]   | Do not render Downloaded
+	//    A   |     B    |      -     ||    no  |    no  |      no    | [Conflict]   | Do not update Clean
+	let links = Data.readLocalLinks();  //will be updated to final content
+	let updateLocal = false, upload = forceUpload, updateClean = false, conflict = false, render = false;
+
+	// Determine how to integrate Edit into Local
+	if (editLinks == null) {
+		// Case -?: Nothing to update
+	} else {
+		let e = editLinks.trim();
+		if (e == '') {
+			// Case e?: Clear Local
+			LogLinksUpdate.important('Clear links');
+			updateLocal = true;
+			links = '';
+		} else if (links == null || e != links.trim()) {
+			// Case A-, BA: Update Local
+			LogLinksUpdate.important('Update links with edits');
+			updateLocal = true;
+			links = editLinks;
+		} else {
+			// Case AA: Nothing to update
+		}
+	}
+	let links_empty = links != null && links.trim() == '';
+
+	// Derive if Local and Download have changed wrt to Clean
+	// xxx_changed is true when it is changed wrt to Clean and Clean is set.
+	// xxx_new is true when it is changed wrt to Clean which may be null.
+	let local_changed = false, download_changed = false;  //when Clean!=null
+	let local_new = false, download_new = false;  //when Clean==null
+	let cleanLinks = Data.readCleanLinks();
+	if (cleanLinks != null) {
+		let clean_tr = cleanLinks.trim();
+		download_changed = downloadLinks != null && downloadLinks.trim() != clean_tr;
+		local_changed = links != null && links.trim() != clean_tr;
+		download_new = download_changed;
+		local_new = local_changed;
+	} else {
+		download_new = downloadLinks != null;
+		local_new = links != null;
+	}
+	// Derive if Local and Download are the same
+	let local_download_same = false;
+	if (links == null && downloadLinks == null) {
+		local_download_same = true;
+	} else if (links != null && downloadLinks != null) {
+		local_download_same = links.trim() == downloadLinks.trim();
+	}
+
+	// Determine how to integrate Download into Local and Clean
+	if (downloadLinks == null) {
+		// Case A-A, B-A, A--: Not downloaded
+		if (cleanLinks == null) {
+			// Case A--: New links
+			LogLinksUpdate.important('No download, no clean, new local');
+			addStatus('New');
+		} else if (!local_changed) {
+			// Case A-A: Nothing to update
+		} else {
+			// Case B-A: Update Clean
+			LogLinksUpdate.important('No download, but update clean with local');
+			upload = true;
+		}
+	} else if (links == null) {
+		// Case -AA, -BA, -A-: There are no local Links
+		LogLinksUpdate.important('Downloaded links, no local Links');
+		addStatus('No Local');
+		updateLocal = true;
+		links = downloadLinks;
+		if (download_new) {
+			// Case -BA, -A-: Update CleanLinks
+			updateClean = true;
+		}
+	} else if (links_empty) {
+		// Case eAA, eBA, eA-: Clear local links
+		LogLinksUpdate.important('Downloaded links, clear or ignore Links');
+		if (cleanLinks == null) {
+			addStatus('No Local');
+		} else {
+			addStatus('Clear');
+		}
+		updateLocal = true;
+		links = downloadLinks;
+		if (download_new) {
+			// Case eBA, eA-: Update CleanLinks
+			updateClean = true;
+		}
+	} else if (local_download_same) {
+		// Case AAA, BBA, AA-: local Links same as download Links
+		// Note that local Links and download Links null or empty have already been handled
+		if (UrlResolver.getLoadOverrideOptions()) {
+			// Downloaded from links-override=
+			LogLinksUpdate.important('Downloaded links same as local, no need to update');
+		} else {
+			// Downloaded from links=
+			LogLinksUpdate.important('Downloaded links same as local, keep pre-rendered Links');
+			addStatus('Same');
+		}
+		if (download_new) {
+			// Case BBA, AA-: Update CleanLinks
+			updateClean = true;
+		}
+	} else {
+		// Case ABA, BAA, BCA, AB-: local Links different from download Links
+		if (local_new) {
+			// Case BAA, BCA, AB-
+			if (UrlResolver.getLoadOverrideOptions()) {
+				// Downloaded from links-override=
+				if (download_new) {
+					// Case BCA, AB-: All three are different
+					LogLinksUpdate.important('Local Links and downloaded override Links have both changed, use override');
+					updateClean = true;
+				} else {
+					// Case BAA: local Links different from others
+					LogLinksUpdate.important('Local Links newer than downloaded override Links, use override')
+				}
+				addStatus('Discard Local changes');
+				updateLocal = true;
+				links = downloadLinks;
+			} else {
+				// Downloaded from links=
+				if (download_new) {
+					// Case BCA, AB-: All three are different
+					LogLinksUpdate.important('Local Links and downloaded Links have both changed, display local');
+					addStatus('Conflict');
+					conflict = true;
+				} else {
+					// Case BAA: local Links different from others
+					LogLinksUpdate.important('Local Links newer than downloaded, use local Links');
+					addStatus('Save Dirty');
+					upload = true;
+				}
+			}
+		} else {
+			// Case ABA: download Links different from others
+			LogLinksUpdate.important('Downloaded Links newer than local, use downloaded Links');
+			updateLocal = true;
+			links = downloadLinks;
+			updateClean = true;
+			// Check later against DisplayedLinks whether to render
+		}
+	}
+
+	// Determine what to display
+	if (links != null) {
+		let alreadyDisplayed;
+		let displayedLinks = Data.getDisplayedLinks();
+		if (displayedLinks == null) {
+			// Currently nothing displayed
+			alreadyDisplayed = false;
+		} else {
+			if (links.trim() != displayedLinks.trim()) {
+				// The new Links are different from the currently displayed
+				alreadyDisplayed = false;
+			} else {
+				LogLinksUpdate.log('New Links same as already displayed, do not re-render');
+				alreadyDisplayed = true;
+			}
+		}
+		if (!alreadyDisplayed) {
+			// The new Links are different from the currently displayed
+			parseLinks(links);  //throws exception if invalid
+			LogLinksUpdate.log('New Links are valid');
+			render = true;
+		}
+	}
+
+	// Update status
+	if (render) {
+		// Stop pre-render
+		if (preRenderCancel) preRenderCancel.setReturn(true);
+	}
+	if (conflict) {
+		updateSettingsConflict(true);
+	}
+	if (updateLocal) {
+		LogLinksUpdate.log('Update LocalLinks');
+		Data.writeLocalLinks(links);
+	}
+	if (updateClean) {
+		LogLinksUpdate.log('Update CleanLinks');
+		Data.writeCleanLinks(links);
+		updateSettingsConflict(false);
+	}
+	if (render) {
+		addStatus('Render');
+		processLinks(links);
+		Data.setDisplayedLinks(links);
+	}
+	if (upload) {
+		if (UrlResolver.getSaveOptions()) {
+			uploadLinks(links);  //will set CleanLinks after successful upload
+		} else {
+			LogLinksUpdate.log('No SaveOptions, cannot upload');
+			updateSettingsConflict(false);  //no SaveOptions, no display conflict
+		}
+	}
+}
+
+// Download new configuration, integrate it with the current Data and update
+// display if necessary.
+// Arguments:
+// - editLinks: Update for LocalLinks, null if no change, '' to clear.
+// - forceUpload: True if the caller already determined that the configuration
+//   should be uploaded.
+// - preRenderCancel: Object to cancel ongoing pre-render, null if not set.
+// - fallbackRender: Function to call to render the fallback contents.
+// Returns Promise that resolves when ready or false if no download.
+function downloadUpdateLinks(editLinks, forceUpload, preRenderCancel, fallbackRender) {
+	if (HOOK_Ready != null) HOOK_Ready.start();
+	let loadPromise = downloadLinks();
+	if (loadPromise != null) {
+		let result = new PendingPromise();
+		loadPromise
+		.then(download => {
+			// Links have been downloaded successfully
+			if (download == null && UrlResolver.getLoadOverrideOptions()) {
+				fallbackRender('File does not exist');
+			} else {
+				updateLinks(editLinks, download, forceUpload, preRenderCancel);
+			}
+			result.resolve(true);
+			if (HOOK_Ready != null) HOOK_Ready.stop();
+		})
+		.catch(error => {
+			if (error === false) {
+				if (fallbackRender) {
+					fallbackRender('Download failed');
+					result.resolve(true);
+				} else {
+					LogLinksUpdate.log('Could not download');
+					result.reject('Could not download');
+				}
+			} else if (error instanceof UserInputError) {
+				// It is a UserInputError, trigger reject, because
+				// the user can fix it.
+				LogLinksUpdate.log('Download failed with UserInputError');
+				result.reject(error);
+			} else {
+				// It is another error, log it for debugging, but
+				// do a resolve, so that no dialog is triggered.
+				LogLinksUpdate.error('Download failed with error', error);
+				result.resolve(false);
+			}
+			if (HOOK_Ready != null) HOOK_Ready.stop();
+		});
+		return result;
+	} else {
+		// No download, go straight to fallback
+		addStatus('No Download');
+		if (fallbackRender) {
+			fallbackRender('No download');
+		} else {
+			LogLinksUpdate.log('Nothing to download, no fallback');
+		}
+		if (HOOK_Ready != null) HOOK_Ready.stop();
+		return Promise.resolve(false);
+	}
+}
+
 // Create object that can be called as a function. The return value of the
 // function can be set with the setReturn() method.
 // This object can be used as 'cancel' argument for processLinks().
@@ -4824,40 +5317,9 @@ function CreateCancel() {
 }
 
 // Load the Links and render them.
-// If forcedownload==true, the Links are downloaded without fallbackLinks.
 // This function returns a Promise to communicate when it's done or if there
 // are exceptions.
-function loadLinks(forcedownload = false) {
-	let result = new PendingPromise();
-
-	// If forcedownload, don't do preliminary links
-	let preliminaryLinks = forcedownload ? null : UrlResolver.getPreliminaryLinks();
-	let preliminaryLinksCancel = CreateCancel();
-	let preliminaryLinksRenderPromise = null;
-
-	// Helper function to render fallbackLinks, logging the reason.
-	function handleFallbackLinks(reason) {
-		if (forcedownload) {
-			// The download is forced, but we ended up in the
-			// fallback. Report to the user.
-			alert('Could not download, see console log for details.');
-			return;
-		}
-		let fallbackLinks = UrlResolver.getFallbackLinks();
-		if (fallbackLinks != null) {
-			if (preliminaryLinks == null || fallbackLinks.trim() != preliminaryLinks.trim()) {
-				LogInit.important(reason + ', use fallback Links');
-				addStatus('Render fallback');
-				Data.writeLocalLinks(fallbackLinks);
-				processLinks(fallbackLinks);
-			} else {
-				LogInit.important(reason + ' and fallback same as preliminary, keep preliminary Links');
-			}
-		} else {
-			LogInit.important(reason + ', keep preliminary Links');
-		}
-	}
-
+function initLinks() {
 	// NOTE: The intention is to start 2 Promises, one doing the rendition
 	// of the preliminaryLinks and a second doing the download. As soon as
 	// the download has finished and the result is different, the
@@ -4880,8 +5342,14 @@ function loadLinks(forcedownload = false) {
 	//   let go anymore.
 
 	// Start rendering preliminaryLinks (if defined)
+	let preliminaryLinks = UrlResolver.getPreliminaryLinks();
+	let preliminaryLinksCancel = null;
+	//LogInit.devlog('preliminaryLinks = ', preliminaryLinks);
 	if (preliminaryLinks != null) {
-		preliminaryLinksRenderPromise = new Promise((resolveFunc, rejectFunc) => {
+		if (HOOK_Ready != null) HOOK_Ready.start();
+		Data.setDisplayedLinks(preliminaryLinks);
+		preliminaryLinksCancel = CreateCancel();
+		let preliminaryLinksRenderPromise = new Promise((resolveFunc, rejectFunc) => {
 			// Use a short timeout to give the download a chance to start
 			// so that the response will be received asap after the
 			// preliminary render is done (since processLinks() does not
@@ -4895,195 +5363,61 @@ function loadLinks(forcedownload = false) {
 				} else {
 					LogInit.important('preliminaryLinks finished successfully');
 				}
+				if (HOOK_Ready != null) HOOK_Ready.stop();
 				resolveFunc();
 			}, 50);
 		});
 	}
 
-	// Start download (if defined)
-	// Depending on download and last download (CleanLinks), handle as in table below.
-	//        |          |            || Update |      |   Update   |
-	//  Local | Download | CleanLinks ||  Local | Save | CleanLinks | StatusLine
-	// -------|----------|------------||--------|------|------------|------------
-	//    -   |     A    |      A     ||   yes  |   no |      no    | [No Local]
-	//    -   |     B    |      A     ||   yes  |   no |     yes    | [No Local] [Save Dirty]
-	//    A   |     A    |      A     ||    no  |   no |      no    | [Same]
-	//    B   |     B    |      A     ||    no  |   no |     yes    | [Same]
-	//    A   |     B    |      A     ||   yes  |   no |     yes    | [Render]
-	//    B   |     A    |      A     ||    no  |  yes |      no    | [Save Dirty]
-	//    B   |     C    |      A     ||    no  |   no |      no    | [Conflict], do not render downloaded
-	// Note the following relations between input and output columns:
-	// - Local = Cache, normally that is displayed now as Preliminary Render
-	// - Update Local = Also Re-Render displayed content
-	// - Save = Update content that is downloaded next time
-	// - CleanLinks are the last downloaded Links. This is used as the
-	//   common ancestor for determining if LocalLinks or newly
-	//   DownloadedLinks have changed.
-	let loadPromise = downloadLinks();
-	if (loadPromise != null) {
-		loadPromise
-		.then(download => {
-			// Links have been downloaded successfully
-			let links = Data.readLocalLinks();
-			let localT = (links != null) ? links.trim() : '';
-			let downloadT = download.trim();
-			let cleanT = Data.readCleanLinks();
-			cleanT = (cleanT != null) ? cleanT.trim() : '';
-
-			let render = false, updateLocal = false, upload = false, updateClean = false, conflict = false;
-			if (preliminaryLinks == null) {
-				// Nothing yet shown
-				render = true;
-			}
-			if (forcedownload || !localT) {
-				// Case -AA, -BA: There are no local Links
-				if (forcedownload) {
-					LogInit.important('Force downloaded links');
-				} else {
-					LogInit.important('Downloaded links, no local Links');
-					addStatus('No Local');
-				}
-				updateLocal = true;
-				render = true;
-				if (downloadT != cleanT) {
-					// Case -BA: Update CleanLinks
-					updateClean = true;
-				}
-			} else if (localT == downloadT) {
-				// Case AAA, BBA: local Links same as download Links
-				if (UrlResolver.getLoadOverrideOptions()) {
-					// Downloaded from links-override=
-					LogInit.important('Downloaded links same as local, no need to update');
-				} else {
-					// Downloaded from links=
-					LogInit.important('Downloaded links same as local, keep pre-rendered Links');
-					addStatus('Same');
-				}
-				if (downloadT != cleanT) {
-					// Case BBA: Update CleanLinks
-					updateClean = true;
-				}
+	// Helper function to render fallbackLinks, logging the reason.
+	function handleFallbackLinks(reason) {
+		let fallbackLinks = UrlResolver.getFallbackLinks();
+		if (fallbackLinks != null) {
+			let displayedLinks = Data.getDisplayedLinks();
+			if (displayedLinks == null || fallbackLinks.trim() != displayedLinks.trim()) {
+				LogInit.important(reason + ', use fallback Links');
+				addStatus('Render fallback');
+				processLinks(fallbackLinks);  //throws exception if invalid
+				Data.writeLocalLinks(fallbackLinks);
+				Data.setDisplayedLinks(fallbackLinks);
 			} else {
-				// Case ABA, BAA, BCA: local Links different from download Links
-				if (localT == cleanT) {
-					// Case ABA: download Links different from others
-					LogInit.important('Downloaded Links newer than local, use downloaded Links');
-					render = true;
-					updateLocal = true;
-					updateClean = true;
-				} else {
-					// Case BAA, BCA
-					if (UrlResolver.getLoadOverrideOptions()) {
-						// Downloaded from links-override=
-						if (downloadT == cleanT) {
-							// Case BAA: local Links different from others
-							LogInit.important('Local Links newer than downloaded override Links, use override');
-						} else {
-							// Case BCA: All three are different
-							LogInit.important('Local Links and downloaded override Links have both changed, use override');
-							updateClean = true;
-						}
-						addStatus('Discard Local changes');
-						updateLocal = true;
-						render = true;
-					} else {
-						// Downloaded from links=
-						if (downloadT == cleanT) {
-							// Case BAA: local Links different from others
-							LogInit.important('Local Links newer than downloaded, use local Links');
-							upload = true;
-						} else {
-							// Case BCA: All three are different
-							LogInit.important('Local Links and downloaded Links have both changed, display local');
-							addStatus('Conflict');
-							conflict = true;
-						}
-					}
-				}
+				LogInit.important(reason + ' and fallback same as displayed, keep displayed Links');
 			}
-
-			// Stop pre-render
-			if (render) {
-				preliminaryLinksCancel.setReturn(true);
-			}
-			// Set conflict state or accept downloaded Links
-			if (conflict) {
-				updateSettingsDirty(true);
-			}
-			// Update LocalStorage
-			if (updateLocal) {
-				LogInit.log('Update LocalLinks');
-				Data.writeLocalLinks(download);
-			}
-			if (updateClean) {
-				LogInit.log('Update CleanLinks');
-				Data.writeCleanLinks(download);
-				updateSettingsDirty(false);
-			}
-			if (upload) {
-				if (UrlResolver.getSaveOptions()) {
-					addStatus('Save Dirty');
-					uploadLinks(links);  //will set CleanLinks after successful upload
-				} else {
-					LogInit.log('No SaveOptions, cannot save');
-					updateSettingsDirty(false);  //no SaveOptions, no dirty
-				}
-			}
-			// Re-render or wait for pre-render
-			if (render) {
-				addStatus('Render');
-				processLinks(download);
-				result.resolve(true);
-			} else {
-				preliminaryLinksRenderPromise.then(() => result.resolve(true));
-			}
-		})
-		.catch(error => {
-			if (error === false) {
-				handleFallbackLinks('Download failed');
-				result.resolve(true);
-			} else if (error instanceof UserInputError) {
-				// It is a UserInputError, trigger reject, because
-				// the user can fix it.
-				LogInit.log('Download failed with UserInputError');
-				result.reject(error);
-			} else {
-				// It is another error, log it for debugging, but
-				// do a resolve, so that no dialog is triggered.
-				LogInit.error('Download failed with error', error);
-				result.resolve(false);
-			}
-		});
-	} else {
-		// No download, go straight to fallback
-		addStatus('No Download');
-		handleFallbackLinks('No download');
+		} else {
+			LogInit.important(reason + ', keep preliminary Links');
+		}
 	}
 
-	return result;
+	// Start download (if defined)
+	return downloadUpdateLinks(null, false, preliminaryLinksCancel, handleFallbackLinks);
 }
 
 // Initialize the JavaScript on the page
 function init() {
+	if (HOOK_Init != null) HOOK_Init();
 	initStatus();
 	initSettingsPanel();
-	loadLinks()
-	.catch(error => {
-		// There is an error, report and open Settings
-		// Always log for debugging
-		LogInit.error(error);
-		if (error instanceof UserInputError) {
-			// It is a UserInputError, show a dialog,
-			// and open Settings, because the user can fix it.
-			window.alert('Error when loading settings: ' +
-				error.message +
-				'\n\nPlease correct or cancel.');
-			showSettingsPanel();
-		} else {
-			// It is another error, discard it, because
-			// it has already been logged.
-		}
-	});
+	if (HOOK_Run != null) {
+		HOOK_Run();
+	} else {
+		initLinks()
+		.catch(error => {
+			// There is an error, report and open Settings
+			// Always log for debugging
+			LogInit.error(error);
+			if (error instanceof UserInputError) {
+				// It is a UserInputError, show a dialog,
+				// and open Settings, because the user can fix it.
+				window.alert('Error when loading settings: ' +
+					error.message +
+					'\n\nPlease correct or cancel.');
+				showSettingsPanel();
+			} else {
+				// It is another error, discard it, because
+				// it has already been logged.
+			}
+		});
+	}
 }
 window.onload = init;
 
