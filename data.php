@@ -122,7 +122,7 @@ $access = "";
 foreach ($lines as $line)
 {
 	if (preg_match('/^\s*(?:\/\/|#|;|$)/', $line)) continue;  # empty line or comment
-	if (preg_match('/^\s*([rw]+)(?:\s+(.*?))?\s*$/i', $line, $m))
+	if (preg_match('/^\s*([rwc]+)(?:\s+(.*?))?\s*$/i', $line, $m))
 	{
 		# 'access token' line
 		#error_log('DEBUG: token-line=' . var_export($m, true));
