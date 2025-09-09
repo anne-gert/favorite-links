@@ -4357,39 +4357,46 @@ function initStatus() {
 
 	let currentLine = '';
 	let lastStatus = null;
+	let lastTs = null;
 	let count = 0;
 
-	function withCount() {
-		return currentLine + '(' + count + 'x)';
+	function render() {
+		return (count > 1) ? currentLine + '(' + count + 'x)' : currentLine;
 	}
 
-	function renderStatus() {
-		if (count > 1) {
-			statusLine.textContent = withCount();
-		} else {
-			statusLine.textContent = currentLine;
-		}
+	function freeze() {
+		currentLine = render();
+		count = 0;
 	}
 
 	addStatus = (status) => {
+		// Add a marker if last status has been too long
+		let nowTs = Date.now();
+		if (lastTs > 0 && nowTs - lastTs > 5000) {
+			freeze();
+			currentLine += ' \u{2022}';
+			lastStatus = null;
+		}
+		lastTs = nowTs;
+		// Increase count or add status
 		if (status == lastStatus) {
 			count++;
 		} else {
-			if (count > 1) {
-				currentLine = withCount();
-			}
+			freeze();
 			currentLine += ' [' + status + ']';
 			lastStatus = status;
 			count = 1;
 		}
-		renderStatus();
+		// Draw line
+		statusLine.textContent = render();
 	};
 
 	clearStatus = () => {
 		currentLine = '';
 		lastStatus = null;
+		lastTs = null;
 		count = 0;
-		renderStatus();
+		statusLine.textContent = render();
 	};
 
 	statusLine.onclick = () => {
