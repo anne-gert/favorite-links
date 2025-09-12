@@ -112,6 +112,15 @@ body {
 	color: var(--error-foreground);
 }
 
+.svg-icon {
+	vertical-align: middle;
+	display: inline;
+	margin: -0.5em 0em -0.5em 0em;
+	& path {
+		stroke: var(--foreground);  fill: var(--foreground);
+	}
+}
+
 /* }}} */
 </style>
 
@@ -478,6 +487,9 @@ values:
     the colon to create a &lt;div&gt;. The contents is scaled to a square. To
     include a space in the fragment use &amp;space; (or the shorthand &amp;sp;
     or &amp;spc;).
+<li><code>krul</code>: A 'Krul' is a Dutch symbol that is similar to a
+    checkmark and means "good" or "done". See also <a
+    href="https://nl.wikipedia.org/wiki/Goedkeuringskrul">Wikipedia</a>.
 </ul>
 </p>
 
@@ -524,6 +536,12 @@ be used to define a checkbox type with custom options. The allowed options are:
 <li><dt>check</dt>: Shorthand for <code>U+2611</code> (checked box, &#x2611;).
 <li><dt>cross</dt>: Shorthand for <code>U+2612</code> (crossed box, &#x2612;).
 <li><dt>mcheck</dt>: Shorthand for <code>U+25A3</code> (filled box, &#x25A3;).
+<li><dt>krul</dt>: Shorthand for <code>g=krul</code> (Dutch 'krul' icon,
+    <div class="svg-icon">
+        <svg width="1.4em" height="1.4em" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9.7,-0.6C8.1,-0.5 7,.8 6,1.8 4.8,3.2 3.6,4.6 3.2,6.3 2.7,7.6 3.7,8.9 4.1,9.7 2.5,11.2.9,12.7-0.7,14.3c-0.6,1.3 1.3,1.9 1.9,.7 1.6,-1.6 3.2,-3.1 4.8,-4.7 1.3,.2 3.4,1.3 2.1,2.8-1,2-2.1,3.9-2.9,5.9-0.7,1.6.8,3.5 2.5,3 1.8,-0.6 3.4,-1.7 5,-2.8C21.8,12.6 25.2,5.9 24,6.7 19.5,11.8 14.3,16.5 8.3,19.8c-1,.9-1.9,.2-1,-0.9 1,-2 2.1,-3.9 2.9,-5.9.5,-1.4-0.2,-2.9-1.5,-3.6-0.7,-0.4-1.7,-0.5-0.6,-1.2 1.5,-1.6 3,-3.1 4.2,-4.9.9,-1.4-0.1,-3.4-1.6,-3.9-0.3,-0.1-0.7,-0.2-1,-0.2zm.1,1.9c1.5,.1.9,1.7.1,2.3C8.5,5.2 7.1,6.7 5.5,8.2 4.2,7.3 5.4,5.7 6,4.7 7,3.4 8.1,2.1 9.5,1.3l.2,-0z"/>
+        </svg>
+    </div>).
 <li><dt>!front</dt>, <dt>!before</dt>: Places the checkbox in front of the text.
 <li><dt>!back</dt>, <dt>!after</dt>: Places the checkbox after the text.
 </ul>

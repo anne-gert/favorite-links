@@ -56,7 +56,7 @@ _
             [😐]:emo Option 3
             [🙂]:emo Option 4
 
-!checkbox yesnoR _=uncheck +=check x=cross ~=mcheck
+!checkbox yesnoR _=uncheck +=check x=cross ~=mcheck krul
         yesnoR
             [ ]:yesnoR Test optie 1
             [+]:yesnoR Test optie 2
@@ -64,6 +64,7 @@ _
             [~]:yesnoR Test optie 4
                 [+]:yesnoR Sub optie 4a
                 [-]:yesnoR Sub optie 4b
+                [g]:yesnoR Sub optie 4c
 
 !checkbox favicons empty A=agb F=firefox S=sigmax B=mantis O=ovp
 !icondef agb       http://hawaii.uxi.nl/favicon.ico
@@ -98,6 +99,17 @@ _
 
     [yes]:yesno Small icon, does it fit?
         [ ]:yesno sub
+
+    After
+!checkbox yesnoR-b _=uncheck +=check x=cross ~=mcheck krul !back
+        yesnoR
+            [ ]:yesnoR-b Test optie 1
+            [+]:yesnoR-b Test optie 2
+            [x]:yesnoR-b Test optie 3
+            [~]:yesnoR-b Test optie 4
+                [+]:yesnoR-b Sub optie 4a
+                [-]:yesnoR-b Sub optie 4b
+                [g]:yesnoR-b Sub optie 4c
 
 
 // Checkbox styles for normal checkboxes with parents and/or children set

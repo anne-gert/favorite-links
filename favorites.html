@@ -300,11 +300,20 @@ body {
 }
 .custom-checkbox .text-icon {
 	transform: scale(1.7);
+	margin: 0px;
 }
 .custom-checkbox img.text-icon {
 	transform: scale(1.4);
+	margin: 0px;
 }
 .checkbox-label.not-first-option {
+}
+
+.custom-checkbox:first-of-type {  /* checkbox at the left */
+	margin-right: 0.2em;
+}
+.custom-checkbox:last-of-type {  /* checkbox at the front */
+	margin-left: 0.3em;
 }
 
 .any-parent-checked {
@@ -847,6 +856,9 @@ These are some examples of the available features.
 !search Google Maps  | Maps
 `;
 // }}}
+
+const KrulSvg_alt = '<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M16.5,.4C13.9,.7 11.5,2.2 9.5,3.9 7.9,5.4 6.1,7 5.8,9.3 5.5,10.2 6.6,11.1 6.6,11.5 4.7,12.7 2.9,13.9 1,14.9-0,15.6.5,17.4 1.8,17.1 3.2,16.5 4.5,15.6 5.9,14.8 7.2,14 8.5,13.2 9.8,12.3c.8,-0.4 1.6,.1 2.5,.1 1.2,.1-0.5,1-0.7,1.4-0.9,.9-2.2,2-2,3.4.1,1.5 1.7,2.3 3.1,2.2 1.2,0 2.4,-0.2 3.6,-0.5 1.5,-0.4.7,-2.8-0.7,-2.3-1.1,.1-2.6,.7-3.4,.2 1,-1.4 2.7,-2.3 3.2,-3.9.4,-1.1-0.4,-2.2-1.4,-2.5-0.5,-0.2-1.1,-0.3-0.3,-0.7C15.5,8.4 17.5,7 18.9,5 19.8,3.9 19.8,2.1 18.6,1.1 18.1,.6 17.3,.4 16.5,.4Zm.2,2.5c1.1,.3-0.4,1.6-0.8,2-1.8,1.9-4.1,3.2-6.2,4.7-0.7,.4-2.1,-0-1.2,-0.9C10.1,6.2 12.6,4.3 15.4,3.1c.4,-0.2.9,-0.3 1.3,-0.2z"/></svg>'
+const KrulSvg = '<svg width="25" height="25" xmlns="http://www.w3.org/2000/svg"><path d="M9.7,-0.6C8.1,-0.5 7,.8 6,1.8 4.8,3.2 3.6,4.6 3.2,6.3 2.7,7.6 3.7,8.9 4.1,9.7 2.5,11.2.9,12.7-0.7,14.3c-0.6,1.3 1.3,1.9 1.9,.7 1.6,-1.6 3.2,-3.1 4.8,-4.7 1.3,.2 3.4,1.3 2.1,2.8-1,2-2.1,3.9-2.9,5.9-0.7,1.6.8,3.5 2.5,3 1.8,-0.6 3.4,-1.7 5,-2.8C21.8,12.6 25.2,5.9 24,6.7 19.5,11.8 14.3,16.5 8.3,19.8c-1,.9-1.9,.2-1,-0.9 1,-2 2.1,-3.9 2.9,-5.9.5,-1.4-0.2,-2.9-1.5,-3.6-0.7,-0.4-1.7,-0.5-0.6,-1.2 1.5,-1.6 3,-3.1 4.2,-4.9.9,-1.4-0.1,-3.4-1.6,-3.9-0.3,-0.1-0.7,-0.2-1,-0.2zm.1,1.9c1.5,.1.9,1.7.1,2.3C8.5,5.2 7.1,6.7 5.5,8.2 4.2,7.3 5.4,5.7 6,4.7 7,3.4 8.1,2.1 9.5,1.3l.2,-0z"/></svg>';
 
 // }}}
 
@@ -2577,6 +2589,9 @@ function parseLinks(links) {
 				val = UNICODE_BALLOT_BOX_WITH_CROSS;
 			} else if (lval == 'mcheck') {
 				val = UNICODE_WHITE_SQUARE_CONTAINING_BLACK_SMALL_SQUARE;
+			} else if (lval == 'krul') {
+				if (name == null) name = 'g';
+				val = 'krul';  //a valid icon
 			}
 			// Set name if name not yet set
 			if (name == null) name = val;
@@ -3361,7 +3376,11 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 			text = text.replace(/^U\+([0-9a-f]+)$/i, s => hexChar(s.substring(2)));
 			// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
 			img.classList.add('text-icon');
-			icon_url = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">' + text + '</text></svg>';
+			icon_url = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text text-anchor="middle" x="50%" y=".9em" font-size="90">' + text + '</text></svg>';
+			img.src = icon_url;
+		} else if (icon_url == 'krul') {
+			img.classList.add('text-icon');
+			icon_url = 'data:image/svg+xml,' + KrulSvg;
 			img.src = icon_url;
 		} else {
 			let alternatives = [], methods = [], urls = [];  //prepare options to use for the icon
