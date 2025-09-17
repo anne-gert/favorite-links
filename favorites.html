@@ -647,7 +647,7 @@ body {
 </style>
 
 <script>
-// Some constants {{{
+// Constants {{{
 
 const LogUnicode = CreateLogger();
 const LogStorage = CreateLogger();
@@ -3635,6 +3635,7 @@ function getNoUrl(intput) {
 // The template is a URL with the following placeholders:
 // - %input: Replaced with the supplied input value.
 // - %urlinput: Replaced with the URL-encoded input value.
+// This function is available for use in the configuration.
 function getTemplateUrl(template) {
 	return function(input) {
 		let encoded_input = encodeURIComponent(input).replace(' ', '+');

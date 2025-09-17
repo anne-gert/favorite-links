@@ -376,7 +376,7 @@ Each Link is specified on a single line as follows:
       <ul>
         <li>If no URL is given, no hyperlink is created.
       </ul>
-  <li><dt>icon=&lt;value&gt;</dt>: Defines the icon to use. See <a
+  <li><dt>icon=value</dt>: Defines the icon to use. See <a
       href="#icons">Icons</a> for how to define the value.
   <li><dt>Checkbox</dt>: If <code>[ ]</code> or <code>[x]</code> is at the
       start of a line, render a standard checkbox for this item, so it can be
@@ -658,7 +658,7 @@ an example, the example below make all checkboxes have 3 states: &#x2753;
 
 
 <a name="search-functions"></a>
-<h2>New Search Function</h2>
+<h2>Search Functions</h2>
 
 <p>
 The line <code>!search identifier | label | tooltip | icon |
@@ -763,6 +763,11 @@ The JavaScript functions are available to create new SearchFunctions:
 <li><code>getRegisteredSearchUrl(&lt;Identifier&gt;, &lt;search-text&gt;)</code>:
     Returns the Text Search URL to search for search-text that is registered
     for Identifier.
+</ul>
+The following support functions are available:
+<ul>
+<li><code>getTemplateUrl(&lt;URL-Template&gt;)</code>: Returns a SearchFunction
+    that uses the given URL-Template.
 </ul>
 </p>
 
