@@ -711,7 +711,7 @@ The following properties are derived:
 </p>
 
 <p>
-Pre-defined Identifiers (case-insensitive) are:
+Pre-defined Identifiers are:
 <ul>
 <li><code>Duck Duck Go</code>: Use Duck Duck Go for text
 <li><code>Google</code>: Use Google Search for text
@@ -726,11 +726,13 @@ Pre-defined Identifiers (case-insensitive) are:
 </p>
 
 <p>
-In JavaScript, <code>SearchFunction</code> can be extended with additional
-functions that can be used for new buttons. The field name in SearchFunction
-<u>must</u> be all <u>lowercase</u>. The function should have a single argument
-that is the string to search for. The function should return a URL to go to for
-the search results.
+In JavaScript, <code>SearchFunction</code> is a data structure where the keys
+are derived from the Identifier with
+<code>getSearchFunction(&lt;Identifier&gt;)</code> and the values contain the
+search functions. This structure can be extended with additional functions that
+can be used for new buttons.  The function should have a single argument that
+is the string to search for. The function should return a URL to go to the
+search results.
 <br>
 The function <code>getTemplateUrl</code> can be used to generate such a
 function, based on a template of the URL.
@@ -766,6 +768,8 @@ The JavaScript functions are available to create new SearchFunctions:
 </ul>
 The following support functions are available:
 <ul>
+<li><code>getSearchFunctionId(&lt;Identifier&gt;)</code>: Returns the canonical
+    id to be used as key in the <code>SearchFunction</code> data structure.
 <li><code>getTemplateUrl(&lt;URL-Template&gt;)</code>: Returns a SearchFunction
     that uses the given URL-Template.
 </ul>
@@ -797,11 +801,12 @@ Silly example for a Random button:
 <pre>
 !search Random |_|| html:&amp;#x2753;
 !script
-registerSearchTemplate('xkcd', 'https://c.xkcd.com/random/comic/');
-registerSearchFunction('random', input =&gt; {
-    let options = [ 'google', 'duck duck go', 'wikipedia', 'amazon', 'xkcd' ];
+registerSearchTemplate(getSearchFunctionId('xkcd'), 'https://c.xkcd.com/random/comic/');
+registerSearchFunction(getSearchFunctionId('Random'), input =&gt; {
+    let options = [ 'Google', 'Duck Duck Go', 'Wikipedia', 'Amazon', 'xkcd' ];
     let r = Math.trunc(Math.random() * options.length);
-    return getRegisteredSearchUrl(options[r], input);
+    let id = getSearchFunctionId(options[r]);
+    return getRegisteredSearchUrl(id, input);
 });
 !endscript
 </pre>

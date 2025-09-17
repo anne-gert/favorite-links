@@ -3554,13 +3554,14 @@ var FillScaler = new ResizeObserver(function(entries) {
 
 // SearchBox related functions {{{
 
-// The search functions will be accessed by name (lower case identifier).
+// The search functions will be accessed by name (lower case identifier with
+// spaces replaced by '_').
 // Every identifier has sub-keys for different functions.
 // A search function has the search query as input and should return a URL to
 // go to for the results.
 
 var SearchFunction = {
-	'duck duck go' : {
+	'duck_duck_go' : {
 		'text'   : getTemplateUrl('https://duckduckgo.com?q=%urlinput'),
 	},
 	'google' : {
@@ -3572,11 +3573,11 @@ var SearchFunction = {
 	'youtube' : {
 		'text'   : getTemplateUrl('https://www.youtube.com/results?search_query=%urlinput'),
 	},
-	'wayback machine' : {
+	'wayback_machine' : {
 		'text'   : getWaybackSearchUrl,
 		'domain' : getWaybackDomainUrl,
 	},
-	'google maps' : {
+	'google_maps' : {
 		'text'   : getTemplateUrl('https://maps.google.com/?q=%urlinput'),
 	},
 	'default' : {
@@ -3585,11 +3586,19 @@ var SearchFunction = {
 	},
 };
 
+// Converts the identifier to a key that can be used in the SearchFunction
+// structure.
+// This function is available for use in the configuration.
+function getSearchFunctionId(identifier) {
+	return identifier.toLowerCase().replaceAll(' ', '_');
+
+}
+
 // This function adds the function to SearchFunction for this identifier.
 // searchFunction should have the text as input and return a results URL.
 // This function is available for use in the configuration.
 function registerSearchFunction(identifier, searchFunction, what = 'text') {
-	let id = identifier.toLowerCase();
+	let id = getSearchFunctionId(identifier);
 	if (!(id in SearchFunction)) {
 		SearchFunction[id] = {};
 	}
@@ -3609,7 +3618,7 @@ function registerSearchTemplate(identifier, urlTemplate, what = 'text') {
 // Returns null if not found.
 // This function is available for use in the configuration.
 function getRegisteredSearchUrl(identifier, searchText, what = 'text') {
-	let id = identifier.toLowerCase();
+	let id = getSearchFunctionId(identifier);
 	if (id in SearchFunction && what in SearchFunction[id]) {
 		return SearchFunction[id][what](searchText);
 	} else {
@@ -3769,7 +3778,7 @@ function addSearchButtons(parsed, searchBox, container) {
 
 		let id = def[f++];
 		if (!id) continue;  //id is mandatory, ignore this entry if absent
-		let key = id.toLowerCase();  //lower case version
+		let key = getSearchFunctionId(id);
 		let label = def[f++];
 		let tooltip = def[f++];
 		let icon = def[f++];
