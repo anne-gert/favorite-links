@@ -2748,6 +2748,14 @@ function render(parsed, container, cancel) {
 			url = 'javascript:navigator.clipboard.writeText(\'' + url + '\');alert(\'' + encodeURI(msg) + '\');void(0)';
 			target = null;
 		}
+		// If the url is a 'search:', replace it with the proper call
+		if (url != null) {
+			let m = url.match(/^search:(.+)/);
+			if (m) {
+				let searcher = m[1];
+				url = getRegisteredSearchUrl(searcher, name);
+			}
+		}
 		// Render the item
 		// State variables for this item; will be used in closures
 		let addItemContainer;  //function to add a container to put the Item into

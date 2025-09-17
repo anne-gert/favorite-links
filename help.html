@@ -375,6 +375,11 @@ Each Link is specified on a single line as follows:
       <code>scheme:</code>.
       <ul>
         <li>If no URL is given, no hyperlink is created.
+	<li>If the URL is <code>search:identifier</code>, a search link is used
+	    that uses the text search function with that identifier (as
+	    described in <a href="#search-functions">Search Functions</a>) to
+	    search for this Link's Name. Note that the identifier is
+	    case-insensitive and spaces should be replaced by '_'.
       </ul>
   <li><dt>icon=value</dt>: Defines the icon to use. See <a
       href="#icons">Icons</a> for how to define the value.
@@ -415,6 +420,7 @@ Different combinations of links and names.
   Example icon=none http://example.com : Same link, but no Icon
   Example:3                            : Show 'Example:3', linking to the URL Example:3, because it also matches schema:location
   Example:3 url=                       : Show 'Example:3' without link
+  Rare word search:Google              : Show 'Rare word' with link that searches 'Rare word' on Google
 </pre>
 Submenus and indentation levels.
 <pre>
