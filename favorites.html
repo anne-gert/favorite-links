@@ -2066,6 +2066,7 @@ function parseLinks(links) {
 		checkboxDefs                 : {},
 		styleBlocks                  : [],
 		scriptBlocks                 : [],
+		noEdit                       : false,
 
 		// Member functions
 
@@ -2191,6 +2192,14 @@ function parseLinks(links) {
 		if (m) {
 			// This is a delay time
 			parsed.autoUploadDelay = 1*m[1];  //save value
+			continue;
+		}
+
+		// Check if it is a no-edit definition
+		m = line.match(/^\s*!no-edit\s*$/i);
+		if (m) {
+			// This is a no-edit flag
+			parsed.noEdit = true;  //save flag
 			continue;
 		}
 
@@ -3868,6 +3877,8 @@ function addSearchButtons(parsed, searchBox, container) {
 let showSettingsPanel = null;
 // Function to update the displayed Dirty state
 let updateSettingsDirty = null;
+// Function to make Settings TextArea readonly
+let setSettingsReadOnly = null;
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
@@ -3881,6 +3892,7 @@ function initSettingsPanel() {
 
 	// Status
 	let visible = false;
+	let textRO = false;
 
 	// Other global variables for Settings (will be assigned in createSettings())
 	let settingsText;
@@ -3889,6 +3901,7 @@ function initSettingsPanel() {
 	// Create the minimal hooks (expose functions) and defer rest at first showing
 	showSettingsPanel = showSettings;
 	updateSettingsDirty = updateDirty;
+	setSettingsReadOnly = setReadOnly;
 	// Create iconOpen
 	iconOpen = document.createElement('span');
 	setUnicodeText(iconOpen, UNICODE_GEARS, '[Settings]');
@@ -4000,6 +4013,7 @@ function initSettingsPanel() {
 		settingsText.spellcheck = false;
 		settingsText.placeholder = 'Settings';
 		settingsText.className = 'textbox';
+		settingsText.readOnly = textRO;
 		settingsText.onkeydown = function(e) {
 			//LogSettings.log('KeyCode=' + e.keyCode);
 			if (e.keyCode == 9) {
@@ -4113,6 +4127,13 @@ function initSettingsPanel() {
 		addClass(iconClear, 'alert', dirty);
 		addClass(warningDirty, 'hidden', !dirty);
 		return dirty;
+	}
+
+	function setReadOnly(textReadOnly) {
+		textRO = textReadOnly;
+		if (settingsText) {
+			settingsText.readOnly = textRO;
+		}
 	}
 
 	// Show the Settings panel.
@@ -4707,6 +4728,8 @@ function processLinks(links, cancel = null) {
 
 	// Parse Links
 	let parsed = parseLinks(links);
+
+	setSettingsReadOnly(parsed.noEdit);
 
 	if (cancel()) return;
 
