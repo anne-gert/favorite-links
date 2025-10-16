@@ -16,8 +16,9 @@
  * Global definitions
  ****************************************************************************/
 
+@media (prefers-color-scheme: dark) {
 /* Color palette - dark theme */
-.dark-theme {
+.normal-theme, .dark-theme {
 	--foreground: #DDDDDD;
 	--background: #2E323B;
 	--accent-color: #50A0EE;
@@ -34,9 +35,11 @@
 	--error-background: #FFD8C0;
 	--error-border: var(--error-foreground);
 }
+}
 
+@media (prefers-color-scheme: light) {
 /* Color palette - light theme */
-.light-theme {
+.normal-theme, .light-theme {
 	--foreground: #444444;
 	--background: #E8F0F8;
 	--accent-color: #4444EE;
@@ -52,6 +55,7 @@
 	--error-foreground: #FF8844;
 	--error-background: #FFEEDD;
 	--error-border: #FFBB88;
+}
 }
 
 :root {
