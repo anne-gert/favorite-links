@@ -1,5 +1,8 @@
 let LogTest;
 
+// If this is true, the test will stop when the first error is encountered.
+let StopOnFirstError = false;
+
 // Mock implementations {{{
 
 // Create an object to register and wait for Promisses.
@@ -171,77 +174,147 @@ function CreateQueryString(queryString) {
 	return storage;
 }
 
-// Create an object that emulates content that is updated with GET and POST.
-function CreateRemoteFile(initialContent = '', timeout = 100) {
-	let _getStatus = 200;
-	let _postStatus = 200;
-	let _content = initialContent;
+// Create an object that emulates the content of multiple files that are updated
+// with GET and POST.
+function CreateRemoteFile(timeout = 100) {
+	let _entries = {};
 	let _prepareNextResponse = null;
+
+	// Get the remote file name from the url/headers
+	function getName(url, headers) {
+		//LogTest.devlog('RemoteFile: URL=' + url + ', Headers=', headers);
+		// Check if 'x-name' occurs in headers
+		if (headers) {
+			for (let i = 0; i < headers.length; ++i) {
+				if (headers[i][0] == 'x-name') {
+					return headers[i][1];
+				}
+			}
+		}
+		// Check if url contains a basename
+		if (url) {
+			url = url.replace(/[?#].*/, '');  //remove querystring and fragment
+			let name = url.replace(/.*\//, '');  //remove all but the last name
+			if (name != '') {
+				return name;
+			}
+		}
+		// Return the default
+		return 'links.txt';
+	}
+
+	// Get the response entry for the specified name.
+	// Creates a new entry if it does not exist yet.
+	function getEntry(name) {
+		let entry = _entries[name];
+		if (entry == null) {
+			_entries[name] = entry = {
+				getStatus: 200,
+				postStatus: 200,
+				content: '',
+			};
+		}
+		return entry;
+	}
 
 	// Returns Promise that simulates a GET.
 	async function getGetResponse(url, headers, body) {
+		let name = getName(url, headers);
+		let entry = getEntry(name);
 		// Wait a bit
 		await sleep(timeout);
 		// Assemble response
 		let rsp = {
-			status : _getStatus,
-			text   : _content,
+			status : entry.getStatus,
+			text   : entry.content,
 		};
 		// Prepare next response if configured
 		if (_prepareNextResponse) _prepareNextResponse('GET');
 		// Return response
+		LogTest.debug('GET content for \'' + name + '\': status ' + rsp.status);
 		return rsp;
 	}
 
 	// Returns Promise that simulates a POST.
 	async function getPostResponse(url, headers, body) {
+		let name = getName(url, headers);
+		let entry = getEntry(name);
 		// Wait a bit
 		await sleep(timeout);
 		// Update emulated file
-		if (_postStatus == 200 && _getStatus == 404) _getStatus = 200;
-		_content = body;
+		if (entry.postStatus == 200) {
+			if (entry.getStatus == 404) entry.getStatus = 200;
+			entry.content = body;
+		}
 		// Assemble response
 		let rsp = {
-			status : _postStatus,
+			status : entry.postStatus,
 			text   : '',
 		};
 		// Prepare next response if configured
 		if (_prepareNextResponse) _prepareNextResponse('POST');
 		// Return response
+		LogTest.debug('POST content for \'' + name + '\': status ' + rsp.status);
 		return rsp;
 	}
 
-	// Set the contents from the value for the next requuest.
+	// Set the contents from the value for the next request.
 	// The value is interpreted as follows:
 	// - 'NOT_EXIST': Emulate file that does not exist yet, but will after
 	//   upload
-	// - 'CANNOT_WRITE': Makes upload fail with 403
 	// - 'DEFAULT_LINKS': Value of DefaultLinks
 	// - numeric: Return this status, sets content to empty
+	// - numeric/numeric: Return separate status for GET/POST.
 	// - any other string: Contents of the emulated file
 	// If next is set, it is called at the next request with 'GET' or
 	// 'POST' as argument. It can then prepare a new response if needed.
-	function setContent(value, next = null) {
-		// Special values:
-		if (value == 'NOT_EXIST') {
-			_getStatus = 404;
-			_postStatus = 200;
-			_content = '';
-		} else if (value == 'CANNOT_WRITE') {
-			_postStatus = 403;
-		} else if (value == 'DEFAULT_LINKS') {
-			_getStatus = 200;
-			_postStatus = 200;
-			_content = DefaultLinks;
-		} else if (value.match(/^\d+$/)) {
-			_getStatus = value.valueOf();
-			_postStatus = value.valueOf();
-			_content = '';
-		} else {
-			_getStatus = 200;
-			_postStatus = 200;
-			_content = value;
+	// If name is set, use that filename, otherwise use UrlResolver.getLoadName().
+	function setContent(value, name = null, next = null) {
+		if (value == null) {
+			// Do not change content
+			return;
 		}
+		if (name == null) name = UrlResolver.getLoadName();
+		let entry = getEntry(name);
+		let m;
+		if (value == 'NOT_EXIST') {
+			entry.getStatus = 404;
+			entry.postStatus = 200;
+			entry.content = '';
+		} else if (value == 'DEFAULT_LINKS') {
+			entry.getStatus = 200;
+			entry.postStatus = 200;
+			entry.content = DefaultLinks;
+		} else if (value.match(/^\d+$/)) {
+			entry.getStatus = value.valueOf();
+			entry.postStatus = value.valueOf();
+			entry.content = '';
+		} else if (m = value.match(/^\s*(\d+)(?:\s*\/\s*(\d+))?\s*$/)) {
+			entry.getStatus = m[1].valueOf();
+			entry.postStatus = ((m.length >= 2) ? m[2] : m[1]).valueOf();
+			let canRead = entry.getStatus == 200;
+			let canWrite = entry.postStatus == 200;
+			if (canRead) {
+				entry.content = canWrite ? 'RW_FILE' : 'RO_FILE';
+			} else {
+				entry.content = '';
+			}
+		} else {
+			entry.getStatus = 200;
+			entry.postStatus = 200;
+			entry.content = value;
+		}
+		LogTest.debug('Set content for \'' + name + '\'');
+		_prepareNextResponse = next;
+	}
+
+	// Get the contents of the specified name.
+	// If name is not specified, use UrlResolver.getLoadName().
+	function getContent(name = null) {
+		if (name == null) name = UrlResolver.getLoadName();
+		let entry = getEntry(name);
+		LogTest.debug('Get content for \'' + name + '\'');
+		return entry.content;
 	}
 
 	let obj = {
@@ -252,7 +325,7 @@ function CreateRemoteFile(initialContent = '', timeout = 100) {
 			response : getPostResponse,
 		},
 		set : setContent,
-		content : () => _content,
+		content : getContent,
 	};
 	return obj;
 }
@@ -284,11 +357,11 @@ function CreateSettingsChanger() {
 			}
 			++j;
 		}
-		for (let i = 0; i < loadOptionEntries.length; ++i) {
+		for (let i = 0; i < saveOptionEntries.length; ++i) {
 			if (j < _options.length) {
 				let v = _options[j];
 				if (v) {
-					loadOptionEntries[i].entry.value = v;
+					saveOptionEntries[i].entry.value = v;
 					++count;
 				}
 			}
@@ -308,19 +381,22 @@ function CreateSettingsChanger() {
 		} else if (_action = 'cancel') {
 			hideFunction(false);
 		} else {
-			LogSettings.error('Unknown _action in HOOK_ChangeSettings.update(): ' + _action);
+			LogTest.error('Unknown _action in HOOK_ChangeSettings.update(): ' + _action);
 		}
 	}
 
 	function setConfig(text) {
+		LogTest.log('ChangeSettings: setConfig: ', renderValue(text));
 		_config = text;
 	}
 
 	function setOptions(options) {
+		LogTest.log('ChangeSettings: setOptions: ', options);
 		_options = options;
 	}
 
 	function setAction(action) {
+		LogTest.log('ChangeSettings: setAction: ', renderValue(action));
 		_action = action;
 	}
 
@@ -363,7 +439,7 @@ HOOK_Run = doTests;
 HOOK_Ready = CreateReady();
 HOOK_QueryString = CreateQueryString('?links=test-config');
 HOOK_LocalStorage = CreateStorage();
-let remoteFile = CreateRemoteFile('!title Test\n\nInitial');
+let remoteFile = CreateRemoteFile();
 HOOK_Download = remoteFile.download;
 HOOK_Upload = remoteFile.upload;
 HOOK_ChangeSettings = CreateSettingsChanger();
@@ -411,7 +487,8 @@ async function readTests(url) {
 		// Check appropriate length
 		if (fields.length <= 1) {
 			// Should have more than 1 field
-			LogError.error('Invalid record: ' + record);
+			LogTest.error('Invalid record: ' + record);
+			if (StopOnFirstError) return null;
 			continue;
 		}
 		if (names == null) {
@@ -422,6 +499,7 @@ async function readTests(url) {
 			// Check length of data
 			if (fields.length != names.length) {
 				LogTest.error('Invalid number of fields: ' + fields.length);
+				if (StopOnFirstError) return null;
 				continue;
 			}
 			// Create entry
@@ -452,6 +530,7 @@ async function readTests(url) {
 
 // Execute tests {{{
 
+let prevStatus = '';
 async function executeTest(data) {
 	let result = {
 		skipped: 0,
@@ -470,28 +549,27 @@ async function executeTest(data) {
 	//LogTest.devlog(data);
 
 	// Initialize
-	HOOK_LocalStorage.clear();
+	if (!data.keepStorage) {
+		HOOK_LocalStorage.clear();
+	}
 	// Start with the correct QueryString to get the right ConfigName
 	let qs = [];
-	if (data.iniOverrideOpt != null) qs.push('links-override=test-override-config');
-	if (data.iniLoadOpt != null) qs.push('links=test-config');
-	if (data.iniSaveOpt != null && data.iniOverrideOpt == null && data.iniLoadOpt == null) qs.push('save=test-save-config');
-	qs = '?' + qs.join('&');
+	if (data.iniOverrideArg != null) qs.push('links-override=' + data.iniOverrideArg);
+	if (data.iniLoadArg != null) qs.push('links=' + data.iniLoadArg);
+	if (data.iniSaveArg != null) qs.push('save=' + data.iniSaveArg);
+	if (qs.length > 0) qs = '?' + qs.join('&'); else qs = '';
 	HOOK_QueryString.set(qs);  //triggers re-evaluation of ConfigLoadKey
 	//LogTest.devlog('ConfigLoadKey after clear: \'' + UrlResolver.getConfigLoadKey() + '\'');
-	// Set the Load/SaveOptions first, because these are used for the
-	// UsedConfigName that is part of other LocalStorage keys.
-	if (data.iniOverrideOpt != null) Data.writeLoadOverrideOptions(data.iniOverrideOpt);
-	if (data.iniLoadOpt != null) Data.writeLoadOptions(data.iniLoadOpt);
-	if (data.iniSaveOpt != null) Data.writeSaveOptions(data.iniSaveOpt);
-	//LogTest.devlog('ConfigLoadKey after Option set: \'' + UrlResolver.getConfigLoadKey() + '\'');
 	HOOK_LocalStorage.reset();  //triggers re-evaluation of UsedLoadConfigName
-	HOOK_QueryString.reset();  //triggers re-evaluation of ConfigLoadKey
 	//LogTest.devlog('ConfigLoadKey after 2nd reset: \'' + UrlResolver.getConfigLoadKey() + '\'');
 	if (data.iniLinks != null) Data.writeLocalLinks(data.iniLinks);
 	if (data.iniCleanLinks != null) Data.writeCleanLinks(data.iniCleanLinks);
 	HOOK_QueryString.reset();  //triggers re-evaluation of preliminary/download/fallback
 	HOOK_LocalStorage.log();
+	if (!data.keepStorage) {
+		clearStatus();
+		prevStatus = '';
+	}
 
 	remoteFile.set(data.iniRemoteFile);
 
@@ -505,18 +583,21 @@ async function executeTest(data) {
 	}
 
 	// If we should set Settings, trigger that and wait for it
-	if (data.configAction != null && data.configAction != '') {
-		HOOK_ChangeSettings.setConfig(data.config);
+	if (data.cnfAction != null && data.cnfAction != '') {
+		//LogTest.devlog('Prepare ChangeSettings');
+		HOOK_ChangeSettings.setConfig(data.cnfLinks);
 		let options = [];
-		if (data.loadOpt1 != '') options.push(data.loadOpt1);
-		if (data.loadOpt2 != '') options.push(data.loadOpt2);
+		if (data.cnfLoadOpt1 != '') options.push(data.cnfLoadOpt1);
+		if (data.cnfLoadOpt2 != '') options.push(data.cnfLoadOpt2);
 		if (options.length < 1) options.push('');  //always at least 1 LoadOption
-		options.push(data.saveOpt);  //may be ''
+		options.push(data.cnfSaveOpt);  //may be ''
 		//LogTest.devlog('Options: ', options);
 		HOOK_ChangeSettings.setOptions(options);
-		HOOK_ChangeSettings.setAction(data.configAction);
+		HOOK_ChangeSettings.setAction(data.cnfAction);
+		//LogTest.devlog('Trigger ChangeSettings');
 		showSettingsPanel();
 		await HOOK_Ready.wait();
+		//LogTest.devlog('Finished ChangeSettings');
 	}
 
 	// Check expected result
@@ -559,6 +640,18 @@ async function executeTest(data) {
 			++result.errors;
 		}
 	}
+	if (data.expStatus != null) {
+		let status = document.getElementById('StatusLine').textContent;
+		let curStatus = status.replace(/[^a-zA-Z0-9]/g, '');
+		let fullStatus = (prevStatus != '') ? prevStatus + ' + ' + data.expStatus : data.expStatus;
+		let expStatus = fullStatus.replace(/[^a-zA-Z0-9]/g, '');
+		if (curStatus != expStatus) {
+			LogTest.error('Test ' + data.name + ': Status (=' + renderValue(status) + ') has not expected value (=' + renderValue(fullStatus) + ')');
+			LogTest.debug('Full Status: \'' + status + '\'');
+			++result.errors;
+		}
+		prevStatus = fullStatus;  //for next testcase
+	}
 
 	if (result.errors == 0) {
 		LogTest.important('Tested ' + data.name + ': Pass');
@@ -581,7 +674,10 @@ async function executeTests(test_cases) {
 		++result.tests;
 		result.skipped += result1.skipped;
 		result.errors += result1.errors;
-		if (result1.errors > 0) result.failed.push(data.name);
+		if (result1.errors > 0) {
+			result.failed.push(data.name);
+			if (StopOnFirstError) return result;
+		}
 	}
 	return result;
 }
@@ -598,6 +694,7 @@ async function doTests() {
 		let result = await executeTests(test_cases);
 		result.name = test_set;
 		results.push(result);
+		if (result.errors > 0 && StopOnFirstError) break;
 	}
 
 	// Prepare results for screen
@@ -622,12 +719,15 @@ async function doTests() {
 		}
 		if (result.failed.length > 0 && result.failed.length <= 20) {
 			for (let j = 0; j < result.failed.length; ++j) {
-				s += ':\n- ' + result.failed[j];
+				s += '\n- ' + result.failed[j];
 			}
 		}
 		s += '\n';
 	}
 	alert(s);
+
+	// Make Settings function normal again
+	HOOK_ChangeSettings = null;
 }
 
 // }}}

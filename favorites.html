@@ -2083,8 +2083,8 @@ function uploadLinks(value) {
 			resolveFunc(true);
 		} else {
 			// Failed
-			LogUpDownload.error('Failed to upload Links, better luck next time (' + this.status + ')');
-			addStatus('Save ' + this.status);
+			LogUpDownload.error('Failed to upload Links, better luck next time (' + status + ')');
+			addStatus('Save ' + status);
 			updateSettingsConflict(Data.linksDirty());
 			resolveFunc(false);  //do not see this as a fail
 		}
@@ -4083,6 +4083,7 @@ function initSettingsPanel() {
 	// Other global variables for Settings (will be assigned in createSettings())
 	let settingsText;
 	let loadOptionEntries = [], saveOptionEntries = [];
+	let recreateOptionEntries;
 
 	// Create the minimal hooks (expose functions) and defer rest at first showing
 	showSettingsPanel = showSettings;
@@ -4222,8 +4223,22 @@ function initSettingsPanel() {
 		let optionsPanel = document.createElement('div');
 		optionsPanel.className = 'options';
 		settingsArea.appendChild(optionsPanel);
+		createOptionEntries(optionsPanel);
 
-		// Create OptionEntries
+		recreateOptionEntries = () => {
+			// Clean current Panel
+			optionsPanel.textContent = '';
+			loadOptionEntries = [];
+			saveOptionEntries = [];
+			// Recreate Panel
+			createOptionEntries(optionsPanel);
+		};
+
+		return true;
+	}
+
+	// Create Option Entries
+	function createOptionEntries(optionsPanel) {
 		function createOption(labelText, getData, saveData) {
 			let label = document.createElement('div');
 			label.className = 'label';
@@ -4304,7 +4319,6 @@ function initSettingsPanel() {
 				});
 			saveOptionEntries.push(option);
 		}
-		return true;
 	}
 
 	function updateConflict(conflicted) {
@@ -4352,6 +4366,10 @@ function initSettingsPanel() {
 				if (HOOK_Ready != null) HOOK_Ready.stop();
 				return;
 			}
+		} else if (HOOK_ChangeSettings != null) {
+			// Panel already created, but do recreate what is needed
+			// in test conditions.
+			recreateOptionEntries();
 		}
 		// Display items for conflicted Settings
 		updateConflict();
@@ -4432,6 +4450,8 @@ function initSettingsPanel() {
 				if (saveOptionEntries[i].saveData()) saveOptionsChanged = true;
 			}
 			if (loadOptionsChanged || saveOptionsChanged) addStatus('Options Changed');
+			// If LoadOptions have changed, save the LocalLinks under the new key
+			if (loadOptionsChanged) Data.writeLocalLinks(saveLinks);
 			// Update Links
 			if (save == 'clear' || settingsText.value == '') {
 				LogSettings.log('Clear settings');
@@ -5031,19 +5051,27 @@ function updateLinks(editLinks, downloadLinks, forceUpload, preRenderCancel) {
 	//        |          |            || Update |        |   Update   |
 	//  Local | Download | CleanLinks ||  Local | Upload | CleanLinks | StatusLine   | Remarks
 	// -------|----------|------------||--------|--------|------------|--------------|-------------
+	// (downloadLinks == null)
+	//   -/e  |     -    |      -     ||    no  |    no  |      no    | [Default]    | Use DefaultLinks
+	//    A   |     -    |      -     ||    no  |   yes  |     yes    | [New]        | New Local
+	//    -   |     -    |      A     ||   yes  |    no  |      no    | [Clean]      | Use Clean
 	//    A   |     -    |      A     ||    no  |    no  |      no    |              |
 	//    B   |     -    |      A     ||    no  |   yes  |     yes    |              |
-	//    A   |     -    |      -     ||    no  |   yes  |     yes    | [New]        | New Local
+	// (links == null)
 	//    -   |     A    |      A     ||   yes  |    no  |      no    | [No Local]   |
-	//    e   |     A    |      A     ||   yes  |    no  |      no    | [Clear]      |
 	//    -   |     B    |      A     ||   yes  |    no  |     yes    | [No Local]   |
 	//    -   |     A    |      -     ||   yes  |    no  |     yes    | [No Local]   | New Download
+	// (links_empty)
+	//    e   |     A    |      A     ||   yes  |    no  |      no    | [Clear]      |
 	//    e   |     B    |      A     ||   yes  |    no  |     yes    | [Clear]      |
 	//    e   |     A    |      -     ||   yes  |    no  |     yes    | [No Local]   | New Download
+	// (local_download_same)
 	//    A   |     A    |      A     ||    no  |    no  |      no    | [Same]       |
 	//    B   |     B    |      A     ||    no  |    no  |     yes    | [Same]       |
 	//    A   |     A    |      -     ||    no  |    no  |     yes    | [Same]       |
+	// (else)
 	//    A   |     B    |      A     ||   yes  |    no  |     yes    | [Render]     |
+	// (local_new)
 	//    B   |     A    |      A     ||    no  |   yes  |      no    | [Save Dirty] |
 	//    B   |     C    |      A     ||    no  |    no  |      no    | [Conflict]   | Do not render Downloaded
 	//    A   |     B    |      -     ||    no  |    no  |      no    | [Conflict]   | Do not update Clean
@@ -5097,11 +5125,27 @@ function updateLinks(editLinks, downloadLinks, forceUpload, preRenderCancel) {
 
 	// Determine how to integrate Download into Local and Clean
 	if (downloadLinks == null) {
-		// Case A-A, B-A, A--: Not downloaded
+		// Case ---, e--, --A, A-A, B-A, A--: Not downloaded
 		if (cleanLinks == null) {
-			// Case A--: New links
-			LogLinksUpdate.important('No download, no clean, new local');
-			addStatus('New');
+			// Case ---, e--, A--
+			if (links == null || links == '') {
+				// Case ---, e--: Use DefaultLinks
+				LogLinksUpdate.important('No download, no clean, no local, use default');
+				links = DefaultLinks;
+				addStatus('Default');
+			} else {
+				// Case A--: New links
+				LogLinksUpdate.important('No download, no clean, new local');
+				addStatus('New');
+				upload = true;
+			}
+		} else if (links == null) {
+			// Case --A: Use Clean
+			links = cleanLinks;
+			local_changed = local_new = false;
+			addStatus('Clean');
+			updateLocal = true;
+			upload = true;
 		} else if (!local_changed) {
 			// Case A-A: Nothing to update
 		} else {
@@ -5170,8 +5214,14 @@ function updateLinks(editLinks, downloadLinks, forceUpload, preRenderCancel) {
 				if (download_new) {
 					// Case BCA, AB-: All three are different
 					LogLinksUpdate.important('Local Links and downloaded Links have both changed, display local');
-					addStatus('Conflict');
-					conflict = true;
+					if (forceUpload) {
+						LogLinksUpdate.important('Force Update');
+						update = true;
+					} else {
+						LogLinksUpdate.important('Local Links and downloaded Links have both changed, display local');
+						addStatus('Conflict');
+						conflict = true;
+					}
 				} else {
 					// Case BAA: local Links different from others
 					LogLinksUpdate.important('Local Links newer than downloaded, use local Links');
