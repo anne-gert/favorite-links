@@ -264,12 +264,11 @@ body {
 
 /* Item Groups for continuation */
 
-.group .item {
+.group > .item {  /* Group leader */
+}
+.group > .item > .item {  /* Continuation items */
 	display: inline;
 	margin-left: 0.4em;
-}
-.group .item:first-child {
-	margin-left: unset;
 }
 
 /* Item Checkboxes */
