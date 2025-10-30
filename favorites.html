@@ -238,6 +238,44 @@ body {
 
 
 /****************************************************************************
+ * Icons
+ ****************************************************************************/
+/* Icons can be one of three types:
+ * - Image: img.icon.img-icon
+ * - SVG: .icon.svg-icon > svg  (also used for char:x icons)
+ * - HTML: .icon.html-icon > div
+ * Icons can be used in one of two places:
+ * - Link icon: .link > .icon
+ * - Custom checkbox: .custom-checkbox > .icon
+ */
+
+.icon {
+	width: 1.0em; height: 1.0em;
+	margin-right: 0.2em;
+	vertical-align: -10%;
+}
+
+.html-icon, .svg-icon {
+	display: inline-block;
+	padding: 0em;
+	text-decoration: none;
+}
+.html-icon div {
+	position: relative;
+	margin: 0em; padding: 0em;
+	transform-origin: 0 0;
+}
+.svg-icon svg {
+	position: relative;
+	width: 100%; height: 100%;
+	margin: 0em; padding: 0em;
+	transform-origin: 0 0.5;
+}
+svg {
+	fill: currentColor; stroke: none;  /* default color */
+}
+
+/****************************************************************************
  * Item and SubItem styles
  ****************************************************************************/
 
@@ -294,16 +332,20 @@ body {
 	transition: transform 0.05s ease-out;  /* used when hover -> not-hover */
 }
 .custom-checkbox:hover {
-	transform: scale(1.2);
+	transform: scale(1.3);
 	transition: transform 0.2s ease-out;  /* used when not-hover -> hover */
 }
-.custom-checkbox .text-icon {
-	transform: scale(1.7);
+.custom-checkbox .icon {
 	margin: 0px;
 }
-.custom-checkbox img.text-icon {
+.custom-checkbox .img-icon {
+	transform: scale(1.2);
+}
+.custom-checkbox .svg-icon {
 	transform: scale(1.4);
-	margin: 0px;
+}
+.custom-checkbox .html-icon {
+	transform: scale(1.4);
 }
 .checkbox-label.not-first-option {
 }
@@ -326,11 +368,6 @@ body {
 
 /* Item Icons */
 
-.item-icon {
-	width: 1.0em; height: 1.0em;
-	margin-right: 0.2em;
-	vertical-align: -10%;
-}
 .link .item-icon {
 	vertical-align: -15%;
 }
@@ -342,16 +379,6 @@ body {
 	vertical-align: 15%;
 }
 .items > .group > .item .link {  /* selects all grouped links */
-}
-.text-icon {
-	display: inline-block;
-	padding: 0em;
-	text-decoration: none;
-}
-.text-icon div {
-	position: relative;
-	margin: 0em; padding: 0em;
-	transform-origin: 0 0;
 }
 
 /* Item Separator */
@@ -371,7 +398,7 @@ body {
 .search-form .button {
 	margin: 0.3em;
 }
-.search-form .button .item-icon {
+.search-form .button .icon {
 	width: 1.5em; height: 1.5em;
 	vertical-align: -25%;
 }
@@ -920,8 +947,8 @@ These are some examples of the available features.
 `;
 // }}}
 
-const KrulSvg_alt = '<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><path d="M16.5,.4C13.9,.7 11.5,2.2 9.5,3.9 7.9,5.4 6.1,7 5.8,9.3 5.5,10.2 6.6,11.1 6.6,11.5 4.7,12.7 2.9,13.9 1,14.9-0,15.6.5,17.4 1.8,17.1 3.2,16.5 4.5,15.6 5.9,14.8 7.2,14 8.5,13.2 9.8,12.3c.8,-0.4 1.6,.1 2.5,.1 1.2,.1-0.5,1-0.7,1.4-0.9,.9-2.2,2-2,3.4.1,1.5 1.7,2.3 3.1,2.2 1.2,0 2.4,-0.2 3.6,-0.5 1.5,-0.4.7,-2.8-0.7,-2.3-1.1,.1-2.6,.7-3.4,.2 1,-1.4 2.7,-2.3 3.2,-3.9.4,-1.1-0.4,-2.2-1.4,-2.5-0.5,-0.2-1.1,-0.3-0.3,-0.7C15.5,8.4 17.5,7 18.9,5 19.8,3.9 19.8,2.1 18.6,1.1 18.1,.6 17.3,.4 16.5,.4Zm.2,2.5c1.1,.3-0.4,1.6-0.8,2-1.8,1.9-4.1,3.2-6.2,4.7-0.7,.4-2.1,-0-1.2,-0.9C10.1,6.2 12.6,4.3 15.4,3.1c.4,-0.2.9,-0.3 1.3,-0.2z"/></svg>'
-const KrulSvg = '<svg width="25" height="25" xmlns="http://www.w3.org/2000/svg"><path d="M9.7,-0.6C8.1,-0.5 7,.8 6,1.8 4.8,3.2 3.6,4.6 3.2,6.3 2.7,7.6 3.7,8.9 4.1,9.7 2.5,11.2.9,12.7-0.7,14.3c-0.6,1.3 1.3,1.9 1.9,.7 1.6,-1.6 3.2,-3.1 4.8,-4.7 1.3,.2 3.4,1.3 2.1,2.8-1,2-2.1,3.9-2.9,5.9-0.7,1.6.8,3.5 2.5,3 1.8,-0.6 3.4,-1.7 5,-2.8C21.8,12.6 25.2,5.9 24,6.7 19.5,11.8 14.3,16.5 8.3,19.8c-1,.9-1.9,.2-1,-0.9 1,-2 2.1,-3.9 2.9,-5.9.5,-1.4-0.2,-2.9-1.5,-3.6-0.7,-0.4-1.7,-0.5-0.6,-1.2 1.5,-1.6 3,-3.1 4.2,-4.9.9,-1.4-0.1,-3.4-1.6,-3.9-0.3,-0.1-0.7,-0.2-1,-0.2zm.1,1.9c1.5,.1.9,1.7.1,2.3C8.5,5.2 7.1,6.7 5.5,8.2 4.2,7.3 5.4,5.7 6,4.7 7,3.4 8.1,2.1 9.5,1.3l.2,-0z"/></svg>';
+const KrulSvg_alt = '<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M16.5,.4C13.9,.7 11.5,2.2 9.5,3.9 7.9,5.4 6.1,7 5.8,9.3 5.5,10.2 6.6,11.1 6.6,11.5 4.7,12.7 2.9,13.9 1,14.9-0,15.6.5,17.4 1.8,17.1 3.2,16.5 4.5,15.6 5.9,14.8 7.2,14 8.5,13.2 9.8,12.3c.8,-0.4 1.6,.1 2.5,.1 1.2,.1-0.5,1-0.7,1.4-0.9,.9-2.2,2-2,3.4.1,1.5 1.7,2.3 3.1,2.2 1.2,0 2.4,-0.2 3.6,-0.5 1.5,-0.4.7,-2.8-0.7,-2.3-1.1,.1-2.6,.7-3.4,.2 1,-1.4 2.7,-2.3 3.2,-3.9.4,-1.1-0.4,-2.2-1.4,-2.5-0.5,-0.2-1.1,-0.3-0.3,-0.7C15.5,8.4 17.5,7 18.9,5 19.8,3.9 19.8,2.1 18.6,1.1 18.1,.6 17.3,.4 16.5,.4Zm.2,2.5c1.1,.3-0.4,1.6-0.8,2-1.8,1.9-4.1,3.2-6.2,4.7-0.7,.4-2.1,-0-1.2,-0.9C10.1,6.2 12.6,4.3 15.4,3.1c.4,-0.2.9,-0.3 1.3,-0.2z"/></svg>'
+const KrulSvg = '<svg viewBox="0 0 25 25"xmlns="http://www.w3.org/2000/svg"><path d="M9.7,-0.6C8.1,-0.5 7,.8 6,1.8 4.8,3.2 3.6,4.6 3.2,6.3 2.7,7.6 3.7,8.9 4.1,9.7 2.5,11.2.9,12.7-0.7,14.3c-0.6,1.3 1.3,1.9 1.9,.7 1.6,-1.6 3.2,-3.1 4.8,-4.7 1.3,.2 3.4,1.3 2.1,2.8-1,2-2.1,3.9-2.9,5.9-0.7,1.6.8,3.5 2.5,3 1.8,-0.6 3.4,-1.7 5,-2.8C21.8,12.6 25.2,5.9 24,6.7 19.5,11.8 14.3,16.5 8.3,19.8c-1,.9-1.9,.2-1,-0.9 1,-2 2.1,-3.9 2.9,-5.9.5,-1.4-0.2,-2.9-1.5,-3.6-0.7,-0.4-1.7,-0.5-0.6,-1.2 1.5,-1.6 3,-3.1 4.2,-4.9.9,-1.4-0.1,-3.4-1.6,-3.9-0.3,-0.1-0.7,-0.2-1,-0.2zm.1,1.9c1.5,.1.9,1.7.1,2.3C8.5,5.2 7.1,6.7 5.5,8.2 4.2,7.3 5.4,5.7 6,4.7 7,3.4 8.1,2.1 9.5,1.3l.2,-0z"/></svg>';
 
 // }}}
 
@@ -3535,148 +3562,156 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 	let icon_element = null;
 
 	// Render icon_url
+	let html_icon = null;
+	let svg_icon = null;
+	let img_icon = null;
+	LogIcon.debug('Loading icon for target \'' + target_url + '\': ' + (icon_url != null ? '\'' + icon_url + '\'' : 'null'));
+
 	let m;  //for regex matches
 	if (icon_url == null) {
-		LogIcon.debug('Loading icon for target \'' + target_url + '\': null');
+		// No icon
 	} else if (icon_url == 'none') {
-		LogIcon.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
+		// No icon
+	} else if (icon_url == 'empty') {
+		html_icon = '';
 	} else if (m = icon_url.match(/^html:(.+)/i)) {
-		let html = m[1].replace(/&(?:sp|spc|space);/ig, ' ');
-		// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
+		html_icon = m[1].replace(/&(?:sp|spc|space);/ig, ' ');
+	} else if (m = icon_url.match(/^char:(.+)/i)) {
+		let text = m[1];
+		// Replace 'U+XXX...'
+		function hexChar(hex) {
+			let i = Number('0x' + hex);
+			if (i > 0xFFFF) {
+				// JavaScript only supports UTF-16, so for codepoints
+				// above 0x10000, surrogate pairs are used, see
+				// https://en.wikipedia.org/wiki/UTF-16#U+0000_to_U+D7FF_and_U+E000_to_U+FFFF
+				let w1 = 0xD800 + (((i - 0x10000) >> 10) & 0x3FF);  //higher 10 bits
+				let w2 = 0xDC00 + (i & 0x3FF);  //lower 10 bits
+				return String.fromCharCode(w1, w2);
+			} else {
+				return String.fromCharCode(i);
+			}
+		}
+		text = text.replace(/^U\+([0-9a-f]+)$/i, s => hexChar(s.substring(2)));
+		svg_icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text text-anchor="middle" x="50%" y=".9em" font-size="90">' + text + '</text></svg>';
+	} else if (icon_url == 'krul') {
+		svg_icon = KrulSvg;
+	} else {
+		img_icon = document.createElement('img');
+
+		let alternatives = [], methods = [], urls = [];  //prepare options to use for the icon
+		if (m = icon_url.match(/^alt(?::([^?]+))?(?:\?(.+))?/i)) {
+			// icon_url contains an alt specification
+			let method = m[1];
+			let url = m[2];
+			if (method == null || method == '' || method == 'any' || method == '*') {
+				// Add all known methods
+				methods.push('google');
+			} else {
+				// Add only the specified method
+				methods.push(method);
+			}
+			if (url != null && url != '') {
+				// Add the specified URL only
+				urls.push(url);
+			} else {
+				// Add the icon_url (but that doesn't contain a URL) and target_url
+				if (target_url != null && target_url != '') {
+					urls.push(target_url);
+				}
+			}
+		} else {
+			// icon_url contains a URL of the icon
+			alternatives.push(icon_url);
+			if (!skip_alternatives) {
+				// Try the alternatives in order of 'likely correct'.
+				// Note that the google-favicons always returns an image, even a generic one, so it
+				// will always prevent further alternatives to be attempted.
+				methods.push('google');
+				if (icon_url != null) {
+					urls.push(icon_url);
+				}
+				if (target_url != null) {
+					urls.push(target_url);
+				}
+			}
+		}
+		//LogIcon.log('All methods for ' + icon_url, methods);
+		//LogIcon.log('All urls for ' + icon_url, urls);
+		// Go through methods and urls and add alternatives
+		for (let m = 0; m < methods.length; ++m) {
+			let method = methods[m];
+			for (let u = 0; u < urls.length; ++u) {
+				if (method == 'google') {
+					alternatives.push(getGoogleAltIconUrl(urls[u]));
+				} else {
+					LogIcon.error('Unknown alt icon method: ' + method);
+				}
+			}
+		}
+		//LogIcon.log('All alternatives for ' + icon_url, alternatives);
+		// Remove duplicates
+		let seen = {};
+		let alt_list = alternatives;  //may have duplicates
+		alternatives = [];  //get the unique ones
+		for (let a = 0; a < alt_list.length; ++a) {
+			if (!seen[alt_list[a]]) {
+				seen[alt_list[a]] = true;
+				alternatives.push(alt_list[a]);
+			}
+		}
+		//LogIcon.log('All unique alternatives for ' + icon_url, alternatives);
+		// Set the icon urls until we find one that works
+		let try_next = function() {
+			if (alternatives.length > 0) {
+				// Try next alternative
+				//LogIcon.log('alternatives.length=' + alternatives.length);
+				let alt = alternatives.shift();
+				if (img_icon.src != null && img_icon.src != '') {
+					LogIcon.warn('Cannot load icon \'' + img_icon.src + '\', try \'' + alt + '\'');
+				}
+				img_icon.src = alt;
+			} else {
+				// Stop trying
+				LogIcon.error('Cannot load icon: ' + img_icon.src);
+				if (alt_text != null) {
+					// prepare to show the alt text
+					img_icon.src = '';
+				} else {
+					// hide entire image
+					img_icon.style.visibility = 'hidden';
+				}
+				img_icon.onerror = null;  //stop handling errors
+			}
+		}
+		img_icon.onerror = try_next;
+		try_next();  //set first alternative
+
+		if (alt_text != null) {
+			img_icon.alt = alt_text;
+		}
+	}
+
+	if (img_icon != null) {
+		img_icon.className = 'icon img-icon';
+		icon_element = img_icon;
+		icon_present = true;
+	} else if (html_icon != null) {
 		let iconDiv = document.createElement('div');
-		iconDiv.className = 'item-icon text-icon';
+		iconDiv.className = 'icon html-icon';
 		let htmlDiv = document.createElement('div');
-		htmlDiv.innerHTML = html;  //also takes care of HTML rendering
+		htmlDiv.innerHTML = html_icon;  //also takes care of HTML rendering, including entities
 		FillScaler.observe(htmlDiv);
 		iconDiv.appendChild(htmlDiv);
 		icon_element = iconDiv;
 		icon_present = true;
-	} else {
-		LogIcon.debug('Loading icon for target \'' + target_url + '\': \'' + icon_url + '\'');
-		let img = document.createElement('img');
-		img.className = 'item-icon';
+	} else if (svg_icon != null) {
+		let iconDiv = document.createElement('div');
+		iconDiv.className = 'icon svg-icon';
+		iconDiv.innerHTML = svg_icon;
+		FillScaler.observe(iconDiv.children[0]);  //this is the <svg> element
+		icon_element = iconDiv;
 		icon_present = true;
-		if (icon_url == 'empty') {
-			img.style.visibility = 'hidden';
-			icon_present = false;  //there is an image, but still empty
-		} else if (m = icon_url.match(/^char:(.+)/i)) {
-			let text = m[1];
-			// Replace 'U+XXX...'
-			function hexChar(hex) {
-				let i = Number('0x' + hex);
-				if (i > 0xFFFF) {
-					// JavaScript only supports UTF-16, so for codepoints
-					// above 0x10000, surrogate pairs are used, see
-					// https://en.wikipedia.org/wiki/UTF-16#U+0000_to_U+D7FF_and_U+E000_to_U+FFFF
-					let w1 = 0xD800 + (((i - 0x10000) >> 10) & 0x3FF);  //higher 10 bits
-					let w2 = 0xDC00 + (i & 0x3FF);  //lower 10 bits
-					return String.fromCharCode(w1, w2);
-				} else {
-					return String.fromCharCode(i);
-				}
-			}
-			text = text.replace(/^U\+([0-9a-f]+)$/i, s => hexChar(s.substring(2)));
-			// Create a 'data:...' pseudo URL that holds the data as SVG and put this text in a text node.
-			img.classList.add('text-icon');
-			icon_url = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text text-anchor="middle" x="50%" y=".9em" font-size="90">' + text + '</text></svg>';
-			img.src = icon_url;
-		} else if (icon_url == 'krul') {
-			img.classList.add('text-icon');
-			icon_url = 'data:image/svg+xml,' + KrulSvg;
-			img.src = icon_url;
-		} else {
-			let alternatives = [], methods = [], urls = [];  //prepare options to use for the icon
-			if (m = icon_url.match(/^alt(?::([^?]+))?(?:\?(.+))?/i)) {
-				// icon_url contains an alt specification
-				let method = m[1];
-				let url = m[2];
-				if (method == null || method == '' || method == 'any' || method == '*') {
-					// Add all known methods
-					methods.push('google');
-				} else {
-					// Add only the specified method
-					methods.push(method);
-				}
-				if (url != null && url != '') {
-					// Add the specified URL only
-					urls.push(url);
-				} else {
-					// Add the icon_url (but that doesn't contain a URL) and target_url
-					if (target_url != null && target_url != '') {
-						urls.push(target_url);
-					}
-				}
-			} else {
-				// icon_url contains a URL of the icon
-				alternatives.push(icon_url);
-				if (!skip_alternatives) {
-					// Try the alternatives in order of 'likely correct'.
-					// Note that the google-favicons always returns an image, even a generic one, so it
-					// will always prevent further alternatives to be attempted.
-					methods.push('google');
-					if (icon_url != null) {
-						urls.push(icon_url);
-					}
-					if (target_url != null) {
-						urls.push(target_url);
-					}
-				}
-			}
-			//LogIcon.log('All methods for ' + icon_url, methods);
-			//LogIcon.log('All urls for ' + icon_url, urls);
-			// Go through methods and urls and add alternatives
-			for (let m = 0; m < methods.length; ++m) {
-				let method = methods[m];
-				for (let u = 0; u < urls.length; ++u) {
-					if (method == 'google') {
-						alternatives.push(getGoogleAltIconUrl(urls[u]));
-					} else {
-						LogIcon.error('Unknown alt icon method: ' + method);
-					}
-				}
-			}
-			//LogIcon.log('All alternatives for ' + icon_url, alternatives);
-			// Remove duplicates
-			let seen = {};
-			let alt_list = alternatives;  //may have duplicates
-			alternatives = [];  //get the unique ones
-			for (let a = 0; a < alt_list.length; ++a) {
-				if (!seen[alt_list[a]]) {
-					seen[alt_list[a]] = true;
-					alternatives.push(alt_list[a]);
-				}
-			}
-			//LogIcon.log('All unique alternatives for ' + icon_url, alternatives);
-			// Set the icon urls until we find one that works
-			let try_next = function() {
-				if (alternatives.length > 0) {
-					// Try next alternative
-					//LogIcon.log('alternatives.length=' + alternatives.length);
-					let alt = alternatives.shift();
-					if (img.src != null && img.src != '') {
-						LogIcon.warn('Cannot load icon \'' + img.src + '\', try \'' + alt + '\'');
-					}
-					img.src = alt;
-				} else {
-					// Stop trying
-					LogIcon.error('Cannot load icon: ' + img.src);
-					if (alt_text != null) {
-						// prepare to show the alt text
-						img.src = '';
-					} else {
-						// hide entire image
-						img.style.visibility = 'hidden';
-					}
-					img.onerror = null;  //stop handling errors
-				}
-			}
-			img.onerror = try_next;
-			try_next();  //set first alternative
-		}
-		if (alt_text != null) {
-			img.alt = alt_text;
-		}
-		icon_element = img;
 	}
 
 	// Return the URL where the default icon should be.
