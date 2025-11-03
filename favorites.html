@@ -302,10 +302,12 @@ svg {
 
 /* Item Groups for continuation */
 
-.group > .item {  /* Group leader */
-}
-.group > .item > .item {  /* Continuation items */
+.group > .item {
 	display: inline;
+}
+.group > .item:first-of-type {  /* Group leader */
+}
+.group > .item:not(.item:first-of-type) {  /* Continuation items */
 	margin-left: 0.4em;
 }
 
@@ -3092,27 +3094,35 @@ function render(parsed, container, cancel) {
 		} else {
 			// Render Item is (sub-)Item
 			//LogRender.log('Render Item ' + name);
+			let _groupContainer;
 			let _itemContainer;
 			let _subContainer;
 			addItemContainer = function() {
-				let groupContainer;
 				if (contItems != null) {
-					groupContainer = document.createElement('div');  //make a div for the continuation group
-					groupContainer.className = 'group';
-					container.appendChild(groupContainer);
+					// This is the 'group-leader'
+					_groupContainer = document.createElement('div');  //make a div for the continuation group
+					_groupContainer.className = 'group';
+					container.appendChild(_groupContainer);
 				} else {
-					groupContainer = container;  //there is no group, use same container
+					// This is not a 'group-leader'
+					_groupContainer = container;  //use same container
 				}
 				_itemContainer = document.createElement('div');
-				_itemContainer.className = 'item level' +  level;
-				groupContainer.appendChild(_itemContainer);
+				_itemContainer.className = 'item level' + level;
+				_groupContainer.appendChild(_itemContainer);
 				return _itemContainer;
 			}
-			addSubContainer = function() {
-				_subContainer = document.createElement('div');
-				_subContainer.className = 'items';
-				container.appendChild(_subContainer);
-				return _subContainer;
+			addSubContainer = function(continuation = false) {
+				if (continuation) {
+					// This is a 'group-member'
+					return _groupContainer;
+				} else {
+					// This is a sub-Item
+					_subContainer = document.createElement('div');
+					_subContainer.className = 'items';
+					container.appendChild(_subContainer);
+					return _subContainer;
+				}
 			}
 		}
 		// Create element itself
@@ -3132,7 +3142,7 @@ function render(parsed, container, cancel) {
 			//             - textContainer: Only present if there is a name
 			//                              In itemContainer if there is no linkContainer
 			//                 - text: name
-			//         - continued items
+			//     - continued items
 			//     - subContainer: Only if there are subItems
 
 			// Declare textContainer to hold the name/label
@@ -3294,7 +3304,7 @@ function render(parsed, container, cancel) {
 
 			// If there is continuation, output those items in this itemContainer too
 			if (contItems != null) {
-				outputItems(contItems, level, itemContainer, myPath, cancel);
+				outputItems(contItems, level, addSubContainer(true), myPath, cancel);
 			}
 		}
 		// Create sub-Items in container
