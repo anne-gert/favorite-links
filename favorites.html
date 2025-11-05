@@ -24,7 +24,7 @@ For syntax description of Links, see help.html
 /* Color palette - dark theme */
 .dark-theme {
 	--foreground: #DDDDDD;
-	--background: #2E323B;
+	--background: #181818;
 	--accent-color: #50A0EE;
 	--block-foreground: #000000;
 	--block-background: #C9CDD0;
@@ -67,6 +67,44 @@ For syntax description of Links, see help.html
 	font-family: var(--font-family);
 	font-size: 12pt;  /* absolute, so --font-size can be relative too */
 	scrollbar-width: thin;
+}
+
+/** Internet Explorer */
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+}
+
+/** Microsoft Edge (pre-Chromium) */
+@supports (-ms-ime-align: auto) {
+	.dark-theme {
+		--background: #3B3B3B;
+	}
+	.light-theme {
+		--background: #F7F7F7;
+	}
+}
+
+/** Safari */
+@media not all and (min-resolution: 0.001dpcm) {
+}
+
+/** Chromium (Chrome, Edge) but also Firefox */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: 0.001dpcm) {
+	.dark-theme {
+		--background: #3B3B3B;
+	}
+	.light-theme {
+		--background: #F7F7F7;
+	}
+}
+
+/** Mozilla Firefox */
+@supports (-moz-appearance: none) {
+	.dark-theme {
+		--background: #1C1B22;
+	}
+	.light-theme {
+		--background: #EAEAED;
+	}
 }
 
 
