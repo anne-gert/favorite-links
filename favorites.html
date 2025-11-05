@@ -324,6 +324,12 @@ svg {
 	color: var(--disabled-color);
 	text-decoration: line-through;
 }
+a:has(.checkbox-label.checked) {
+	text-decoration: none;
+}
+a:has(.checkbox-label.checked):hover {
+	text-decoration: underline;
+}
 
 .custom-checkbox {
 	display: inline-block;
