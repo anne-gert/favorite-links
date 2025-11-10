@@ -3426,9 +3426,15 @@ function render(parsed, container, cancel) {
 
 		// Function to update the Links
 		let updateCb = function(newCheck) {
-			const re = new RegExp('(^(?:[^\\n]*\\n){' + (lineNum - 1) + '}\\s*(?:[-*]\\s*)?)\\[(?:\\s+|\\S+)?\\]');
+			// Note: Checkbox already identified by parser. Now only locate it:
+			// - Match lineNum-1 linebreaks
+			// - Match the first [...] pair
+			const rePrevLines = '(^(?:[^\\n]*\\n){' + (lineNum - 1) + '})';  //capture 1: lines
+			const reBeforeCbx = '([^\\][]*?)';  //capture 2: No checkbox characters
+			const reCbx = '\\[(?:\\s+|[^\\][\\s]+)?\\]';  //[...]
+			const re = new RegExp(rePrevLines + reBeforeCbx + reCbx);
 			let links = Data.readLocalLinks();
-			let newLinks = links.replace(re, '$1' + newCheck);
+			let newLinks = links.replace(re, '$1$2' + newCheck);
 			if (newLinks != links) {
 				links = newLinks;
 				Data.writeLocalLinks(links);
