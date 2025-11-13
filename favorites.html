@@ -2855,6 +2855,8 @@ function parseLinks(links) {
 				} else {
 					// It is a value option
 					val = m[2];
+					let m2 = val.match(/^char:(.+)/i);
+					if (m2) name = m2[1];  //if 'char:X', only use 'X' as name
 				}
 			}
 			if (name == '_') name = ' ';

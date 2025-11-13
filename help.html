@@ -539,6 +539,8 @@ be used to define a checkbox type with custom options. The allowed options are:
     <li><dt>Unicode codepoint</dt>: Unicode codepoint notation, like 'U+2611'
         or 'U+1F44D'.
     </ul>
+    Note: This only works for single characters. For multiple characters, the
+    <code>char:ABC</code> should be used.<br>
     See below for examples.
 <li><dt>Icon</dt>: By using <code>X=icon</code>, the checkbox <code>[X]</code>
     is displayed as icon. 'X' can be any letter or short text and 'icon' can be
@@ -599,7 +601,17 @@ Example 3: Checkbox with 3 values, A, B and C:
 </p>
 
 <p>
-Example 4: Checkbox with 3 values, unknown (&#x2753;), thumbs-up (&#x1F44D;)
+Example 4: Checkbox with 3 values, I, II and III:
+<pre>
+!checkbox roman I char:II char:III
+[I]:roman Option 1
+[II]:roman Option 2
+[III]:roman Option 3
+</pre>
+</p>
+
+<p>
+Example 5: Checkbox with 3 values, unknown (&#x2753;), thumbs-up (&#x1F44D;)
 and thumbs-down (&#x1F44E;):
 <pre>
 !checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E
@@ -610,7 +622,7 @@ and thumbs-down (&#x1F44E;):
 </p>
 
 <p>
-Example 5: It is also possible to copy the unicode characters directly into
+Example 6: It is also possible to copy the unicode characters directly into
 the definition. E.g. from <a href="https://www.unicode.org/emoji/charts/full-emoji-list.html">Full Emoji List, v16.0</a>,
 copy the icon in the 'Sample' column for characters U+1F641, U+1F610 and
 U+1F642:
@@ -623,7 +635,7 @@ U+1F642:
 </p>
 
 <p>
-Example 6: Checkbox with 7 values, empty, check and 5 icons where '1' and '3'
+Example 7: Checkbox with 7 values, empty, check and 5 icons where '1' and '3'
 show the same icon because of the !icondef and '2' and '5' also show the same
 icon because both options have the same display value. The check icon
 (&#x2611;) is overriden with a checkmark (&#x2714;):
@@ -640,7 +652,7 @@ icon because both options have the same display value. The check icon
 </p>
 
 <p>
-Example 7: Links to read with the URL icon in front and a checkbox after the
+Example 8: Links to read with the URL icon in front and a checkbox after the
 text. The checkbox can be empty, '+' or '-':
 <pre>
 !checkbox good _ + - !after

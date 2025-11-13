@@ -37,19 +37,24 @@ Section
         *everything*
         *Not*this // *is bold* // * not bold * // *NOT**
 
+Test Cases for Icons
+
+    TBD
+
+Test Cases for Checkboxes
+
+    Definition
+        Custom Checkboxes url=?links-override=test/checkbox-links.txt
+
 Other Links
-
-    Other Tests
-        Checkboxes url=?links-override=test/checkbox-links.txt
-        Conflict Tests url=?links-override=test/conflict-links.txt
-
-    Default Pages
-        Example Links url=?links-override=example-links.txt
-        Default Links url=?links-override=does-not-exist
 
     Help
         Syntax url=help.html
         Load/Save url=external-files.html
+
+    Default Pages
+        Example Links url=?links-override=example-links.txt
+        Default Links url=?links-override=does-not-exist
 
 
 // vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
