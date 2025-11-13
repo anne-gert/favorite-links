@@ -292,6 +292,9 @@ body {
 	margin-right: 0.2em;
 	vertical-align: -10%;
 }
+.icon * {
+	overflow: visible;
+}
 
 .html-icon, .svg-icon {
 	display: inline-block;
@@ -307,7 +310,8 @@ body {
 	position: relative;
 	width: 100%; height: 100%;
 	margin: 0em; padding: 0em;
-	transform-origin: 0 0.5;
+	top: -0.20em;
+	transform-origin: 0 0;
 }
 svg {
 	fill: currentColor; stroke: none;  /* default color */
@@ -388,7 +392,8 @@ a:has(.checkbox-label.checked):hover {
 	transform: scale(1.2);
 }
 .custom-checkbox .svg-icon {
-	transform: scale(1.4);
+	padding-top: 0.1em;
+	transform: scale(1.2);
 }
 .custom-checkbox .html-icon {
 	transform: scale(1.4);
@@ -3655,7 +3660,13 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 			}
 		}
 		text = text.replace(/^U\+([0-9a-f]+)$/i, s => hexChar(s.substring(2)));
-		svg_icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text text-anchor="middle" x="50%" y=".9em" font-size="90">' + text + '</text></svg>';
+		if (text.length <= 3) {
+			// SVG will maintain aspect ratio, but will clip if too large
+			svg_icon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text text-anchor="middle" x="50%" y="1em" font-size="90">' + text + '</text></svg>';
+		} else {
+			// Will scale the text to fit, but changes aspect ratio
+			html_icon = text;
+		}
 	} else if (icon_url == 'krul') {
 		svg_icon = KrulSvg;
 	} else {
@@ -3803,48 +3814,32 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 var FillScaler = new ResizeObserver(function(entries) {
 	for (let entry of entries) {
 		let element = entry.target;
-		// Get entries current size
-		let w, h;
-		if (entry.borderBoxSize) {
-			let rect = entry.borderBoxSize[0];  //area of 1st (and only) fragment
-			let writingMode = element.style.writingMode;
-			//LogRender.log('FillScaler: Writing mode ' + writingMode);
-			if (writingMode.match(/^vertical/i)) {
-				// Vertical writing-mode, so inline direction is vertical
-				h = rect.inlineSize;
-				w = rect.blockSize;
-			} else {
-				// Assume horizontal writing-mode, so inline direction is horizontal
-				w = rect.inlineSize;
-				h = rect.blockSize;
-			}
-		} else {
-			let rect = entry.contentRect;
-			w = entry.contentRect.width;
-			h = entry.contentRect.height;
-		}
-		LogRender.log('FillScaler: Element size ' + w + ' x ' + h);
+		LogRender.log('FillScaler: Scaling element \'' + element.innerHTML + '\'');
+		//LogRender.devlog(entry);
+		// Get entries current size (how big it wants to be)
+		let w = element.scrollWidth, h = element.scrollHeight;
+		LogRender.debug('FillScaler: Element Scroll size ' + w + ' x ' + h);
 		// Get parent's current size
 		let parent = element.parentElement;
 		let pw = parent.offsetWidth;
 		let ph = parent.offsetHeight;
-		//LogRender.log('FillScaler: Parent size ' + pw + ' x ' + ph);
+		//LogRender.devlog('FillScaler: Parent size ' + pw + ' x ' + ph);
 		// Calculate new scaling factor
 		let scaleX = pw / w;
 		let scaleY = ph / h;
-		//LogRender.log('FillScaler: Scale with ' + scaleX + ' x ' + scaleY);
+		//LogRender.devlog('FillScaler: Scale with ' + scaleX + ' x ' + scaleY);
 		// Check if the change is big enough
 		let changeX = element._scaleX / scaleX;
 		let changeY = element._scaleY / scaleY;
-		//LogRender.log('FillScaler: Scale change ' + changeX + ' x ' + changeY);
+		//LogRender.devlog('FillScaler: Scale change ' + changeX + ' x ' + changeY);
 		if (isNaN(changeX) || changeX < 0.98 || changeX > 1.02 || isNaN(changeY) || changeY < 0.98 || changeY > 1.02) {
 			// More than 2% change
-			LogRender.debug('FillScaler: Set scale ' + scaleX + ' x ' + scaleY);
+			LogRender.log('FillScaler: Set scale ' + scaleX + ' x ' + scaleY);
 			element._scaleX = scaleX;
 			element._scaleY = scaleY;
 			entry.target.style.scale = scaleX + ' ' + scaleY;
 		} else {
-			LogRender.debug('FillScaler: Scale change too small ' + changeX + ' x ' + changeY);
+			LogRender.log('FillScaler: Scale change too small ' + changeX + ' x ' + changeY);
 		}
 	}
 });
