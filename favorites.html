@@ -809,6 +809,7 @@ const LogLinksUpdate = CreateLogger('debug');
 
 const IconRefLoopDefault = 'char:!ND!';
 const IconUndefinedDefault = 'char:!ND!';
+const CheckboxEmpty = 'char:!EE!';
 
 // Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
 // Unicode Block: Arrows
@@ -2334,11 +2335,12 @@ function CreatePending(name, timeout, onlyLast) {
 // - searchButtonDefs: Specified search button declarations
 // - rootLinks: Array of Link objects that have no parents (i.e. are roots)
 // - _iconDefs: Specified icondef declarations
-// - checkboxDefs: Specified checkbox declarations
+// - _checkboxDefs: Specified checkbox declarations
 // - styleBlocks: Array of !style...!endstyle blocks
 // - scriptBlocks: Array of !script...!endscript blocks
 // And member functions:
 // - resolveIconDefs(icon_url)
+// - resolveCheckboxDefs(name)
 function parseLinks(links) {
 	LogParse.important('Parsing Links...');
 
@@ -2358,7 +2360,7 @@ function parseLinks(links) {
 			'refloop'   : IconRefLoopDefault,
 			'undefined' : IconUndefinedDefault,
 		},
-		checkboxDefs                 : {},
+		_checkboxDefs                : {},
 		styleBlocks                  : [],
 		scriptBlocks                 : [],
 		noEdit                       : false,
@@ -2393,8 +2395,20 @@ function parseLinks(links) {
 			LogIcon.log('Icon=' + icon_url + ' -> use icon \'' + retval + '\'');
 			return retval;
 		},
+
+		// Look up the CheckboxDef name to find the correct definition
+		resolveCheckboxDefs(name) {
+			let def = this._checkboxDefs[name];
+			// If not found, try (re-)definition of 'default'
+			if (def == null && name != 'default') {
+				def = this._checkboxDefs['default'];
+			}
+			// If def is still null, use the default checkbox
+			LogParse.debug('Resolve checkbox reference ', def);
+			return def;
+		}
 	};
-	let tempCheckboxDefs = [];  //temporary checkboxDefs, because they need post-processing
+	let tempCheckboxDefs = [];  //temporary _checkboxDefs, because they need post-processing
 	let textBlock = null;  //used for literal !text ... !endtext blocks
 	let styleBlock = null;  //used for literal !style ... !endstyle blocks
 	let scriptBlock = null;  //used for literal !script ... !endscript blocks
@@ -2519,7 +2533,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a checkbox definition
-		m = line.match(/^\s*!checkbox\s+(\S+)\s+(.+?)\s*$/i);
+		m = line.match(/^\s*!checkbox\s+(\S+)(?:\s+(.+?))?\s*$/i);
 		if (m) {
 			// This is a checkbox definition
 			tempCheckboxDefs.push([ m[1], m[2] ]);
@@ -2833,8 +2847,9 @@ function parseLinks(links) {
 	// Go through CheckboxDefs and resolve the icons
 	for (let i = 0; i < tempCheckboxDefs.length; ++i) {
 		let name = tempCheckboxDefs[i][0];
+		let args = tempCheckboxDefs[i][1];
 		// Parse the arguments
-		let args = tempCheckboxDefs[i][1].split(/\s+/);  //split on whitespace
+		args = (args != null) ? args.split(/\s+/) : [];  //split on whitespace
 		let firstOptionName = null, prevOptionName = null;
 		let options = {};
 		let place = 'F';  //the default
@@ -2937,19 +2952,23 @@ function parseLinks(links) {
 				prevOptionName = name;  //advance prev
 			}
 		}
-		if (firstOptionName != null) {
-			let def = {
-				name    : name,
-				options : options,
-				first   : firstOptionName,
-				place   : place,
+		if (firstOptionName == null) {
+			LogParse.warn('Ignore !checkbox \'' + name + '\' with no options');
+			firstOptionName = 'E';
+			options[firstOptionName] = {
+				name  : firstOptionName,
+				value : CheckboxEmpty,
+				next  : firstOptionName,
 			};
-			//LogParse.devlog('!checkbox found');
-			//LogParse.log(def);
-			parsed.checkboxDefs[name] = def;
-		} else {
-			LogParse.warn('Ignore !checkbox \'' + m[1] + '\' with no options');
 		}
+		let def = {
+			name    : name,
+			options : options,
+			first   : firstOptionName,
+			place   : place,
+		};
+		//LogParse.devlog('!checkbox found ', def);
+		parsed._checkboxDefs[name] = def;
 	}
 
 	// Check if all blocks have been closed
@@ -3466,7 +3485,7 @@ function render(parsed, container, cancel) {
 		if (type == null) return retval;
 
 		// Find the checkbox definition for this type
-		let def = parsed.checkboxDefs[type];
+		let def = parsed.resolveCheckboxDefs(type);
 
 		// Placeholder for the associated label
 		let labelElement = null;

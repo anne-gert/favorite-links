@@ -92,8 +92,41 @@ loop-lengths for refloop cases are shown.
 
 Test Cases for Checkboxes
 
+!text
+<p>
+Test cases for handling of checkboxes and checkbox definitions.
+</p>
+<p>
+Default, undefined and re-defined checkboxes are tested.
+Also a page with different ways of Custom Checkbox definitions is linked.
+</p>
+!endtext
+
     Definition
-        Custom Checkboxes url=?links-override=test/checkbox-links.txt
+        Normal
+            [] Default checkbox (the normal case)
+            !checkbox cb-empty-1
+            []:cb-empty-1 Empty checkbox definition (should display *!EE!*)
+            !checkbox cb-empty-2 !back
+            []:cb-empty-2 Empty checkbox definition (should display *!EE!*)
+        Undefined
+            []:cb-undefined Undefined checkbox (should display default checkbox)
+        Custom Checkboxes icon=char:T url=?links-override=test/checkbox-links.txt
+
+        With Defaults
+            Test with defined default checkbox icon=char:T url=?links-override=test/checkbox-define-default.txt
+
+    Re-definition
+        []:cb-redefine-1 Use before single definition (should display *I/II/III*)
+        !checkbox cb-redefine-1 I char:II char:III
+        []:cb-redefine-1 Use after single definition (should display *I/II/III*)
+
+        []:cb-redefine-2 Use before definition (should display final value *X/Y/Z*)
+        !checkbox cb-redefine-2 A B C
+        []:cb-redefine-2 Use after first definition (should display final value *X/Y/Z*)
+        !checkbox cb-redefine-2 1 2 3
+        []:cb-redefine-2 Use after second definition (should display final value *X/Y/Z*)
+        !checkbox cb-redefine-2 X Y Z
 
 Other Links
 

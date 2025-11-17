@@ -1,0 +1,17 @@
+Test Cases for Checkboxes
+
+!text
+<p>
+Test cases for handling of checkbox and definitions where 'default' has been
+user-defined.
+</p>
+!endtext
+
+    Definition
+
+        []:cb-undefined Undefined checkbox (should display default, *X/Y/Z*)
+
+!checkbox default X Y Z
+
+// vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
+
