@@ -3504,7 +3504,12 @@ function render(parsed, container, cancel) {
 			retval.selFirstMe = isFirst;
 			let icon = renderIcon(parsed, null, sel.value);
 			checkbox.appendChild(icon.element);
-			checkbox.onclick = function() {
+			checkbox.onmousedown = function() {
+				// Stop propagation so that this is not interpreted as a double click
+				event.stopPropagation();  //newer method
+				return false;  //legacy method
+			};
+			checkbox.onmouseup = function() {
 				// Determine next value
 				sel = def.options[sel.next];
 				isFirst = sel.name == def.first;
@@ -3523,6 +3528,9 @@ function render(parsed, container, cancel) {
 				setLabelClass('first-option', isFirst);
 				// Update parents/children
 				updateSelFirst(true);
+				// Stop propagation so that this is not interpreted as a double click
+				event.stopPropagation();  //newer method
+				return false;  //legacy method
 			};
 			initialSetLabel = () => setLabelClass('first-option', isFirst);
 			// Set return value
