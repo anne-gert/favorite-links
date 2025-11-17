@@ -3295,9 +3295,11 @@ function render(parsed, container, cancel) {
 				//   extra '*' before or after.
 				// - A StringGroup is a sequence 'Delimiter text Delimiter'.
 				// Rules:
-				// - There should be spaces around the StrongGroup, i.e. before
-				//   the start Delimiter and after the end Delimiter.
-				//   This is slightly restrictive by design (avoid false
+				// - There should be spaces or any of (<{[ in front of the
+				//   StrongGroup and spaces or any of ]}>)!?.,;: behind, i.e.
+				//   before the start Delimiter and after the
+				//   end Delimiter.  This is slightly
+				//   restrictive by design (avoid false
 				//   positives).
 				// - There should be no spaces directly after the start
 				//   Delimiter or before the end Delimiter. This should be
@@ -3310,7 +3312,7 @@ function render(parsed, container, cancel) {
 				// - 1: open delimiter
 				// - 2: text
 				// - 3: close delimiter
-				let reSG = /(?<=^|\s)(\*+)(?!\*|\s)((?:(?!\1).)*?)(?<!\*|\s)(\1)(?=\s|$)/;
+				let reSG = /(?<=^|[\s(<{\[])(\*+)(?!\*|\s)((?:(?!\1).)*?)(?<!\*|\s)(\1)(?=[\]}>)!?.,;:\s]|$)/;
 				// Split on this regex. Expect 3 captures per match and n+1
 				// parts for n separator matches. This means for n matches,
 				// the array should have 3*n + n+1 = 4*n+1 elements.
