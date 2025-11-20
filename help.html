@@ -518,7 +518,7 @@ values:
 It is allowed to redefine an icon, but only the last definition will be used.
 </p>
 
-<b>Undefined Icons</b>
+<h4>Undefined Icons</h4>
 
 <p>
 If an icon definition is used that is not defined, the special
@@ -533,7 +533,7 @@ icon=unknown Not Defined     : shows <dt>?</dt>
 </pre>
 </p>
 
-<b>Reference Loops</b>
+<h4>Reference Loops</h4>
 
 <p>
 Since an icon definition can refer to another, it would be possible to create
@@ -592,6 +592,9 @@ be used to define a checkbox type with custom options. The allowed options are:
 <li><dt>Icon</dt>: By using <code>X=icon</code>, the checkbox <code>[X]</code>
     is displayed as icon. 'X' can be any letter or short text and 'icon' can be
     any valid <a href="#icons">icon definition</a>.  See below for examples.
+<li><dt>Other Checkbox</dt>: If the name of an other checkbox definition is
+    used as an option, all its options are included. Checkboxes referring to
+    eachother (called a <i>reference loop</i>) is not allowed.
 <li><dt>empty</dt>: Shorthand for <code>_=empty</code>.
 <li><dt>uncheck</dt>: Shorthand for <code>_=U+2610</code> (empty box, &#x2610;).
 <li><dt>check</dt>: Shorthand for <code>U+2611</code> (checked box, &#x2611;).
@@ -615,11 +618,6 @@ http://example.com/icon.png</code>
 The checkbox definition defined with <code>!checkbox name</code> can be used
 for a specific checkbox by appending the <code>:name</code> with no spaces to
 the checkbox.
-</p>
-
-<p>
-If a checkbox name is used that is not defined, the <code>default</code>
-checkbox will be used. This <code>default</code> may be overridden, see below.
 </p>
 
 <p>
@@ -715,7 +713,19 @@ text. The checkbox can be empty, '+' or '-':
 </p>
 
 
-<h3>Overriding Default</h3>
+<h4>Undefined Checkbox</h4>
+
+<p>
+If a checkbox name is used that is not defined, the <code>default</code>
+checkbox will be used:
+<pre>
+[ ]:undefined Not defined                   : shows normal checkbox
+</pre>
+This <code>default</code> may be overridden, see below.
+</p>
+
+
+<h4>Overriding Default Checkbox</h4>
 
 <p>
 If no checkbox definition is supplied, the default checkbox definition is used.
@@ -729,6 +739,56 @@ an example, the example below make all checkboxes have 3 states: &#x2753;
 [ ] Unknown
 [x] Yes
 [-] No
+</pre>
+</p>
+
+
+<h4>Re-defined Checkbox</h4>
+
+<p>
+If a Custom Checkbox is defined multiple times, The most recent definition is
+used. If there is no definition yet, the very last definition is used.
+<pre>
+[ ]:levels Use last definition              : shows A/B/C
+!checkbox levels 1 2 3
+!checkbox levels X Y Z
+[ ]:levels Use most recent definition       : shows X/Y/Z
+!checkbox levels A B C
+</pre>
+</p>
+
+
+<h4>Extended Checkbox</h4>
+
+<p>
+If a checkbox definition name is used as one of the options of another
+checkbox definition, the options of the former are included in the latter.
+This way, the latter can be extended.
+<pre>
+!checkbox letters A B C
+!checkbox numbers 1 2 3
+!checkbox choices letters numbers X Y Z
+[ ]:choices Make your choice                : shows A/B/C/1/2/3/X/Y/Z in front
+!checkbox choices-after choices !after
+[ ]:choices-after Make your choice          : shows A/B/C/1/2/3/X/Y/Z after
+</pre>
+</p>
+
+
+<h4>Reference Loops</h4>
+
+<p>
+If a reference loop is created when extending a checkbox, all definitions that
+depend on the loop will be shows as the special <code>refloop</code> value.
+<pre>
+!checkbox options1 A B C
+!checkbox options2 1 2 3 options1 options3
+!checkbox options3 X Y Z options2
+!checkbox options4 h j k l options2
+[ ]:options1 This is fine                   : shows A/B/C
+[ ]:options2 Reference Loop                 : shows <dt>!RL!</dt>
+[ ]:options3 Reference Loop                 : shows <dt>!RL!</dt>
+[ ]:options4 Depends on Reference Loop      : shows <dt>!RL!</dt>
 </pre>
 </p>
 

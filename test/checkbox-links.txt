@@ -56,15 +56,15 @@ _
             [😐]:emo Option 3
             [🙂]:emo Option 4
 
-!checkbox yesnoR _=uncheck +=check x=cross ~=mcheck krul
-        yesnoR
-            [ ]:yesnoR Test optie 1
-            [+]:yesnoR Test optie 2
-            [x]:yesnoR Test optie 3
-            [~]:yesnoR Test optie 4
-                [+]:yesnoR Sub optie 4a
-                [-]:yesnoR Sub optie 4b
-                [g]:yesnoR Sub optie 4c
+!checkbox checksR _=uncheck +=check x=cross ~=mcheck krul
+        checksR
+            [ ]:checksR Test optie 1
+            [+]:checksR Test optie 2
+            [x]:checksR Test optie 3
+            [~]:checksR Test optie 4
+                [+]:checksR Sub optie 4a
+                [-]:checksR Sub optie 4b
+                [g]:checksR Sub optie 4c
 
 !checkbox favicons empty A=agb F=firefox S=sigmax B=mantis O=ovp
 !icondef agb       http://hawaii.uxi.nl/favicon.ico
@@ -84,12 +84,6 @@ _
             [+]:checkross Test optie 2
             [-]:checkross Test optie 3
 
-!checkbox yesnoafter _=char:U+2753 +=U+1F44D -=U+1F44E !after
-        yesno after
-            [ ]:yesnoafter icon=mantis Test optie 1
-            [+]:yesnoafter icon=mantis Test optie 2
-            [-]:yesnoafter icon=mantis Test optie 3
-
         default
             [x] Test optie 1
             [x] Test optie 2
@@ -101,15 +95,22 @@ _
         [ ]:yesno sub
 
     After
-!checkbox yesnoR-b _=uncheck +=check x=cross ~=mcheck krul !back
-        yesnoR
-            [ ]:yesnoR-b Test optie 1
-            [+]:yesnoR-b Test optie 2
-            [x]:yesnoR-b Test optie 3
-            [~]:yesnoR-b Test optie 4
-                [+]:yesnoR-b Sub optie 4a
-                [-]:yesnoR-b Sub optie 4b
-                [g]:yesnoR-b Sub optie 4c
+
+!checkbox yesno-after yesno !after
+        yesno after
+            [ ]:yesno-after icon=mantis Test optie 1
+            [+]:yesno-after icon=mantis Test optie 2
+            [-]:yesno-after icon=mantis Test optie 3
+
+!checkbox checkR-after checksR !back
+        checkR after
+            [ ]:checkR-after Test optie 1
+            [+]:checkR-after Test optie 2
+            [x]:checkR-after Test optie 3
+            [~]:checkR-after Test optie 4
+                [+]:checkR-after Sub optie 4a
+                [-]:checkR-after Sub optie 4b
+                [g]:checkR-after Sub optie 4c
 
 
 // Checkbox styles for normal checkboxes with parents and/or children set

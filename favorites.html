@@ -810,6 +810,7 @@ const LogLinksUpdate = CreateLogger('debug');
 const IconRefLoopDefault = 'char:!ND!';
 const IconUndefinedDefault = 'char:!ND!';
 const CheckboxEmpty = 'char:!EE!';
+const CheckboxRefLoop = 'char:!RL!';
 
 // Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
 // Unicode Block: Arrows
@@ -2340,7 +2341,7 @@ function CreatePending(name, timeout, onlyLast) {
 // - scriptBlocks: Array of !script...!endscript blocks
 // And member functions:
 // - resolveIconDefs(icon_url)
-// - resolveCheckboxDefs(name)
+// - resolveCheckboxDefs(name, lineNum)
 function parseLinks(links) {
 	LogParse.important('Parsing Links...');
 
@@ -2396,19 +2397,32 @@ function parseLinks(links) {
 			return retval;
 		},
 
-		// Look up the CheckboxDef name to find the correct definition
-		resolveCheckboxDefs(name) {
-			let def = this._checkboxDefs[name];
+		// Look up the CheckboxDef name and lineNum to find the correct definition
+		resolveCheckboxDefs(name, lineNum) {
+			let defs = this._checkboxDefs[name];
 			// If not found, try (re-)definition of 'default'
-			if (def == null && name != 'default') {
-				def = this._checkboxDefs['default'];
+			if (defs == undefined && name != 'default') {
+				defs = this._checkboxDefs['default'];
 			}
-			// If def is still null, use the default checkbox
-			LogParse.debug('Resolve checkbox reference ', def);
+			let def = null;
+			if (defs != null && defs.length > 0) {
+				if (defs.length > 1) {
+					// Search for most recent definition before lineNum
+					//LogParse.devlog('Find lineNum=' + lineNum + ' in: ', defs);
+					def = defs.findLast(d => d.lineNum < lineNum);
+					//LogParse.devlog('Found: ', def);
+				}
+				// If multiple definitions, but all after lineNum, assume this is meant
+				// as re-definitions and take the final one.
+				// If there is a single definition, take that, even if it is defined later.
+				if (def == null) {
+					def = defs[defs.length-1];
+				}
+			}
+			LogParse.debug('Resolve checkbox reference from line ' + lineNum + ' to ', def);
 			return def;
 		}
 	};
-	let tempCheckboxDefs = [];  //temporary _checkboxDefs, because they need post-processing
 	let textBlock = null;  //used for literal !text ... !endtext blocks
 	let styleBlock = null;  //used for literal !style ... !endstyle blocks
 	let scriptBlock = null;  //used for literal !script ... !endscript blocks
@@ -2536,7 +2550,22 @@ function parseLinks(links) {
 		m = line.match(/^\s*!checkbox\s+(\S+)(?:\s+(.+?))?\s*$/i);
 		if (m) {
 			// This is a checkbox definition
-			tempCheckboxDefs.push([ m[1], m[2] ]);
+			let name = m[1], args = m[2];
+			let def = {
+				name    : name,
+				lineNum : i+1,
+				options : null,
+				first   : null,
+				place   : null,
+				// Intermediate fields
+				_args   : args,
+			};
+			//LogParse.devlog('!checkbox found ', def);
+			if (parsed._checkboxDefs[name] == null) {
+				parsed._checkboxDefs[name] = [ def ];
+			} else {
+				parsed._checkboxDefs[name].push(def);
+			}
 			continue;
 		}
 
@@ -2844,24 +2873,32 @@ function parseLinks(links) {
 		}
 	}
 
-	// Go through CheckboxDefs and resolve the icons
-	for (let i = 0; i < tempCheckboxDefs.length; ++i) {
-		let name = tempCheckboxDefs[i][0];
-		let args = tempCheckboxDefs[i][1];
+	// Complete CheckboxDefs
+	function iterateCheckboxDefs(func) {
+		for (name in parsed._checkboxDefs) {
+			let defs = parsed._checkboxDefs[name];
+			for (let i = 0; i < defs.length; ++i) {
+				//LogParse.devlog('Interate Checkbox \'' + name + '[' + i + ']\'');
+				func(defs[i]);
+			}
+		}
+	}
+	// Resolve individual options and pragmas (sets _options)
+	iterateCheckboxDefs(def => {
 		// Parse the arguments
-		args = (args != null) ? args.split(/\s+/) : [];  //split on whitespace
-		let firstOptionName = null, prevOptionName = null;
-		let options = {};
-		let place = 'F';  //the default
+		let args = (def._args != null) ? def._args.split(/\s+/) : [];  //split on whitespace
+		let opts = [];
 		for (let i = 0; i < args.length; ++i) {
 			let arg = args[i];
 			//LogParse.devlog('!checkbox arg: ' + arg);
 			let name = null, val = null;
 			let m = arg.match(/^(!?)([^=]+)(?:=(.*))?$/);
-			if (!m) {
+			if (parsed._checkboxDefs[arg] != null) {
+				// Reference
+				opts.push(arg);
+			} else if (!m) {
 				// Unrecognized
 				LogParse.error('Ignore unknown checkbox argument \'' + arg + '\'');
-				continue;
 			} else if (m[1]) {
 				// Pragma
 				name = m[2].toLowerCase();
@@ -2871,9 +2908,9 @@ function parseLinks(links) {
 					// It is a !name=value pragma
 					if (name == 'place') {
 						if (m[3].match(reBack)) {
-							place = 'B';
+							def.place = 'B';
 						} else if (m[3].match(reFront)) {
-							place = 'F';
+							def.place = 'F';
 						} else {
 							LogParse.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
 						}
@@ -2883,14 +2920,13 @@ function parseLinks(links) {
 				} else {
 					// It is a !pragma
 					if (name.match(reBack)) {
-						place = 'B';
+						def.place = 'B';
 					} else if (name.match(reFront)) {
-						place = 'F';
+						def.place = 'F';
 					} else {
 						LogParse.error('Ignoring unknown checkbox pragma \'' + arg + '\'');
 					}
 				}
-				continue;
 			} else {
 				// Option
 				if (m[3] != null) {
@@ -2903,73 +2939,140 @@ function parseLinks(links) {
 					let m2 = val.match(/^char:(.+)/i);
 					if (m2) name = m2[1];  //if 'char:X', only use 'X' as name
 				}
-			}
-			if (name == '_') name = ' ';
-			// Check icondef
-			let icondef = parsed.resolveIconDefs(val);
-			if (icondef == val) icondef = null;
-			// Check special values
-			let lval = val.toLowerCase();
-			if (lval == '_' || lval == 'empty') {
-				if (name == null) name = ' ';
-				val = 'empty';  //a valid icon
-			} else if (lval == 'uncheck') {
-				if (name == null) name = ' ';
-				val = UNICODE_BALLOT_BOX;
-			} else if (lval == 'check') {
-				val = UNICODE_BALLOT_BOX_WITH_CHECK;
-			} else if (lval == 'cross') {
-				val = UNICODE_BALLOT_BOX_WITH_CROSS;
-			} else if (lval == 'mcheck') {
-				val = UNICODE_WHITE_SQUARE_CONTAINING_BLACK_SMALL_SQUARE;
-			} else if (lval == 'krul') {
-				if (name == null) name = 'g';
-				val = 'krul';  //a valid icon
-			}
-			// Set name if name not yet set
-			if (name == null) name = val;
-			// If icondef, use that value instead, but retain name
-			if (icondef != null) val = icondef;
-			// Represent single char, surrogate pair or 'U+xxxxx' as char:x
-			if (val.length == 1 ||
-				(val.length == 2 && val.codePointAt(0) >= 0x10000) ||
-				val.match(/^U\+[0-9a-f]{1,6}$/i)) {
-				val = 'char:' + val;
-			}
-			// Add option to options structure
-			if (name != null) {
-				let option = {
-					name  : name,
-					value : val,
-					next  : firstOptionName,  //last points to first
+				if (name == '_') name = ' ';
+				// Check icondef
+				let icondef = parsed.resolveIconDefs(val);
+				if (icondef == val) icondef = null;
+				// Check special values
+				let lval = val.toLowerCase();
+				if (lval == '_' || lval == 'empty') {
+					if (name == null) name = ' ';
+					val = 'empty';  //a valid icon
+				} else if (lval == 'uncheck') {
+					if (name == null) name = ' ';
+					val = UNICODE_BALLOT_BOX;
+				} else if (lval == 'check') {
+					val = UNICODE_BALLOT_BOX_WITH_CHECK;
+				} else if (lval == 'cross') {
+					val = UNICODE_BALLOT_BOX_WITH_CROSS;
+				} else if (lval == 'mcheck') {
+					val = UNICODE_WHITE_SQUARE_CONTAINING_BLACK_SMALL_SQUARE;
+				} else if (lval == 'krul') {
+					if (name == null) name = 'g';
+					val = 'krul';  //a valid icon
 				}
-				if (firstOptionName == null) {
-					firstOptionName = name;  //first in list
-				} else {
-					options[prevOptionName].next = name;  //prev points to me
+				// Set name if name not yet set
+				if (name == null) name = val;
+				// If icondef, use that value instead, but retain name
+				if (icondef != null) val = icondef;
+				// Represent single char, surrogate pair or 'U+xxxxx' as char:x
+				if (val.length == 1 ||
+					(val.length == 2 && val.codePointAt(0) >= 0x10000) ||
+					val.match(/^U\+[0-9a-f]{1,6}$/i)) {
+					val = 'char:' + val;
 				}
-				options[name] = option;  //add to list
-				prevOptionName = name;  //advance prev
+				// Add option to options structure
+				if (name != null) {
+					let opt = {
+						name  : name,
+						value : val,
+					}
+					opts.push(opt);
+				}
 			}
 		}
-		if (firstOptionName == null) {
+		if (opts.length <= 0) {
 			LogParse.warn('Ignore !checkbox \'' + name + '\' with no options');
-			firstOptionName = 'E';
-			options[firstOptionName] = {
-				name  : firstOptionName,
-				value : CheckboxEmpty,
-				next  : firstOptionName,
-			};
+			opts = 'empty';
 		}
-		let def = {
-			name    : name,
-			options : options,
-			first   : firstOptionName,
-			place   : place,
-		};
-		//LogParse.devlog('!checkbox found ', def);
-		parsed._checkboxDefs[name] = def;
+		def._options = opts;
+	});
+	// Resolve all checkbox references (sets _options, _resolved)
+	function resolve(def) {
+		if (def._resolved == 2) return;  //done
+		if (def._resolved == 1) {
+			// Already busy
+			LogParse.warn('Reference Loop detected for Checkbox \'' + def.name + '\'');
+			def._options = 'refloop';
+		} else {
+			def._resolved = 1;  //start calculate
+			let opts = def._options;
+			if (opts == 'empty') {
+				// Leave empty
+			} else {
+				// Go through all options to resolve
+				def._options = [];
+				for (let i = 0; i < opts.length; ++i) {
+					let opt = opts[i];
+					if (typeof opt === 'string') {
+						// Reference
+						let def2 = parsed.resolveCheckboxDefs(opt, def.lineNum);
+						if (def2 != null) {
+							// Found reference, resolve and insert options
+							resolve(def2);
+							let opts2 = def2._options;
+							if (opts2 == 'empty') {
+								// No options to add
+								LogParse.log('Checkbox \'' + def.name + '\' extends Empty \'' + def2.name + '\'');
+							} else if (opts2 == 'refloop') {
+								// If refloop, then we are also refloop
+								LogParse.warn('Checkbox \'' + def.name + '\' extends RefLoop \'' + def2.name + '\'');
+								def._options = 'refloop';
+								break;
+							} else {
+								// Add options
+								LogParse.log('Checkbox \'' + def.name + '\' extends \'' + def2.name + '\'');
+								for (let j = 0; j < opts2.length; ++j) {
+									LogParse.debug('Add option \'' + opts2[j].name + '\'');
+									// Not owned, clone it
+									let opt2 = opts2[j];
+									def._options.push({
+										name  : opt2.name,
+										value : opt2.value,
+									});
+								}
+							}
+						} else {
+							// Unknown reference, skip
+							LogParse.warn('Checkbox \'' + def.name + '\' extends undefined \'' + def2.name + '\'');
+						}
+					} else {
+						// Option
+						def._options.push(opt);  //already owned, no need to clone
+					}
+				}
+			}
+		}
+		def._resolved = 2;  //done calculate
 	}
+	iterateCheckboxDefs(resolve);
+	// Link options together (sets options, first, place)
+	iterateCheckboxDefs(def => {
+		let opts = def._options;
+		if (typeof opts === 'string') {
+			def.options = opts;
+		} else if (opts.length <= 0) {
+			def.options = 'empty';
+		} else {
+			// Link the options together (sets next)
+			let numopt = opts.length;
+			for (let i = 0; i < numopt; ++i) {
+				let next = opts[(i+1) % numopt];
+				opts[i].next = next.name;
+			}
+			// Convert array to a lookup hash
+			let hash = {};
+			for (let i = 0; i < numopt; ++i) {
+				let opt = opts[i];
+				hash[opt.name] = opt;
+			}
+			def.options = hash;
+			def.first = opts[0].name;
+		}
+		// Set defaults
+		if (def.place == null) def.place = 'F';
+	});
+	//LogParse.devlog('CheckboxDefs ', parsed._checkboxDefs);
 
 	// Check if all blocks have been closed
 	if (textBlock) {
@@ -3485,7 +3588,7 @@ function render(parsed, container, cancel) {
 		if (type == null) return retval;
 
 		// Find the checkbox definition for this type
-		let def = parsed.resolveCheckboxDefs(type);
+		let def = parsed.resolveCheckboxDefs(type, lineNum);
 
 		// Placeholder for the associated label
 		let labelElement = null;
@@ -3566,43 +3669,53 @@ function render(parsed, container, cancel) {
 			// The checkbox is defined by def
 			let checkbox = document.createElement('span');
 			checkbox.className = 'custom-checkbox';
-			let sel = def.options[value];
-			if (sel == null) sel = def.options[def.first];
-			let isFirst = sel.name == def.first;
-			retval.selFirstMe = isFirst;
-			let icon = renderIcon(parsed, null, sel.value);
-			checkbox.appendChild(icon.element);
-			checkbox.onmousedown = function() {
-				// Stop propagation so that this is not interpreted as a double click
-				event.stopPropagation();  //newer method
-				return false;  //legacy method
-			};
-			checkbox.onmouseup = function() {
-				// Determine next value
-				sel = def.options[sel.next];
+			let opts = def.options;
+			let isFirst, icon;
+			if (opts == 'empty') {
+				isFirst = true;
+				icon = renderIcon(parsed, null, CheckboxEmpty);
+			} else if (opts == 'refloop') {
+				isFirst = true;
+				icon = renderIcon(parsed, null, CheckboxRefLoop);
+			} else {
+				let sel = opts[value];
+				if (sel == null) sel = opts[def.first];
 				isFirst = sel.name == def.first;
-				retval.selFirstMe = isFirst;
-				// Update Links
-				if (sel != null) {
-					LogCheckbox.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
-					let newCheck = '[' + sel.name + ']';
-					updateCb(newCheck);
-				}
-				// Update icon
-				let newIcon = renderIcon(parsed, null, sel.value);
-				checkbox.replaceChild(newIcon.element, icon.element);
-				icon = newIcon;
-				// Update label
-				setLabelClass('first-option', isFirst);
-				// Update parents/children
-				updateSelFirst(true);
-				// Stop propagation so that this is not interpreted as a double click
-				event.stopPropagation();  //newer method
-				return false;  //legacy method
-			};
-			initialSetLabel = () => setLabelClass('first-option', isFirst);
+				icon = renderIcon(parsed, null, sel.value);
+				checkbox.onmousedown = function() {
+					// Stop propagation so that this is not interpreted as a double click
+					event.stopPropagation();  //newer method
+					return false;  //legacy method
+				};
+				checkbox.onmouseup = function() {
+					// Determine next value
+					sel = def.options[sel.next];
+					isFirst = sel.name == def.first;
+					retval.selFirstMe = isFirst;
+					// Update Links
+					if (sel != null) {
+						LogCheckbox.log('Change checkbox on line ' + lineNum + ' to ' + sel.name);
+						let newCheck = '[' + sel.name + ']';
+						updateCb(newCheck);
+					}
+					// Update icon
+					let newIcon = renderIcon(parsed, null, sel.value);
+					checkbox.replaceChild(newIcon.element, icon.element);
+					icon = newIcon;
+					// Update label
+					setLabelClass('first-option', isFirst);
+					// Update parents/children
+					updateSelFirst(true);
+					// Stop propagation so that this is not interpreted as a double click
+					event.stopPropagation();  //newer method
+					return false;  //legacy method
+				};
+				initialSetLabel = () => setLabelClass('first-option', isFirst);
+			}
+			if (icon.present) checkbox.appendChild(icon.element);
 			// Set return value
-			retval.present = true;
+			retval.selFirstMe = isFirst;
+			retval.present = icon.present;
 			retval.element = checkbox;
 			retval.place = def.place;
 		}

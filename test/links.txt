@@ -109,6 +109,8 @@ Also a page with different ways of Custom Checkbox definitions is linked.
             []:cb-empty-1 Empty checkbox definition (should display *!EE!*)
             !checkbox cb-empty-2 !back
             []:cb-empty-2 Empty checkbox definition (should display *!EE!*)
+            !checkbox cb-empty-3 cb-empty-2 !front
+            []:cb-empty-3 Empty checkbox extension (should display *!EE!*)
         Undefined
             []:cb-undefined Undefined checkbox (should display default checkbox)
         Custom Checkboxes icon=char:T url=?links-override=test/checkbox-links.txt
@@ -123,10 +125,124 @@ Also a page with different ways of Custom Checkbox definitions is linked.
 
         []:cb-redefine-2 Use before definition (should display final value *X/Y/Z*)
         !checkbox cb-redefine-2 A B C
-        []:cb-redefine-2 Use after first definition (should display final value *X/Y/Z*)
+        []:cb-redefine-2 Use after first definition (should display *A/B/C*)
         !checkbox cb-redefine-2 1 2 3
-        []:cb-redefine-2 Use after second definition (should display final value *X/Y/Z*)
+        []:cb-redefine-2 Use after second definition (should display *1/2/3*)
         !checkbox cb-redefine-2 X Y Z
+
+    Extending
+        Simple
+            !checkbox cb-extend-1a 1 2
+            !checkbox cb-extend-1b A cb-extend-1a B
+            []:cb-extend-1a Custom Checkbox 1 (base) (should display *1/2*)
+            []:cb-extend-1b Custom Checkbox 2 (extend) (should display *A/1/2/B*)
+            !checkbox cb-extend-1b X Y
+            []:cb-extend-1b Custom Checkbox 2 (redefine) (should display *X/Y*)
+        Override Place
+            !checkbox cb-extend-2a A B C
+            !checkbox cb-extend-2b cb-extend-2a !back
+            !checkbox cb-extend-2c cb-extend-2b !front
+            []:cb-extend-2a Default place (should display *A/B/C* at *front*)
+            []:cb-extend-2b Default place (should display *A/B/C* at *back*)
+            []:cb-extend-2c Default place (should display *A/B/C* at *front*)
+        Use Before Definition
+            []:cb-extend-3-ABC Use/extend before definition (should display *A/B/C*)
+            // 1) 3-ABC not yet defined -> use last (and only)
+            !checkbox cb-extend-3-ABC A cb-extend-3-BC
+            // 2) 3-BC not yet defined -> Use last
+            !checkbox cb-extend-3-B B
+            !checkbox cb-extend-3-BC X
+            !checkbox cb-extend-3-BC cb-extend-3-B C
+            // 3) 3-B already defined -> use most recent
+            !checkbox cb-extend-3-B Y
+
+    Definition Loop
+        !checkbox cb-refloop-1 A cb-refloop-1 B
+        []:cb-refloop-1 Custom Checkbox 3 (circular, length=1) (should display *!RL!*)
+        !checkbox cb-refloop-2 A cb-refloop-3 B
+        !checkbox cb-refloop-3 1 cb-refloop-2 2
+        []:cb-refloop-2 Custom Checkbox 5 (circular, length=2) (should display *!RL!*)
+        !checkbox cb-refloop-4 X cb-refloop-3 Y
+        []:cb-refloop-3 Custom Checkbox 6 (circular, length=3) (should display *!RL!*)
+        !checkbox cb-refloop-5 I char:II char:III
+        []:cb-refloop-5 Custom Checkbox 7 (not yet circular) (should display *I/II/III*)
+        !checkbox cb-refloop-5 cb-refloop-1
+        []:cb-refloop-5 Custom Checkbox 7 (now circular) (should display *!RL!*)
+
+Checkbox Examples from help.html
+
+!text
+These examples are from <a href="help.html#checkboxes">help.html</a> and included to
+verify if they work.
+!endtext
+
+    Example 1
+        !checkbox standard _=uncheck x=check
+        [ ]:standard Option 1
+        [x]:standard Option 2
+
+    Example 2
+        !checkbox sub uncheck check mcheck
+        [ ]:sub Option 1
+        [▣]:sub Option 2
+            [☑]:sub Option 2-1
+            [ ]:sub Option 2-2
+
+    Example 3
+        !checkbox letters A B C
+        [A]:letters Option 1
+        [B]:letters Option 2
+        [C]:letters Option 3
+
+    Example 4
+        !checkbox roman I char:II char:III
+        [I]:roman Option 1
+        [II]:roman Option 2
+        [III]:roman Option 3
+
+    Example 5
+        !checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E
+        [ ]:yesno Option 1
+        [yes]:yesno Option 2
+        [no]:yesno Option 3
+
+    Example 6
+        !checkbox emo 🙁 😐 🙂
+        [🙁]:emo Option 1
+        [😐]:emo Option 2
+        [🙂]:emo Option 3
+
+    Example 7
+        !checkbox icons empty check 1=icon1 2=icon2 3=icon3 4=icon4 5=icon2
+        [1]:icons Option 1
+        [2]:icons Option 2
+        !icondef icon1 http://example.com/icon1.png
+        !icondef icon2 http://example.com/icon2.png
+        !icondef icon3 icon1
+        !icondef icon4 char:X
+        !icondef check char:U+2714
+
+    Example 8
+        !checkbox good _ + - !after
+        [ ]:good Item 1 http://example.com/item1
+        [+]:good Item 2 http://example.com/item2
+        [-]:good Item 3 http://example.com/item3
+
+    Re-defined Checkbox
+        [ ]:levels Use last definition, A/B/C
+        !checkbox levels 1 2 3
+        !checkbox levels X Y Z
+        [ ]:levels Use most recent definition, X/Y/Z
+        !checkbox levels A B C
+
+    Extended Checkbox
+        !checkbox letters A B C
+        !checkbox numbers 1 2 3
+        !checkbox choices letters numbers X Y Z
+        [ ]:choices Make your choice
+        !checkbox choices-after choices !after
+        [ ]:choices-after Make your choice
+
 
 Other Links
 
