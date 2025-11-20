@@ -39,7 +39,56 @@ Section
 
 Test Cases for Icons
 
-    TBD
+!text
+<p>
+Test cases for handling of icons and icon definitions.
+</p>
+<p>
+Different orders of definitions for normal definitions and different
+loop-lengths for refloop cases are shown.
+</p>
+!endtext
+
+    Char vs. HTML
+        Char
+            icon=char:X Short Char icon
+            icon=char:ICONTEXT Long Char icon
+        HTML
+            icon=html:X Short HTML icon
+            icon=html:ICONTEXT Long HTML icon
+
+    Definition
+        Normal
+            !icondef ic-ok char:X
+            icon=ic-ok Normal icon (should display *'X'*)
+        Undefined
+            icon=ic-undefined Undefined icon (should display *'!ND!'*)
+
+    Re-definition
+        !icondef ic-redefine char:A
+        icon=ic-redefine First use of icon (should display *'B'*)
+        !icondef ic-redefine char:B
+        icon=ic-redefine Second use of icon (should display *'B'*)
+
+    Definition Loop
+        !icondef ic-refloop-1a ic-refloop-1b
+        !icondef ic-refloop-1b ic-refloop-1a
+        icon=ic-refloop-1a Circularly defined icon (length 2) (should display *'!ND!'*)
+
+        !icondef ic-refloop-2a ic-refloop-2b
+        !icondef ic-refloop-2b ic-refloop-2c
+        !icondef ic-refloop-2c ic-refloop-2d
+        !icondef ic-refloop-2d ic-refloop-2e
+        icon=ic-refloop-2a Circularly defined icon (lengt 4) (should display *'!ND!'*)
+
+        !icondef ic-refloop-3a ic-refloop-3b
+        !icondef ic-refloop-3b ic-refloop-2a
+        icon=ic-refloop-3a Circularly defined icon (lengt 6) (should display *'!ND!'*)
+
+    With Defaults
+        Test with defined default icons icon=char:T url=?links-override=test/icon-define-default.txt
+        Test with incorrect default icons icon=char:T url=?links-override=test/icon-define-error.txt
+        Test with looped refloop icons icon=char:T url=?links-override=test/icon-define-refloop-loop.txt
 
 Test Cases for Checkboxes
 

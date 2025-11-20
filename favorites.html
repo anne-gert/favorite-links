@@ -807,6 +807,9 @@ const LogStatusLine = CreateLogger();
 const LogInit = CreateLogger();
 const LogLinksUpdate = CreateLogger('debug');
 
+const IconRefLoopDefault = 'char:!ND!';
+const IconUndefinedDefault = 'char:!ND!';
+
 // Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
 // Unicode Block: Arrows
 const UNICODE_LEFTWARDS_ARROW_WITH_HOOK = '\u{21A9}';  //a 'swoosh' arrow
@@ -2330,10 +2333,12 @@ function CreatePending(name, timeout, onlyLast) {
 // - blocksCollapsedAlwaysInitial: If initial is always used or if local value is used
 // - searchButtonDefs: Specified search button declarations
 // - rootLinks: Array of Link objects that have no parents (i.e. are roots)
-// - iconDefs: Specified icondef declarations
+// - _iconDefs: Specified icondef declarations
 // - checkboxDefs: Specified checkbox declarations
 // - styleBlocks: Array of !style...!endstyle blocks
 // - scriptBlocks: Array of !script...!endscript blocks
+// And member functions:
+// - resolveIconDefs(icon_url)
 function parseLinks(links) {
 	LogParse.important('Parsing Links...');
 
@@ -2348,7 +2353,11 @@ function parseLinks(links) {
 		autoUploadDelay              : null,
 		searchButtonDefs             : [],
 		rootLinks                    : [],
-		iconDefs                     : {},
+		_iconDefs                    : {
+			// Set them here, so they always exist, but can be overridden too
+			'refloop'   : IconRefLoopDefault,
+			'undefined' : IconUndefinedDefault,
+		},
 		checkboxDefs                 : {},
 		styleBlocks                  : [],
 		scriptBlocks                 : [],
@@ -2361,15 +2370,27 @@ function parseLinks(links) {
 		resolveIconDefs(icon_url) {
 			let retval = icon_url;
 			let seen = {};  //to break cycles
+			let refloop = 1;
 			seen[icon_url] = 1;
-			let override = this.iconDefs[icon_url];
-			while (override !== undefined && !seen[override]) {
-				LogIcon.log('Replace icon=' + icon_url + ' by IconDefs ' + override);
-				retval = override;
-				seen[override] = 1;
-				override = this.iconDefs[override];
+			let override = this._iconDefs[icon_url];
+			while (override !== undefined) {
+				LogIcon.debug('Replace icon=' + retval + ' by IconDefs \'' + override + '\'');
+				if (!seen[override]) {
+					// Go to the next in the reference-chain
+					retval = override;
+					seen[override] = 1;
+					override = this._iconDefs[override];
+				} else if (refloop == 1) {
+					// Got in a reference-loop for the first time
+					override = 'refloop';  //does exist
+					++refloop;
+				} else {
+					// Got in a reference-loop again, give up
+					retval = IconRefLoopDefault;
+					break;
+				}
 			}
-			//LogIcon.log('Returning ' + retval);
+			LogIcon.log('Icon=' + icon_url + ' -> use icon \'' + retval + '\'');
 			return retval;
 		},
 	};
@@ -2493,7 +2514,7 @@ function parseLinks(links) {
 		m = line.match(/^\s*!icondef\s+(\S+)(?:\s+|\s*=\s*)(\S+)\s*$/i);
 		if (m) {
 			// This is an icondef
-			parsed.iconDefs[m[1]] = m[2];  //save mapping
+			parsed._iconDefs[m[1]] = m[2];  //save mapping
 			continue;
 		}
 
@@ -3639,6 +3660,8 @@ function render(parsed, container, cancel) {
 // - http://www.google.com/s2/favicons?domain=<target_url domain>
 // - http://www.google.com/s2/favicons?domain=<icon_url domain>
 function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = false) {
+	let requestUndef = icon_url == 'undefined';
+
 	// By default, construct icon_url from target_url
 	if ((icon_url == null || icon_url == 'default') && target_url != null) {
 		// Check if the target domain is in IconDefs
@@ -3668,7 +3691,7 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 	let html_icon = null;
 	let svg_icon = null;
 	let img_icon = null;
-	LogIcon.debug('Loading icon for target \'' + target_url + '\': ' + (icon_url != null ? '\'' + icon_url + '\'' : 'null'));
+	LogIcon.debug('Loading icon for target \'' + (target_url ? target_url : '<no-target-url>') + '\': ' + (icon_url != null ? '\'' + icon_url + '\'' : 'null'));
 
 	let m;  //for regex matches
 	if (icon_url == null) {
@@ -3705,7 +3728,11 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 		}
 	} else if (icon_url == 'krul') {
 		svg_icon = KrulSvg;
-	} else {
+	} else if (icon_url.match(/^https?:\/\/|\.|^alt\b/i)) {
+		// It is any of:
+		// - URL, starting with http:// or https://
+		// - Domain or filename with a '.'
+		// - alt
 		img_icon = document.createElement('img');
 
 		let alternatives = [], methods = [], urls = [];  //prepare options to use for the icon
@@ -3745,8 +3772,8 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 				}
 			}
 		}
-		//LogIcon.log('All methods for ' + icon_url, methods);
-		//LogIcon.log('All urls for ' + icon_url, urls);
+		//LogIcon.devlog('All methods for ' + icon_url, methods);
+		//LogIcon.devlog('All urls for ' + icon_url, urls);
 		// Go through methods and urls and add alternatives
 		for (let m = 0; m < methods.length; ++m) {
 			let method = methods[m];
@@ -3758,7 +3785,7 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 				}
 			}
 		}
-		//LogIcon.log('All alternatives for ' + icon_url, alternatives);
+		//LogIcon.devlog('All alternatives for ' + icon_url, alternatives);
 		// Remove duplicates
 		let seen = {};
 		let alt_list = alternatives;  //may have duplicates
@@ -3769,12 +3796,12 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 				alternatives.push(alt_list[a]);
 			}
 		}
-		//LogIcon.log('All unique alternatives for ' + icon_url, alternatives);
+		//LogIcon.devlog('All unique alternatives for ' + icon_url, alternatives);
 		// Set the icon urls until we find one that works
 		let try_next = function() {
 			if (alternatives.length > 0) {
 				// Try next alternative
-				//LogIcon.log('alternatives.length=' + alternatives.length);
+				//LogIcon.devlog('alternatives.length=' + alternatives.length);
 				let alt = alternatives.shift();
 				if (img_icon.src != null && img_icon.src != '') {
 					LogIcon.warn('Cannot load icon \'' + img_icon.src + '\', try \'' + alt + '\'');
@@ -3798,6 +3825,16 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 
 		if (alt_text != null) {
 			img_icon.alt = alt_text;
+		}
+	} else {
+		// Did not recognize, use 'undefined'
+		if (requestUndef) {
+			// This call was already requesting 'undefined'. Apparently
+			// something went wrong. Now just use the default.
+			return renderIcon(parsed, alt_text, IconUndefinedDefault, target_url, skip_alternatives);
+		} else {
+			// Find if there is a definition of it
+			return renderIcon(parsed, alt_text, 'undefined', target_url, skip_alternatives);
 		}
 	}
 

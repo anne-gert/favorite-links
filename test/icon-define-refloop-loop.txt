@@ -1,0 +1,25 @@
+Test Cases for Icons
+
+!text
+<p>
+Test cases for handling of icons and icon definitions where 'refloop' is
+defined, causing a secondary refloop. This should result in the default value
+for 'refloop' being displayed.
+</p>
+!endtext
+
+    Definition
+
+        !icondef ic-refloop-1a ic-refloop-1b
+        !icondef ic-refloop-1b ic-refloop-1a
+        icon=ic-refloop-1a Circularly defined icon (length 2) (should display *'!ND!'*)
+
+        icon=ic-undefined Undefined icon (should display *'!UU!'*)
+
+!icondef refloop refloop
+
+!icondef undefined char:!UU!
+
+// vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
+
+

@@ -514,6 +514,44 @@ values:
 </ul>
 </p>
 
+<p>
+It is allowed to redefine an icon, but only the last definition will be used.
+</p>
+
+<b>Undefined Icons</b>
+
+<p>
+If an icon definition is used that is not defined, the special
+<code>undefided</code> icon will be shown. This definition can be redefined.
+<pre>
+icon=unknown Not Defined     : shows <dt>!ND!</dt> ('not defined')
+</pre>
+<pre>
+icon=unknown Not Defined     : shows <dt>?</dt>
+
+!icondef undefined char:     : define undefine as '?'
+</pre>
+</p>
+
+<b>Reference Loops</b>
+
+<p>
+Since an icon definition can refer to another, it would be possible to create
+a reference loop. If such an icon is used, the special <code>refloop</code>
+icon will be shown. This definition can be redefined.
+<pre>
+!icondef icon2 icon1
+!icondef icon1 icon2         : icon1 and icon2 are now in a reference loop
+
+icon=icon1 Reference Loop    : shows <dt>!ND!</dt> ('not defined')
+</pre>
+<pre>
+icon=icon1 Reference Loop    : shows <dt>&#x221E;</dt>
+
+!icondef refloop char:U+221E : define refloop as &#x221E;
+</pre>
+</p>
+
 
 <a name="checkboxes"></a>
 <h2>Checkboxes</h2>
