@@ -1657,10 +1657,15 @@ function CreateUrlResolver(getData = () => Data) {
 		if (_downloadHeaders === undefined) calcDownloadUrl();
 		return _downloadHeaders;
 	}
+	let _downloadUrlPrivate = undefined;
+	function isDownloadUrlPrivate() {
+		if (_downloadUrlPrivate === undefined) calcDownloadUrl();
+		return _downloadUrlPrivate;
+	}
 
 	// Reset the download URL variables, so that it gets recalculated when needed
 	function resetDownloadUrl() {
-		_preliminaryLinks = _loadUrl = _fallbackLinks = _loadName = _downloadHeaders = _usedLoadConfigName = undefined;
+		_preliminaryLinks = _loadUrl = _fallbackLinks = _loadName = _downloadHeaders = _usedLoadConfigName = _downloadUrlPrivate = undefined;
 		resetUploadUrl();
 	}
 
@@ -1726,6 +1731,7 @@ function CreateUrlResolver(getData = () => Data) {
 		// Derive loadToken and loadName
 		_loadName = null;
 		_downloadHeaders = [];
+		_downloadUrlPrivate = false;
 		if (_loadUrl != null) {
 			let parts = _loadUrl.split('\\');
 			//LogUrlResolver.log(parts);
@@ -1738,12 +1744,14 @@ function CreateUrlResolver(getData = () => Data) {
 				if (name_value) {
 					// This is a name:value header
 					_downloadHeaders.push(name_value.slice(1,3));
+					_downloadUrlPrivate = true;  //may contain secrets
 				} else {
 					// A header with an implicit name
 					if (implicitNames.length > 0) {
 						let name = implicitNames.shift();
 						_downloadHeaders.push([ name, parts[i] ]);
 						if (name == 'x-name') _loadName = parts[i];
+						if (name == 'x-token') _downloadUrlPrivate = true;  //contains token
 					} else {
 						LogUrlResolver.error('Too many implicit headers in ' + _loadUrl);
 						// Just discard this header
@@ -1865,10 +1873,15 @@ function CreateUrlResolver(getData = () => Data) {
 		if (_uploadHeaders === undefined) calcUploadUrl();
 		return _uploadHeaders;
 	}
+	let _uploadUrlPrivate = undefined;
+	function isUploadUrlPrivate() {
+		if (_uploadUrlPrivate === undefined) calcUploadUrl();
+		return _uploadUrlPrivate;
+	}
 
 	// Reset the upload URL variables, so that it gets recalculated when needed
 	function resetUploadUrl() {
-		_uploadUrl = _uploadMethod = _uploadHeaders = undefined;
+		_uploadUrl = _uploadMethod = _uploadHeaders = _uploadUrlPrivate = undefined;
 	}
 	function noUploadUrl() {
 		_uploadUrl = '';
@@ -1966,6 +1979,8 @@ function CreateUrlResolver(getData = () => Data) {
 			}
 		}
 
+		_uploadUrlPrivate = _uploadHeaders.length > 0;  //may contain secrets
+
 		//LogUrlResolver.log('Request headers: ', _uploadHeaders);
 	}
 
@@ -2002,12 +2017,14 @@ function CreateUrlResolver(getData = () => Data) {
 		// Fields for downloading Links
 		getDownloadUrl : getDownloadUrl,
 		getDownloadHeaders : getDownloadHeaders,
+		isDownloadUrlPrivate : isDownloadUrlPrivate,
 		getLoadName : getLoadName,
 
 		// Fields for uploading Links
 		getUploadUrl : getUploadUrl,
 		getUploadMethod : getUploadMethod,
 		getUploadHeaders : getUploadHeaders,
+		isUploadUrlPrivate : isUploadUrlPrivate,
 		getUploadDisabled : getSaveOptionsDisabled,
 		setUploadDisabled : setSaveOptionsDisabled,
 
@@ -4338,7 +4355,7 @@ function initSettingsPanel() {
 
 	// Create Option Entries
 	function createOptionEntries(optionsPanel) {
-		function createOption(labelText, getData, saveData) {
+		function createOption(labelText, getData, saveData, private) {
 			let label = document.createElement('div');
 			label.className = 'label';
 			label.appendChild(document.createTextNode(labelText));
@@ -4347,15 +4364,39 @@ function initSettingsPanel() {
 			container.className = 'input';
 			let entry = document.createElement('input');
 			entry.type = 'text';
+			let hiddenData = null;  //not null if currently hidden
+			if (private) {
+				// May be private, hide value if not focus
+				entry.onfocus = () => {
+					entry.value = hiddenData;
+					hiddenData = null;
+				};
+				entry.onblur = () => {
+					hiddenData = entry.value;
+					entry.value = '* * * * *';
+				}
+				hiddenData = '';  //set by showData()
+			}
+			entry.autocomplete = 'off';  //prevents 'Manage Passwords' popup
 			container.appendChild(entry);
 			optionsPanel.appendChild(container);
-			let data;
+			let savedData;
 			let option = {
-				showData : () => entry.value = data = getData(),
+				showData : () => {
+					savedData = getData();
+					if (hiddenData != null) {
+						// Currently hidden
+						hiddenData = savedData;
+						entry.value = '* * * * *';
+					} else {
+						entry.value = savedData;
+					}
+				},
 				saveData : () => {
-					let oldData = data;
-					saveData(data = entry.value);
-					return data != oldData;
+					let newData = (hiddenData != null) ? hiddenData : entry.value;
+					let changed = savedData != newData;
+					saveData(savedData = newData);
+					return changed;
 				},
 				entry    : entry,
 			};
@@ -4371,7 +4412,8 @@ function initSettingsPanel() {
 					UrlResolver.setLoadOptions(value);
 					UrlResolver.setLoadOverrideOptions(value);
 					Data.writeLoadOverrideOptions(value);
-				});
+				},
+				UrlResolver.isDownloadUrlPrivate());
 			loadOptionEntries.push(option);
 		} else {
 			if (loadOverrideConfigName) {
@@ -4381,7 +4423,8 @@ function initSettingsPanel() {
 					(value) => {
 						UrlResolver.setLoadOverrideOptions(value);
 						Data.writeLoadOverrideOptions(value);
-					});
+					},
+					UrlResolver.isDownloadUrlPrivate());
 				loadOptionEntries.push(option);
 			}
 			if (loadConfigName) {
@@ -4391,7 +4434,8 @@ function initSettingsPanel() {
 					(value) => {
 						UrlResolver.setLoadOptions(value);
 						Data.writeLoadOptions(value);
-					});
+					},
+					UrlResolver.isDownloadUrlPrivate());
 				loadOptionEntries.push(option);
 			}
 		}
@@ -4415,7 +4459,8 @@ function initSettingsPanel() {
 						UrlResolver.setSaveOptions(value);
 						Data.writeSaveOptions(value);
 					}
-				});
+				},
+				UrlResolver.isUploadUrlPrivate());
 			saveOptionEntries.push(option);
 		}
 	}
