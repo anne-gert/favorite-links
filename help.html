@@ -616,8 +616,10 @@ http://example.com/icon.png</code>
 
 <p>
 The checkbox definition defined with <code>!checkbox name</code> can be used
-for a specific checkbox by appending the <code>:name</code> with no spaces to
-the checkbox.
+for a specific checkbox by appending it to the checkbox: <code>[ ]:name</code>
+with no spaces between the checkbox and the name.<br>
+There is a special syntax where the name is left empty: <code>[ ]:</code>, in
+which case, the last defined checkbox definition is used.
 </p>
 
 <p>
@@ -626,6 +628,16 @@ Example 1: Simple checkbox with standard Unicode icons:
 !checkbox standard _=uncheck x=check
 [ ]:standard Option 1
 [x]:standard Option 2
+</pre>
+</p>
+
+<p>
+Using the special syntax to refer to the last defined type, this is the same
+as:
+<pre>
+!checkbox standard _=uncheck x=check
+[ ]: Option 1
+[x]: Option 2
 </pre>
 </p>
 

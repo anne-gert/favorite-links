@@ -2426,6 +2426,7 @@ function parseLinks(links) {
 	let textBlock = null;  //used for literal !text ... !endtext blocks
 	let styleBlock = null;  //used for literal !style ... !endstyle blocks
 	let scriptBlock = null;  //used for literal !script ... !endscript blocks
+	let lastCheckboxType = 'default';  //name of last !checkbox definition
 	let openIndentLevels = [];  //indentation level (number of spaces) for each open level
 	let maxLevel = null;  //keep track of the maximum level
 	let lines = links.split(/\r?\n\r?/);  //lines with Link specifications
@@ -2566,6 +2567,7 @@ function parseLinks(links) {
 			} else {
 				parsed._checkboxDefs[name].push(def);
 			}
+			lastCheckboxType = name;
 			continue;
 		}
 
@@ -2639,7 +2641,7 @@ function parseLinks(links) {
 		}
 		// Take out Check: start with '[]', '[value]' or '[value]:checkbox-type'.
 		let checkType = null, checkValue = null;
-		m = line.match(/^(\s*)(?:[-*]\s*)?(?:\[(\S+|\s+)\]|(\[\]))(?::(\S+))?(.*)$/);
+		m = line.match(/^(\s*)(?:[-*]\s*)?(?:\[(\S+|\s+)\]|(\[\]))(?::(\S*))?(.*)$/);
 		// The above regex matches the following:
 		// - Capture 1: Initial whitespace (indentation)
 		// - Capture 2: The checkbox value (either non-space string or only-space string)
@@ -2649,7 +2651,16 @@ function parseLinks(links) {
 		if (m) {
 			if (m[2]) checkValue = m[2];  //value is set
 			if (m[3]) checkValue = null;  //value is empty
-			checkType = (m[4] != null) ? m[4] : 'default'; 
+			checkType = m[4];
+			if (checkType === undefined) {
+				checkType = 'default';
+				LogParse.debug('Line ' + (i+1) + ': Checkbox with no type -> \'' + checkType + '\'');
+			} else if (checkType === '') {
+				checkType = lastCheckboxType;
+				LogParse.debug('Line ' + (i+1) + ': Checkbox with empty type -> \'' + checkType + '\'');
+			} else {
+				LogParse.debug('Line ' + (i+1) + ': Checkbox with type \'' + checkType + '\'');
+			}
 			line = m[1] + m[5];  //the rest
 		}
 		// Take out Target: /target=non-whitespace/

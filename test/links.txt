@@ -105,18 +105,28 @@ Also a page with different ways of Custom Checkbox definitions is linked.
     Definition
         Normal
             [] Default checkbox (the normal case)
-            !checkbox cb-empty-1
-            []:cb-empty-1 Empty checkbox definition (should display *!EE!*)
-            !checkbox cb-empty-2 !back
-            []:cb-empty-2 Empty checkbox definition (should display *!EE!*)
-            !checkbox cb-empty-3 cb-empty-2 !front
-            []:cb-empty-3 Empty checkbox extension (should display *!EE!*)
+        Last Definition
+            []: Last defined checkbox is none (should display default)
+            !checkbox cb-last-def-1 A B C
+            []: Last defined checkbox is defined (should display *A/B/C*)
+            !checkbox cb-last-def-2 X Y Z
+            []: Last defined checkbox is other defined (should display *X/Y/Z*)
+            !checkbox cb-last-def-2 I char:II char:III
+            []: Last defined checkbox (is re-defined) (should display *I/II/III*)
         Undefined
             []:cb-undefined Undefined checkbox (should display default checkbox)
         Custom Checkboxes icon=char:T url=?links-override=test/checkbox-links.txt
 
         With Defaults
             Test with defined default checkbox icon=char:T url=?links-override=test/checkbox-define-default.txt
+
+    No Options
+        !checkbox cb-empty-1
+        []:cb-empty-1 Empty checkbox definition (should display *!EE!*)
+        !checkbox cb-empty-2 !back
+        []:cb-empty-2 Empty checkbox definition (should display *!EE!*)
+        !checkbox cb-empty-3 cb-empty-2 !front
+        []:cb-empty-3 Empty checkbox extension (should display *!EE!*)
 
     Re-definition
         []:cb-redefine-1 Use before single definition (should display *I/II/III*)
