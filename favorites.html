@@ -1722,7 +1722,15 @@ function CreateUrlResolver(getData = () => Data) {
 			LogUrlResolver.log('Both loadOverrideOptions and loadOptions not set');
 			_loadUrl = null;
 			loadUrlMsg = 'none';
-			_usedLoadConfigName = null;
+			// No options set, but a ConfigName might be set. A ConfigName
+			// is used to scope configurations in LocalStorage too.
+			if (loadOverrideConfigName != null) {
+				_usedLoadConfigName = loadOverrideConfigName;
+			} else if (loadConfigName != null) {
+				_usedLoadConfigName = loadConfigName;
+			} else {
+				_usedLoadConfigName = null;
+			}
 			addStatus('Local');
 		}
 		console.assert(_usedLoadConfigName !== undefined);
