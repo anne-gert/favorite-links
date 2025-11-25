@@ -2894,7 +2894,7 @@ function parseLinks(links) {
 			}
 		}
 	}
-	// Resolve individual options and pragmas (sets _options)
+	// Resolve individual options and pragmas (sets _options, place)
 	iterateCheckboxDefs(def => {
 		// Parse the arguments
 		let args = (def._args != null) ? def._args.split(/\s+/) : [];  //split on whitespace
@@ -2998,7 +2998,7 @@ function parseLinks(links) {
 		}
 		def._options = opts;
 	});
-	// Resolve all checkbox references (sets _options, _resolved)
+	// Resolve all checkbox references (sets _options, _resolved, place)
 	function resolve(def) {
 		if (def._resolved == 2) return;  //done
 		if (def._resolved == 1) {
@@ -3043,6 +3043,8 @@ function parseLinks(links) {
 									});
 								}
 							}
+							// Inherit pragmas
+							if (def2.place != null && def.place == null) def.place = def2.place;
 						} else {
 							// Unknown reference, skip
 							LogParse.warn('Checkbox \'' + def.name + '\' extends undefined \'' + def2.name + '\'');
