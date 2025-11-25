@@ -3643,7 +3643,7 @@ function render(parsed, container, cancel) {
 
 		// Render the checkbox as specified by the definition
 		let checkbox = null;
-		if (def == null) {
+		if (def == null || (def.name == 'default' && def.options == 'empty')) {
 			// Default checkbox: Use the standard <input> element
 			checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
@@ -3675,7 +3675,7 @@ function render(parsed, container, cancel) {
 			// Set return value
 			retval.present = true;
 			retval.element = checkbox;
-			retval.place = 'F';
+			retval.place = (def != null) ? def.place : 'F';
 		} else {
 			// The checkbox is defined by def
 			let checkbox = document.createElement('span');

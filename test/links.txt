@@ -179,6 +179,19 @@ Also a page with different ways of Custom Checkbox definitions is linked.
         !checkbox cb-refloop-5 cb-refloop-1
         []:cb-refloop-5 Custom Checkbox 7 (now circular) (should display *!RL!*)
 
+    Reset Definition
+        !checkbox cb-reset-1 A B C
+        []:cb-reset-1 Not empty (should display *A/B/C*)
+        !checkbox default A B C
+        [] Default Checkbox with definition (should display *A/B/C*)
+        !checkbox cb-reset-1
+        []:cb-reset-1 Re-defined as empty (should display default checkbox *!EE!*)
+        !checkbox default
+        [] Default Checkbox with definition reset (should display normal checkbox)
+        !checkbox default !back
+        [] Default Checkbox with definition reset (should display normal at the back)
+        !checkbox default
+
 Checkbox Examples from help.html
 
 !text
@@ -245,6 +258,15 @@ verify if they work.
         [ ]:levels Use most recent definition, X/Y/Z
         !checkbox levels A B C
 
+    Reset Default
+        [ ] Option (shows standard checkbox)
+        !checkbox default A B C
+        [ ] Option (shows *A/B/C*)
+        !checkbox default
+        [ ] Option (shows standard checkbox again)
+        !checkbox default !back
+        [ ] Option (shows standard checkbox at the back)
+
     Extended Checkbox
         !checkbox letters A B C
         !checkbox numbers 1 2 3
@@ -263,6 +285,10 @@ Other Links
     Default Pages
         Example Links url=?links-override=example-links.txt
         Default Links url=?links-override=does-not-exist
+
+// Ensure default is unmodified for the checkboxes that are before the first
+// definition of default.
+!checkbox default
 
 
 // vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent

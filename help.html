@@ -769,6 +769,20 @@ used. If there is no definition yet, the very last definition is used.
 </pre>
 </p>
 
+<p>
+The default checkbox can be reset by re-defining <code>default</code> without
+any options:
+<pre>
+[ ] Option                                  : shows standard checkbox
+!checkbox default A B C
+[ ] Option                                  : shows A/B/C
+!checkbox default
+[ ] Option                                  : shows standard checkbox again
+!checkbox default !back
+[ ] Option                                  : shows standard checkbox at the back
+</pre>
+</p>
+
 
 <h4>Extended Checkbox</h4>
 
