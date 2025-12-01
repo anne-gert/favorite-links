@@ -1035,6 +1035,7 @@ function CreateLogger(level = 'important') {
 			console.error('Unknown log level: ' + level);
 			_level = levels.none;
 		}
+		return this;  //allow this function to be chained.
 	}
 	setLevel(level);
 
@@ -1070,6 +1071,7 @@ function CreateLogger(level = 'important') {
 	}
 	let obj = {
 		setLevel    : setLevel,
+		all         : function() { return this.setLevel('all') },  //alias
 		defineLevel : (name, level, style) => obj[name] = Func(level, style),
 		error       : console.error,
 		warn        : console.warn,
@@ -4749,6 +4751,7 @@ function initSettingsPanel() {
 
 	// Hide (Save or Cancel) Settings panel.
 	function hideSettings(save) {
+		//LogSettings.devlog('hideSettings(' + save + ')');
 		if (!visible) return;  //do nothing if already hidden
 		let hide = () => {
 			// slide panel to hidden
@@ -4998,8 +5001,8 @@ function tabInsert(ctl, add) {
 // StatusLine {{{
 
 // These variables will be set in initStatus()
-// Add a SatusLine statement.
-let addStatus = () => {};
+// Add a SatusLine statement. Insert separator if status=='/'
+let addStatus = (status) => {};
 // Clear current StatusLine.
 let clearStatus = () => {};
 
@@ -5022,23 +5025,29 @@ function initStatus() {
 		count = 0;
 	}
 
+	function addSeparator() {
+		freeze();
+		currentLine += ' \u{2022}';
+		lastStatus = null;
+	}
+
 	addStatus = (status) => {
-		// Add a marker if last status has been too long
-		let nowTs = Date.now();
-		if (lastTs > 0 && nowTs - lastTs > 5000) {
-			freeze();
-			currentLine += ' \u{2022}';
-			lastStatus = null;
-		}
-		lastTs = nowTs;
-		// Increase count or add status
-		if (status == lastStatus) {
-			count++;
+		if (status != '/') {
+			// Add a separator if last status has been too long ago
+			let nowTs = Date.now();
+			if (lastTs > 0 && nowTs - lastTs > 5000) addSeparator();
+			lastTs = nowTs;
+			// Increase count or add status
+			if (status == lastStatus) {
+				count++;
+			} else {
+				freeze();
+				currentLine += ' [' + status + ']';
+				lastStatus = status;
+				count = 1;
+			}
 		} else {
-			freeze();
-			currentLine += ' [' + status + ']';
-			lastStatus = status;
-			count = 1;
+			addSeparator();
 		}
 		// Draw line
 		statusLine.textContent = render();

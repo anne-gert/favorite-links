@@ -2,6 +2,9 @@ let LogTest;
 
 // If this is true, the test will stop when the first error is encountered.
 let StopOnFirstError = false;
+// If this is set, only tests which names satisfy this regex will be executed.
+let ExecutedTestsRegexp = null;
+//let ExecutedTestsRegexp = /^3\./;
 
 // Mock implementations {{{
 
@@ -376,9 +379,9 @@ function CreateSettingsChanger() {
 		// Call the hideSettings
 		if (_action == 'save') {
 			hideFunction(true);
-		} else if (_action = 'clear') {
+		} else if (_action == 'clear') {
 			hideFunction('clear');
-		} else if (_action = 'cancel') {
+		} else if (_action == 'cancel') {
 			hideFunction(false);
 		} else {
 			LogTest.error('Unknown _action in HOOK_ChangeSettings.update(): ' + _action);
@@ -444,6 +447,8 @@ HOOK_Download = remoteFile.download;
 HOOK_Upload = remoteFile.upload;
 HOOK_ChangeSettings = CreateSettingsChanger();
 
+let CurrTestCtl = null;
+
 function initTests() {
 	// Create the special logger
 	LogTest = CreateLogger();
@@ -454,6 +459,11 @@ function initTests() {
 	LogTest.defineLevel('debug', 3, 'color:#666666;background:#FFFFCC');
 	LogTest.setLevel();
 
+	// Add subtitle to display current test
+	let title = document.getElementById('Title');
+	CurrTestCtl = document.createElement('h2');
+	title.parentNode.insertBefore(CurrTestCtl, title.nextSibling);
+
 	LogTest.important('Init Tests');
 }
 
@@ -463,19 +473,19 @@ function initTests() {
 
 async function readTests(url) {
 	LogTest.important('Read test cases from ' + url);
-	let rsp = await fetch(url);
+	let test_cases = [];
+	let rsp = await fetch(url, { cache: 'no-cache' });
 	if (rsp == null) {
 		LogTest.error('No response');
-		return null;
+		return test_cases;
 	}
 	if (rsp.status != 200) {
 		LogTest.error('No data: status ' + rsp.status);
-		return null;
+		return test_cases;
 	}
 	let contents = await rsp.text();
 	//LogTest.devlog(contents);
 	let records = contents.split(/[\r\n]+/);  //split in lines
-	let test_cases = [];
 	let names = null;
 	for (let i = 0; i < records.length; ++i) {
 		let record = records[i];
@@ -488,7 +498,7 @@ async function readTests(url) {
 		if (fields.length <= 1) {
 			// Should have more than 1 field
 			LogTest.error('Invalid record: ' + record);
-			if (StopOnFirstError) return null;
+			if (StopOnFirstError) return test_cases;
 			continue;
 		}
 		if (names == null) {
@@ -499,7 +509,7 @@ async function readTests(url) {
 			// Check length of data
 			if (fields.length != names.length) {
 				LogTest.error('Invalid number of fields: ' + fields.length);
-				if (StopOnFirstError) return null;
+				if (StopOnFirstError) return test_cases;
 				continue;
 			}
 			// Create entry
@@ -542,11 +552,16 @@ async function executeTest(data) {
 		LogTest.important('Skip Test ' + data.name);
 		result.skipped++;
 		return result;
+	} else if (ExecutedTestsRegexp != null && !data.name.match(ExecutedTestsRegexp)) {
+		// This name is not in the Regexp
+		LogTest.important('Skip Test ' + data.name);
+		result.skipped++;
+		return result;
 	} else {
 		LogTest.important('Test ' + data.name);
 		LogTest.debug('Test data', data);
 	}
-	//LogTest.devlog(data);
+	if (CurrTestCtl) CurrTestCtl.textContent = data.name;
 
 	// Initialize
 	if (!data.keepStorage) {
@@ -584,6 +599,7 @@ async function executeTest(data) {
 
 	// If we should set Settings, trigger that and wait for it
 	if (data.cnfAction != null && data.cnfAction != '') {
+		addStatus('/');
 		//LogTest.devlog('Prepare ChangeSettings');
 		HOOK_ChangeSettings.setConfig(data.cnfLinks);
 		let options = [];
@@ -648,6 +664,8 @@ async function executeTest(data) {
 		if (curStatus != expStatus) {
 			LogTest.error('Test ' + data.name + ': Status (=' + renderValue(status) + ') has not expected value (=' + renderValue(fullStatus) + ')');
 			LogTest.debug('Full Status: \'' + status + '\'');
+			LogTest.debug('Actual string: \'' + curStatus +'\'');
+			LogTest.debug('Expected string: \'' + expStatus +'\'');
 			++result.errors;
 		}
 		prevStatus = fullStatus;  //for next testcase
