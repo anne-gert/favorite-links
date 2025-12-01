@@ -3,7 +3,7 @@
 !title Test Checkboxes
 
 // Enable this to represent the checked checkbox as a checkmark ✓
-//!icondef check char:U+2714
+//!icon check char:U+2714
 
 // Enable this to change or disable the automatic upload delay
 //!auto-upload-delay 5
@@ -67,11 +67,11 @@ _
                 [g]:checksR Sub optie 4c
 
 !checkbox favicons empty A=agb F=firefox S=sigmax B=mantis O=ovp
-!icondef agb       http://hawaii.uxi.nl/favicon.ico
-!icondef firefox   https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
-!icondef sigmax    https://www.sigmax.nl/wp-content/themes/sigmax/static/images/favicon/favicon-194x194.png
-!icondef mantis    https://mantisbt.org/favicon.ico
-!icondef ovp       https://tst.ovpocket.nl/SigmaxTester/WebBackOfficeClient/assets/ovpocket_favicon.png
+!icon agb       http://hawaii.uxi.nl/favicon.ico
+!icon firefox   https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
+!icon sigmax    https://www.sigmax.nl/wp-content/themes/sigmax/static/images/favicon/favicon-194x194.png
+!icon mantis    https://mantisbt.org/favicon.ico
+!icon ovp       https://tst.ovpocket.nl/SigmaxTester/WebBackOfficeClient/assets/ovpocket_favicon.png
         favicons
             [ ]:favicons Test optie 1
             [A]:favicons Test optie 2

@@ -10,15 +10,15 @@ for 'refloop' being displayed.
 
     Definition
 
-        !icondef ic-refloop-1a ic-refloop-1b
-        !icondef ic-refloop-1b ic-refloop-1a
+        !icon ic-refloop-1a ic-refloop-1b
+        !icon ic-refloop-1b ic-refloop-1a
         icon=ic-refloop-1a Circularly defined icon (length 2) (should display *'!ND!'*)
 
         icon=ic-undefined Undefined icon (should display *'!UU!'*)
 
-!icondef refloop refloop
+!icon refloop refloop
 
-!icondef undefined char:!UU!
+!icon undefined char:!UU!
 
 // vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
 

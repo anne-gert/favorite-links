@@ -13,14 +13,14 @@ resulting in the default value of undefined for both.
 
     Definition
 
-        !icondef ic-refloop-1a ic-refloop-1b
-        !icondef ic-refloop-1b ic-refloop-1a
+        !icon ic-refloop-1a ic-refloop-1b
+        !icon ic-refloop-1b ic-refloop-1a
         icon=ic-refloop-1a Circularly defined icon (length 2) (should display *'!ND!'*)
 
         icon=ic-undefined Undefined icon (should display *'!ND!'*)
 
-!icondef refloop unknown
-!icondef undefined unknown
+!icon refloop unknown
+!icon undefined unknown
 
 // vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
 

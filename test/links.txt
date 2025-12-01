@@ -29,7 +29,7 @@ Section
 !search Wayback Machine | Archive | Wayback Machine (Internet Archive) | alt
 !search Google Maps     | Maps
 
-!icondef maps.google.com alt
+!icon maps.google.com alt
 
     Boldness
         test *bold* and **also** trailing
@@ -59,30 +59,30 @@ loop-lengths for refloop cases are shown.
 
     Definition
         Normal
-            !icondef ic-ok char:X
+            !icon ic-ok char:X
             icon=ic-ok Normal icon (should display *'X'*)
         Undefined
             icon=ic-undefined Undefined icon (should display *'!ND!'*)
 
     Re-definition
-        !icondef ic-redefine char:A
+        !icon ic-redefine char:A
         icon=ic-redefine First use of icon (should display *'B'*)
-        !icondef ic-redefine char:B
+        !icon ic-redefine char:B
         icon=ic-redefine Second use of icon (should display *'B'*)
 
     Definition Loop
-        !icondef ic-refloop-1a ic-refloop-1b
-        !icondef ic-refloop-1b ic-refloop-1a
+        !icon ic-refloop-1a ic-refloop-1b
+        !icon ic-refloop-1b ic-refloop-1a
         icon=ic-refloop-1a Circularly defined icon (length 2) (should display *'!ND!'*)
 
-        !icondef ic-refloop-2a ic-refloop-2b
-        !icondef ic-refloop-2b ic-refloop-2c
-        !icondef ic-refloop-2c ic-refloop-2d
-        !icondef ic-refloop-2d ic-refloop-2e
+        !icon ic-refloop-2a ic-refloop-2b
+        !icon ic-refloop-2b ic-refloop-2c
+        !icon ic-refloop-2c ic-refloop-2d
+        !icon ic-refloop-2d ic-refloop-2e
         icon=ic-refloop-2a Circularly defined icon (lengt 4) (should display *'!ND!'*)
 
-        !icondef ic-refloop-3a ic-refloop-3b
-        !icondef ic-refloop-3b ic-refloop-2a
+        !icon ic-refloop-3a ic-refloop-3b
+        !icon ic-refloop-3b ic-refloop-2a
         icon=ic-refloop-3a Circularly defined icon (lengt 6) (should display *'!ND!'*)
 
     With Defaults
@@ -239,11 +239,11 @@ verify if they work.
         !checkbox icons empty check 1=icon1 2=icon2 3=icon3 4=icon4 5=icon2
         [1]:icons Option 1
         [2]:icons Option 2
-        !icondef icon1 http://example.com/icon1.png
-        !icondef icon2 http://example.com/icon2.png
-        !icondef icon3 icon1
-        !icondef icon4 char:X
-        !icondef check char:U+2714
+        !icon icon1 http://example.com/icon1.png
+        !icon icon2 http://example.com/icon2.png
+        !icon icon3 icon1
+        !icon icon4 char:X
+        !icon check char:U+2714
 
     Example 8
         !checkbox good _ + - !after

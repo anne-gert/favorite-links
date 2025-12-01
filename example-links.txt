@@ -40,10 +40,10 @@ Examples
         LinkedIn https://www.linkedin.com/
 
 // Icon definitions
-!icondef maps.google.com        alt
-!icondef html-preview.github.io github
-!icondef firefox                https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
-!icondef github                 https://github.com
+!icon maps.google.com        alt
+!icon html-preview.github.io github
+!icon firefox                https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
+!icon github                 https://github.com
 
 // Checkbox definitions
 !checkbox 3 uncheck check mcheck

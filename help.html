@@ -288,13 +288,12 @@ Each line should be one of the following:
       tooltip | icon | url-template</code> defines a search button to be
       displayed next to the search box.  See <a
       href="#search-functions">below</a> for more details.
-  <li><dt>Icon Definitions</dt>: The line <code>!icondef name
-      replacement</code> defines an icon. If a link uses
-      <code>icon=name</code>, it will be replaced by whatever is defined for
-      name.  This also works with the special words <code>none</code>,
-      <code>empty</code>, <code>html:x</code>, etc.  It is also allowed to
-      write this with an <code>=</code> between name and replacement. See <a
-      href="#icons">Icons</a> for more on icons.
+  <li><dt>Icon Definitions</dt>: The line <code>!icon name replacement</code>
+      defines an icon. If a link uses <code>icon=name</code>, it will be
+      replaced by whatever is defined for name.  This also works with the
+      special words <code>none</code>, <code>empty</code>, <code>html:x</code>,
+      etc.  It is also allowed to write this with an <code>=</code> between
+      name and replacement. See <a href="#icons">Icons</a> for more on icons.
   <li><dt>Checkbox Definition</dt>: The line <code>!checkbox name options
       ...</code> defines a custom checkbox. See <a
       href="#checkboxes">Checkboxes</a> for more details.
@@ -462,13 +461,13 @@ Checkboxes.
 </pre>
 Specifying icons.
 <pre>
-  !icondef www.example.com https://static.example.com/assets/icon1.png
-  !icondef icon2 https://static.example.com/assets/icon2.png
-  !icondef iconToo icon2
+  !icon www.example.com https://static.example.com/assets/icon1.png
+  !icon icon2 https://static.example.com/assets/icon2.png
+  !icon iconToo icon2
   http://example.com                   : Uses icon http://example.com/favicon.ico (default)
-  http://www.example.com               : Uses icon icon1.png from !icondef above (implicit)
-  icon=icon2 http://www.example.com    : Uses icon icon2.png from !icondef above (explicit)
-  icon=iconToo http://www.example.com  : Uses icon icon2.png from !icondef above (expliciti, recursive)
+  http://www.example.com               : Uses icon icon1.png from !icon above (implicit)
+  icon=icon2 http://www.example.com    : Uses icon icon2.png from !icon above (explicit)
+  icon=iconToo http://www.example.com  : Uses icon icon2.png from !icon above (expliciti, recursive)
   icon=alt http://example.com          : Use alternate
   icon=alt:google http://example.com   : Use alternate from Google
   icon=html:&lt;span&amp;space;style="color:green"&gt;&amp;#x2714;&lt;/span&gt; http://example.com
@@ -486,7 +485,7 @@ values:
 <li>URL: This URL is used as the image URL of the icon.
 <li><code>default</code>: If value is default or no icon is given, the URL
     domain + <code>favicon.ico</code> is used. If the URL domain is the name of
-    an !icondef, that value is used.
+    an !icon definition, that value is used.
 <li><code>none</code>: No image is rendered.
 <li><code>empty</code>: An empty image is rendered.
 <li><code>alt:&lt;method&gt;?&lt;url&gt;</code>: Instead of the website's icon
@@ -529,7 +528,7 @@ icon=unknown Not Defined     : shows <dt>!ND!</dt> ('not defined')
 <pre>
 icon=unknown Not Defined     : shows <dt>?</dt>
 
-!icondef undefined char:     : define undefine as '?'
+!icon undefined char:        : define undefine as '?'
 </pre>
 </p>
 
@@ -540,15 +539,15 @@ Since an icon definition can refer to another, it would be possible to create
 a reference loop. If such an icon is used, the special <code>refloop</code>
 icon will be shown. This definition can be redefined.
 <pre>
-!icondef icon2 icon1
-!icondef icon1 icon2         : icon1 and icon2 are now in a reference loop
+!icon icon2 icon1
+!icon icon1 icon2            : icon1 and icon2 are now in a reference loop
 
 icon=icon1 Reference Loop    : shows <dt>!ND!</dt> ('not defined')
 </pre>
 <pre>
 icon=icon1 Reference Loop    : shows <dt>&#x221E;</dt>
 
-!icondef refloop char:U+221E : define refloop as &#x221E;
+!icon refloop char:U+221E    : define refloop as &#x221E;
 </pre>
 </p>
 
@@ -610,7 +609,7 @@ be used to define a checkbox type with custom options. The allowed options are:
 <li><dt>!back</dt>, <dt>!after</dt>: Places the checkbox after the text.
 </ul>
 The representation of special values can be overridden. E.g. to use a different
-icon for the checkmark, use <code>!icondef check
+icon for the checkmark, use <code>!icon check
 http://example.com/icon.png</code>
 </p>
 
@@ -698,18 +697,18 @@ U+1F642:
 
 <p>
 Example 7: Checkbox with 7 values, empty, check and 5 icons where '1' and '3'
-show the same icon because of the !icondef and '2' and '5' also show the same
-icon because both options have the same display value. The check icon
-(&#x2611;) is overriden with a checkmark (&#x2714;):
+show the same icon because of the !icon and '2' and '5' also show the same icon
+because both options have the same display value. The check icon (&#x2611;) is
+overriden with a checkmark (&#x2714;):
 <pre>
 !checkbox icons empty check 1=icon1 2=icon2 3=icon3 4=icon4 5=icon2
 [1]:icons Option 1
 [2]:icons Option 2
-!icondef icon1 http://example.com/icon1.png
-!icondef icon2 http://example.com/icon2.png
-!icondef icon3 icon1
-!icondef icon4 char:X
-!icondef check char:U+2714
+!icon icon1 http://example.com/icon1.png
+!icon icon2 http://example.com/icon2.png
+!icon icon3 icon1
+!icon icon4 char:X
+!icon check char:U+2714
 </pre>
 </p>
 

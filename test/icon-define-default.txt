@@ -9,14 +9,14 @@ Test cases for handling of icons and icon definitions where 'refloop' and
 
     Definition
 
-        !icondef ic-refloop-1a ic-refloop-1b
-        !icondef ic-refloop-1b ic-refloop-1a
+        !icon ic-refloop-1a ic-refloop-1b
+        !icon ic-refloop-1b ic-refloop-1a
         icon=ic-refloop-1a Circularly defined icon (length 2) (should display *'!RL!'*)
 
         icon=ic-undefined Undefined icon (should display *'!UU!'*)
 
-!icondef refloop char:!RL!
-!icondef undefined char:!UU!
+!icon refloop char:!RL!
+!icon undefined char:!UU!
 
 // vim: foldmethod=marker nowrap shiftwidth=4 tabstop=4 expandtab smartindent
 

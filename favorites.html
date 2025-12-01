@@ -986,10 +986,10 @@ These are some examples of the available features.
         LinkedIn https://www.linkedin.com/
 
 // Icon definitions
-!icondef maps.google.com        alt
-!icondef html-preview.github.io github
-!icondef firefox                https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
-!icondef github                 https://github.com
+!icon maps.google.com        alt
+!icon html-preview.github.io github
+!icon firefox                https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
+!icon github                 https://github.com
 
 // Checkbox definitions
 !checkbox 3 uncheck check mcheck
@@ -2539,10 +2539,11 @@ function parseLinks(links) {
 			continue;
 		}
 
-		// Check if it is an icon definition
-		m = line.match(/^\s*!icondef\s+(\S+)(?:\s+|\s*=\s*)(\S+)\s*$/i);
+		// Check if it is an icon definition (also support old syntax
+		// with !icondef.
+		m = line.match(/^\s*!icon(?:def)?\s+(\S+)(?:\s+|\s*=\s*)(\S+)\s*$/i);
 		if (m) {
-			// This is an icondef
+			// This is an icon definition
 			parsed._iconDefs[m[1]] = m[2];  //save mapping
 			continue;
 		}
