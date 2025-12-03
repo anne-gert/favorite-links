@@ -1,9 +1,9 @@
 name	keepStorage	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	iniSaveArg	expLinks	expDispLinks	expCleanLinks	expUplDisabled	expConflict	expRemoteFile	cnfAction	cnfLinks	cnfLoadOpt1	cnfLoadOpt2	cnfSaveOpt	expStatus
 
 # Edit Config in Settings -LoadOptions -SaveOptions
-"1.1 Set Config A, no Load/Save"	FALSE	NULL	X	NULL	NULL	NULL	NULL	A	A	NULL	FALSE	FALSE	X	save	A				Local-NoDownload-Renderfallback-New-Render
-"1.2 Set Config B, no Load/Save"	FALSE	A	X	NULL	NULL	NULL	NULL	B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender-New-Render
-"1.3 Set Config C, no Load/Save"	FALSE	B	X	NULL	NULL	NULL	NULL	B	B	NULL	FALSE	FALSE	X	cancel	C				Local-Links-NoDownload-Prerender-NoDownload
+"1.1 Set Config A, no Load/Save"	FALSE	NULL	X	NULL	NULL	NULL	NULL	A	A	NULL	FALSE	FALSE	X	save	A				Local-NoDownload-Renderfallback * New-Render
+"1.2 Set Config B, no Load/Save"	FALSE	A	X	NULL	NULL	NULL	NULL	B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender * New-Render
+"1.3 Set Config C, no Load/Save"	FALSE	B	X	NULL	NULL	NULL	NULL	B	B	NULL	FALSE	FALSE	X	cancel	C				Local-Links-NoDownload-Prerender
 
 # Edit Links in Settings
 "2.1(1) Clean"	FALSE	NULL	NOT_EXIST	NULL	NULL	links-A.txt	links-A.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE							Saveable-Load404-Default-Render
@@ -11,14 +11,31 @@ name	keepStorage	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	
 
 # Create and Edit Configs
 "2.2(1) Create empty Config"	FALSE	NULL	NOT_EXIST	NULL	NULL	config-A	NULL	DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE							Local-NoDownload-Renderfallback
-"2.2(2) Set Options"	TRUE	NULL	NULL	NULL	NULL	config-A	NULL	DEFAULT_LINKS	DEFAULT_LINKS	DEFAULT_LINKS	FALSE	FALSE	DEFAULT_LINKS	save	NULL	links-A.txt		links-A.txt	Local-Links-NoDownload-Prerender + OptionsChanged-LoadOK-SaveOK
-"2.2(3) Change Links"	TRUE	NULL	NULL	NULL	NULL	config-A	NULL	A	A	A	FALSE	FALSE	A	save	A	NULL		NULL	Saveable-Links-Prerender-LoadOK-Same + Render-SaveOK
+"2.2(2) Set Options"	TRUE	NULL	NULL	NULL	NULL	config-A	NULL	DEFAULT_LINKS	DEFAULT_LINKS	DEFAULT_LINKS	FALSE	FALSE	DEFAULT_LINKS	save	NULL	links-A.txt		links-A.txt	Local-Links-NoDownload-Prerender * OptionsChanged-Saveable-Links-LoadOK-SaveOK
+"2.2(3) Change Links"	TRUE	NULL	NULL	NULL	NULL	config-A	NULL	A	A	A	FALSE	FALSE	A	save	A	NULL		NULL	Saveable-Links-Prerender-LoadOK-Same * Render-SaveOK
 
 # Create and Switch between Configs
 "2.3(1) Change Config Options"	FALSE	A	A	A	NULL	config-A	NULL	A	A	A	FALSE	FALSE	A	save	NULL	links-A.txt		links-A.txt	NULL
 "2.3(2) Change ConfigName"	TRUE	NULL	NULL	NULL	NULL	config-B	NULL	B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	NULL
 "2.3(3) Switch to A"	TRUE	NULL	NULL	NULL	NULL	config-A	NULL	A	A	A	FALSE	FALSE	A						NULL
 "2.3(4) Switch to B"	TRUE	NULL	NULL	NULL	NULL	config-B	NULL	B	B	B	FALSE	FALSE	B						NULL
+
+# Save/Clear/Cancel all combinations of L,O,S (Links, Override, Save)
+"3.1.1 [--] Settings: Save"	FALSE	A	X	NULL	NULL	NULL	NULL	B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender * New-Render
+"3.1.2 [--] Settings: Clear"	FALSE	A	X	NULL	NULL	NULL	NULL	DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE	X	clear	B				Local-Links-NoDownload-Prerender * NoDownload
+"3.1.3 [--] Settings: Cancel"	FALSE	A	X	NULL	NULL	NULL	NULL	A	A	NULL	FALSE	FALSE	X	cancel	B				Local-Links-NoDownload-Prerender * -
+"3.2.1 [L-] Settings: Save"	FALSE	A	A	A	NULL	links.txt	NULL	B	B	A	FALSE	FALSE	A	save	B				Local-NoDownload-Prerender * Render
+"3.2.2 [L-] Settings: Clear"	FALSE	A	A	A	NULL	links.txt	NULL	A	A	A	FALSE	FALSE	A	clear	B				Local-NoDownload-Prerender * LoadOK-Clear
+"3.2.3 [L-] Settings: Cancel"	FALSE	A	A	A	NULL	links.txt	NULL	A	A	A	FALSE	FALSE	A	cancel	B				Local-NoDownload-Prerender * -
+"3.3.1 [O-] Settings: Save"	FALSE	A	A	A	links.txt	NULL	NULL	B	B	A	FALSE	FALSE	A	save	B				Override-Links-LoadOK-Render * Render
+"3.3.2 [O-] Settings: Clear"	FALSE	A	A	A	links.txt	NULL	NULL	A	A	A	FALSE	FALSE	A	clear	B				Override-Links-LoadOK-Render * LoadOK-Clear
+"3.3.3 [O-] Settings: Cancel"	FALSE	A	A	A	links.txt	NULL	NULL	A	A	A	FALSE	FALSE	A	cancel	B				Override-Links-LoadOK-Render * -
+"3.4.1 [LS] Settings: Save"	FALSE	A	A	A	NULL	links.txt	links.txt	B	B	B	FALSE	FALSE	B	save	B				Saveable-Links-Prerender-LoadOK-Same * Render-SaveOK
+"3.4.2 [LS] Settings: Clear"	FALSE	A	A	A	NULL	links.txt	links.txt	A	A	A	FALSE	FALSE	A	clear	B				Saveable-Links-Prerender-LoadOK-Same * LoadOK-Clear
+"3.4.3 [LS] Settings: Cancel"	FALSE	A	A	A	NULL	links.txt	links.txt	A	A	A	FALSE	FALSE	A	cancel	B				Saveable-Links-Prerender-LoadOK-Same * -
+"3.5.1 [OS] Settings: Save"	FALSE	A	A	A	links.txt	NULL	links.txt	B	B	B	FALSE	FALSE	B	save	B				Saveable-Override-Links-LoadOK-Render * Render-SaveOK
+"3.5.2 [OS] Settings: Clear"	FALSE	A	A	A	links.txt	NULL	links.txt	A	A	A	FALSE	FALSE	A	clear	B				Saveable-Override-Links-LoadOK-Render * LoadOK-Clear
+"3.5.3 [OS] Settings: Cancel"	FALSE	A	A	A	links.txt	NULL	links.txt	A	A	A	FALSE	FALSE	A	cancel	B				Saveable-Override-Links-LoadOK-Render * -
 
 # Just LocalStorage -LoadOptions -SaveOption
 # - No Download, so no change in CleanLinks.
