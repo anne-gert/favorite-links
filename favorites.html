@@ -4591,18 +4591,18 @@ function initSettingsPanel() {
 		settingsText.className = 'textbox';
 		settingsText.readOnly = textRO;
 		settingsText.onkeydown = function(e) {
-			//LogSettings.log('KeyCode=' + e.keyCode);
-			if (e.keyCode == 9) {
-				// This is the TAB key
-				tabInsert(this, !e.shiftKey);
-				return false;  //stop further handling
-			} else if (e.keyCode == 13) {
-				// This is the Enter key -> Copy indentation from current line
-				textInsert(this, (before, mid, after) => {
+			//LogSettings.devlog('KeyCode=' + e.keyCode);
+			if (e.keyCode == 9) {  //Tab key
+				return !tabInsert(this, !e.shiftKey);
+			} else if (e.keyCode == 13) {  //Enter key
+				// Copy indentation from current line
+				return !textInsert(this, (before, mid, after) => {
 					let m = before.match(/(?:^|\r|\n)([ \t]*)[^\r\n]*$/);  //match: 'linebreak whitespace line end'
 					return '\n' + m[1];  //insert linebreak plus matched whitespace
 				});
-				return false;  //stop further handling
+			} else if (e.keyCode == 36) {  //Home key
+				// Go to first non-whitespace character or first column
+				return !gotoHome(this);
 			}
 			return true;
 		};
@@ -4943,14 +4943,17 @@ function getSelection(ctl) {
 	if (start > len) start = len;
 	if (end == null || end < start) end = start;
 	if (end > len) end = len;
+	// Current position is at the start or end
+	let caret = (dir == 'backward') ? start : end;
 
-	return [start, end, dir];
+	return [start, end, dir, caret];
 }
 
 // Assume the ctl is an input control.
 // Determine the strings before and after the insertion point.
 // Then call the inserter with these values. The inserter should return the insertion string.
 // Update ctl and place the new insertion point after the insertion.
+// Return true if handled.
 function textInsert(ctl, inserter) {
 	let pos = getSelection(ctl);
 	let start = pos[0], end = pos[1];
@@ -4962,6 +4965,7 @@ function textInsert(ctl, inserter) {
 	// Put the insertion point after the insertion
 	let newPos = start + mid2.length;
 	ctl.selectionStart = ctl.selectionEnd = newPos;
+	return true;
 }
 
 // Assume the ctl is an input control.
@@ -4974,8 +4978,7 @@ function tabInsert(ctl, add) {
 	const space = ' ';
 	let sel = getSelection(ctl);
 	let val = ctl.value;
-	let start = sel[0], end = sel[1], dir = sel[2];
-	let pos = (dir == 'backward') ? start : end;
+	let start = sel[0], end = sel[1], caret = sel[3];
 	if (start != end) {
 		// There is a slection -> add/remove indentation
 		// Get the indexes of the starts of the lines in the selection
@@ -5048,10 +5051,10 @@ function tabInsert(ctl, add) {
 		// Set the new selection
 		ctl.selectionStart = start;
 		ctl.selectionEnd = end;
-		ctl.selectionDirection = dir;
+		ctl.selectionDirection = sel[2];
 	} else {
 		// There is no selection -> add/remove N spaces at current position
-		let before = val.substring(0, pos), after = val.substring(pos);
+		let before = val.substring(0, caret), after = val.substring(caret);
 		let newBefore;
 		if (add) {
 			// Insert N spaces
@@ -5066,6 +5069,76 @@ function tabInsert(ctl, add) {
 		// Put the insertion point after the change
 		ctl.selectionStart = ctl.selectionEnd = newBefore.length;
 	}
+	return true;
+}
+
+// Move insertion point to first non-whitespace or first column.
+// The algorithm is as follows:
+// 1. Find start of the selection (caret).
+// 2. Find start of line (A) and first non-whitespace character (B) on that line.
+// 3. Depending on the location of the carent wrt A and B, select the goto
+//    position, according to this:
+//      Positions : A    B
+//      Go to     : BAABBABBBBBB...
+//    "Go to B if to the right of B or closer to B or at A (for toggle). Go to
+//    A if closer to A or at B (toggle)."
+// 4. If a range is selected, deselect.
+// Return true if handled.
+function gotoHome(ctl) {
+	let pos = getSelection(ctl);
+	let caret = pos[3];
+	let val = ctl.value;
+	// Search to the left for start of line and start of text
+	let posLine = 0, posText;
+	for (let i = caret-1; i >= 0; --i) {  //start immediately before the caret
+		let ch = val.charAt(i);
+		if (ch == '\r' || ch == '\n') {
+			// Found position of start of line
+			posLine = i + 1;
+			break;
+		} else if (ch != ' ' && ch != '\t') {
+			// Found non-whitespace
+			posText = i;
+		}
+	}
+	let newpos;
+	if (posText !== undefined) {
+		// Both start of line and start of text are to the left of the current position
+		newpos = posText;
+		//LogSettings.devlog(`Home pressed: posLine=${posLine} <= posText=${posText} < caret=${caret} -> newpos=${newpos}`);
+	} else {
+		// No first non-whitespace found, search to the right
+		for (let i = caret; i < val.length; ++i) {
+			let ch = val.charAt(i);
+			if (ch == '\r' || ch == '\n') {
+				// Found position of start of next line
+				break;
+			} else if (ch != ' ' && ch != '\t') {
+				// Found non-whitespace
+				posText = i;
+				break;
+			}
+		}
+		if (posText !== undefined) {
+			// Caret is inside leading whitespace
+			if (caret == posText) {
+				newpos = posLine;  //at posText, toggle to posLine
+			} else if (caret == posLine) {
+				newpos = posText;  //at posLine, toggle to posText
+			} else if (caret - posLine < posText - caret) {
+				newpos = posLine;  //closer to posLine, go to posLine
+			} else {
+				newpos = posText;  //closer to posText, go to posText
+			}
+			//LogSettings.devlog(`Home pressed: posLine=${posLine} <= caret=${caret} <= posText=${posText} -> newpos=${newpos}`);
+		} else {
+			// Line consists of only whitespace, only consider start of line
+			newpos = posLine;
+			//LogSettings.devlog(`Home pressed: posLine=${posLine} <= caret=${caret} -> newpos=${newpos}`);
+		}
+	}
+	// Change posisiton
+	ctl.selectionStart = ctl.selectionEnd = newpos;
 	return true;
 }
 
