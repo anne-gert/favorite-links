@@ -3439,10 +3439,14 @@ function render(parsed, container, cancel) {
 			}
 		}
 		// Create element itself
+		let editIt = (ev) => {
+			showSettingsPanel(link.lineNum);
+		};
 		if (name == '---') {
 			// Special separator item
 			let item = document.createElement('hr');
 			item.className = 'separator';
+			item.addEventListener('dblclick', editIt);
 			container.appendChild(item);
 		} else {
 			let itemContainer = addItemContainer();
@@ -3457,6 +3461,9 @@ function render(parsed, container, cancel) {
 			//                 - text: name
 			//     - continued items
 			//     - subContainer: Only if there are subItems
+
+			// Add doubleclick event for edit to the itemContainer
+			itemContainer.addEventListener('dblclick', editIt);
 
 			// Declare textContainer to hold the name/label
 			let textContainer = null;
@@ -4449,6 +4456,7 @@ function addSearchButtons(parsed, searchBox, container) {
 
 // These variables will be set in initSettingsPanel()
 // Function to open the Settings panel
+// Optionally a line number can be supplied to scroll to.
 let showSettingsPanel = null;
 // Function to update the displayed Conflict state
 let updateSettingsConflict = null;
@@ -4764,9 +4772,33 @@ function initSettingsPanel() {
 	// handler after fhe first time.
 
 	// Show the Settings panel.
-	function showSettings() {
+	function showSettings(gotoLine = null) {
 		if (HOOK_Ready != null) HOOK_Ready.start();
+		let scrollToLine = () => {
+			if (gotoLine != null && settingsText) {
+				// Find position of nth linebreak (/\r*\n\r*/)
+				let n = gotoLine-1;  //line 1 should have 0 linebreaks before
+				let t = settingsText.value;
+				let pos = 0;
+				let len = t.length;
+				while (n > 0) {
+					// Find linebreak
+					while (pos < len && t[pos] != '\n') ++pos;
+					// Find end of linebreak
+					++pos;  //skip '\n'
+					while (pos < len && t[pos] == '\r') ++pos;  //skip '\r'
+					// pos is now at start of next line
+					--n;
+				}
+				// Skip indentation whitespace
+				while (pos < len && (t[pos] == ' ' || t[pos] == '\t')) ++pos;
+				LogSettings.log('Scroll to line ' + gotoLine + ' on character position ' + pos);
+				settingsText.selectionStart = settingsText.selectionEnd = pos;
+				settingsText.focus();
+			}
+		};
 		if (visible) {
+			scrollToLine();
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 			return;  //do nothing if already visible
 		}
@@ -4800,6 +4832,7 @@ function initSettingsPanel() {
 		settingsPanel.onanimationend = function() {
 			settingsPanel.onanimationend = null;
 			settingsPanel.classList.remove('expanding');
+			scrollToLine();
 			if (HOOK_ChangeSettings != null) {
 				// Call the hook function to handle the settings
 				HOOK_ChangeSettings.update(settingsText, loadOptionEntries, saveOptionEntries, hideSettings);
