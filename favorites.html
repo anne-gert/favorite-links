@@ -792,6 +792,7 @@ let HOOK_Ready = null;
 // Constants {{{
 
 const LogUnicode = CreateLogger();
+const LogEvents = CreateLogger();
 const LogStorage = CreateLogger();
 const LogUrlResolver = CreateLogger('log');
 const LogUpDownload = CreateLogger();
@@ -1232,6 +1233,44 @@ class UserInputError extends Error {
 		super(message, fileName, lineNumber);
 		this.name = 'UserInputError';
 	}
+}
+
+// Evaluate keyEvent:
+// - ensure the the correct key is pressed
+// - ensure the required modifier keys are true
+// - ensure the non-required, non-optional modifier keys are false
+// state is a string of the format 'r?o', where r represents the letters of the
+// required modifier keys and o the ones that are optional. The ones not
+// mentioned are forbidden.
+// The used letters are:
+// - 'a' : altKey
+// - 'c' : ctrlKey
+// - 'm' : metaKey
+// - 's' : shiftKey
+// Returns true if valid.
+function isKey(keyEvent, state, key) {
+	let ok = true;
+	if (keyEvent.key.toUpperCase() == key.toUpperCase()) {
+		let st = { a: false, c: false, m: false, s: false };  //null=optional, true=required, false=forbidden
+		let v = true;
+		for (let i = 0; i < state.length; ++i) {
+			let c = state.charAt(i);
+			if (c == '?') {
+				v = null;  //go to optional part
+				continue;
+			}
+			st[c] = v;  //expected state
+		}
+		// Check the state
+		if (st.a != null) ok = ok && (st.a == keyEvent.altKey);
+		if (st.c != null) ok = ok && (st.c == keyEvent.ctrlKey);
+		if (st.m != null) ok = ok && (st.m == keyEvent.metaKey);
+		if (st.s != null) ok = ok && (st.s == keyEvent.shiftKey);
+	} else {
+		ok = false;
+	}
+	LogEvents.log(`isKey(state='${state}',key='${key}'): Key='${keyEvent.key}' -> ${ok}`);
+	return ok;
 }
 
 // }}}
@@ -4520,7 +4559,7 @@ function initSettingsPanel() {
 		iconBarOpen.appendChild(iconClear);
 		// Create iconCancel
 		iconCancel = document.createElement('span');
-		iconCancel.title = 'Cancel';
+		iconCancel.title = 'Cancel (Ctrl-Q)';
 		iconCancel.className = 'settings-icon';
 		iconCancel.onclick = () => hideSettings(false);
 		iconBarOpen.appendChild(iconCancel);
@@ -4556,26 +4595,23 @@ function initSettingsPanel() {
 
 		// Configure settingsPanel
 		settingsPanel.onkeydown = function(e) {
-			//LogSettings.log('KeyCode=' + e.keyCode);
-			if (e.ctrlKey && e.key == 's') {
+			if (isKey(e, 'c', 's')) {
 				if (visible) hideSettings(true);
 				return false;  //stop default button action
 			}
 			return true;
 		};
 		// Bind entire document
-		//window.addEventListener('keydown', function(e) {
-		//	//LogSettings.log('KeyCode=' + e.keyCode);
-		//	if (e.keyCode == 27) {
-		//		// This is the Esc key
-		//		if (visible) {  //only if Settings visible
-		//			hideSettings(false);
-		//			e.preventDefault();
-		//			return false;  //stop default button action
-		//		}
-		//	}
-		//	return true;
-		//});
+		window.addEventListener('keydown', function(e) {
+			if (isKey(e, 'c', 'q')) {
+				if (visible) {  //only if Settings visible
+					hideSettings(false);
+					e.preventDefault();
+					return false;  //stop default button action
+				}
+			}
+			return true;
+		});
 
 		// Create hidden warnings
 		warningDirty = document.createElement('div');
@@ -4599,16 +4635,15 @@ function initSettingsPanel() {
 		settingsText.className = 'textbox';
 		settingsText.readOnly = textRO;
 		settingsText.onkeydown = function(e) {
-			//LogSettings.devlog('KeyCode=' + e.keyCode);
-			if (e.keyCode == 9) {  //Tab key
+			if (isKey(e, '?s', 'Tab')) {
 				return !tabInsert(this, !e.shiftKey);
-			} else if (e.keyCode == 13) {  //Enter key
+			} else if (isKey(e, '', 'Enter')) {
 				// Copy indentation from current line
 				return !textInsert(this, (before, mid, after) => {
 					let m = before.match(/(?:^|\r|\n)([ \t]*)[^\r\n]*$/);  //match: 'linebreak whitespace line end'
 					return '\n' + m[1];  //insert linebreak plus matched whitespace
 				});
-			} else if (e.keyCode == 36) {  //Home key
+			} else if (isKey(e, '', 'Home')) {
 				// Go to first non-whitespace character or first column
 				return !gotoHome(this);
 			}
