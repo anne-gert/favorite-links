@@ -4814,22 +4814,55 @@ function initSettingsPanel() {
 				// Find position of nth linebreak (/\r*\n\r*/)
 				let n = gotoLine-1;  //line 1 should have 0 linebreaks before
 				let t = settingsText.value;
-				let pos = 0;
+				let spos = 0;
 				let len = t.length;
 				while (n > 0) {
 					// Find linebreak
-					while (pos < len && t[pos] != '\n') ++pos;
+					while (spos < len && t[spos] != '\n') ++spos;
 					// Find end of linebreak
-					++pos;  //skip '\n'
-					while (pos < len && t[pos] == '\r') ++pos;  //skip '\r'
-					// pos is now at start of next line
+					++spos;  //skip '\n'
+					while (spos < len && t[spos] == '\r') ++spos;  //skip '\r'
+					// spos is now at start of next line
 					--n;
 				}
 				// Skip indentation whitespace
+				let pos = spos;
 				while (pos < len && (t[pos] == ' ' || t[pos] == '\t')) ++pos;
-				LogSettings.log('Scroll to line ' + gotoLine + ' on character position ' + pos);
-				settingsText.selectionStart = settingsText.selectionEnd = pos;
+				// Search to end of this line
+				let epos = pos;
+				while (epos < len && t[epos] != '\r' && t[epos] != '\n') ++epos;
+				// Select the line
+				LogSettings.log(`Scroll to line ${gotoLine} (positions ${spos}-${epos}) on character position ${pos}`);
+				let selLine = () => {
+					settingsText.selectionStart = spos;
+					settingsText.selectionEnd = epos;
+				};
+				let selHome = () => {
+					settingsText.selectionStart = settingsText.selectionEnd = pos;
+				};
+				selLine();
 				settingsText.focus();
+				setTimeout(() => {
+					// The scrollable area is scrollHeight pixels high
+					// and the viewable area starts at scrollTop.
+					// The visible area is offsetHeight.
+					// If scrollTop>0, there was a need to scroll the
+					// area to get the cursor line in view. The result
+					// is that the selected line is at the bottom.
+					// To get this in the middle, add half of
+					// offsetHeight to scrollTop.
+					// Do this after a timeout to give scrollTop time to
+					// settle.
+					if (settingsText.scrollTop > 0) {
+						let shift = settingsText.offsetHeight / 2;
+						LogSettings.devlog('Scroll window by ' + shift + ' pixels');
+						settingsText.scrollTop += shift;
+					}
+				}, 50);
+				// Flash line twice, then set caret to home position
+				setTimeout(selHome, 300);
+				setTimeout(selLine, 500);
+				setTimeout(selHome, 800);
 			}
 		};
 		if (visible) {
