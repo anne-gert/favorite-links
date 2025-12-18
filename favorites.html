@@ -4833,14 +4833,16 @@ function initSettingsPanel() {
 				while (epos < len && t[epos] != '\r' && t[epos] != '\n') ++epos;
 				// Select the line
 				LogSettings.log(`Scroll to line ${gotoLine} (positions ${spos}-${epos}) on character position ${pos}`);
-				let selLine = () => {
-					settingsText.selectionStart = spos;
-					settingsText.selectionEnd = epos;
+				// In a number of steps, shrink selection to insertion point
+				let steps = 10, step = steps;
+				let selStep = (step) => {
+					//LogSettings.devlog('Set selection step=' + step);
+					let f1 = step / steps;
+					let f2 = 1 - f1;
+					settingsText.selectionStart = spos * f1 + pos * f2;
+					settingsText.selectionEnd = epos * f1 + pos * f2;
 				};
-				let selHome = () => {
-					settingsText.selectionStart = settingsText.selectionEnd = pos;
-				};
-				selLine();
+				selStep(step);
 				settingsText.focus();
 				setTimeout(() => {
 					// The scrollable area is scrollHeight pixels high
@@ -4859,10 +4861,11 @@ function initSettingsPanel() {
 						settingsText.scrollTop += shift;
 					}
 				}, 50);
-				// Flash line twice, then set caret to home position
-				setTimeout(selHome, 300);
-				setTimeout(selLine, 500);
-				setTimeout(selHome, 800);
+				let selTimer = () => {
+					selStep(step--);
+					if (step >= 0) setTimeout(selTimer, 500 / steps);
+				}
+				setTimeout(selTimer, 200);
 			}
 		};
 		if (visible) {
