@@ -4530,7 +4530,7 @@ function initSettingsPanel() {
 	setUnicodeText(iconOpen, UNICODE_GEARS, '[Settings]');
 	iconOpen.title = 'Settings';
 	iconOpen.className = 'settings-icon';
-	iconOpen.onclick = showSettings;
+	iconOpen.onclick = () => showSettings();
 	iconBarClosed.appendChild(iconOpen);
 
 	// Create rest of the Settings panel. This is called at first showing.
