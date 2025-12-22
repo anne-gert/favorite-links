@@ -669,6 +669,9 @@ a:has(.checkbox-label.checked):hover {
 	grid-template-rows: 0fr;
 	grid-template-columns: 0fr;
 }
+.expanded .slider-container > * {
+	overflow-x: auto;
+}
 @keyframes block-expanding-x {
 	0% {
 		grid-template-columns: 0fr;
@@ -3387,16 +3390,18 @@ function render(parsed, container, cancel) {
 						LogBlockExpand.debug('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
 						if (isExpanded) {
 							// Expand this block
+							_blockContainer.classList.remove('collapsed');
 							_blockContainer.classList.add('expanding');
 							_blockContainer.onanimationend = function() {
 								_blockContainer.onanimationend = null;
-								_blockContainer.classList.remove('collapsed');
+								_blockContainer.classList.add('expanded');
 								_blockContainer.classList.remove('expanding');
 							};
 							// Reflect action of resize-icon
 							expandIcon.title = 'Hide';
 						} else {
 							// Collapse this block
+							_blockContainer.classList.remove('expanded');
 							_blockContainer.classList.add('collapsing');
 							_blockContainer.onanimationend = function() {
 								_blockContainer.onanimationend = null;
@@ -3417,6 +3422,7 @@ function render(parsed, container, cancel) {
 						// Display the initial state
 						//displayExpandState();  //display initial state
 						if (isExpanded) {
+							_blockContainer.classList.add('expanded');
 							expandIcon.title = 'Hide';
 						} else {
 							_blockContainer.classList.add('collapsed');
