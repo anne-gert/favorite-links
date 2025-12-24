@@ -3235,7 +3235,10 @@ function parseLinks(links) {
 function render(parsed, container, cancel) {
 	// Render the RootLinks in the container.
 	container.textContent = '';
-	outputItems(parsed.rootLinks, 1, container, '', cancel);
+	let rendered = outputItems(parsed.rootLinks, 1, container, '', cancel);
+
+	// Set/update event handler to quick-open Settings
+	addQuickShowSettingsPanelEvent(container, rendered);
 
 	// Collect all checkboxes in a hierarchy
 	let toplevel = [];
@@ -3266,15 +3269,25 @@ function render(parsed, container, cancel) {
 
 	// Render array of Links to the container at specified level.
 	function outputItems(links, level, container, parentPath, cancel) {
+		let rendered = [];
 		for (let i = 0; i < links.length; ++i) {
 			let link = links[i];
+			let subrendered = null;
 			if (link.type == 'link') {
-				outputItem(link, level, container, parentPath, cancel);
+				subrendered = outputItem(link, level, container, parentPath, cancel);
 			} else if (link.type == 'text') {
-				outputText(link.lines, container);
+				let ctl = outputText(link.lines, container);
+				subrendered = { ctl: ctl, lineNum: link.lineNum };
 			}
 			if (cancel()) return;
+			if (subrendered) {
+				if (subrendered.length)
+					rendered.push(...subrendered);
+				else
+					rendered.push(subrendered);
+			}
 		}
+		return rendered;
 	}
 
 	// Output Link {{{
@@ -3484,17 +3497,16 @@ function render(parsed, container, cancel) {
 			}
 		}
 		// Create element itself
-		let editIt = (ev) => {
-			showSettingsPanel(link.lineNum);
-		};
+		let rendered = [];
 		if (name == '---') {
 			// Special separator item
 			let item = document.createElement('hr');
 			item.className = 'separator';
-			item.addEventListener('dblclick', editIt);
 			container.appendChild(item);
+			rendered.push({ ctl: item, lineNum: link.lineNum });
 		} else {
 			let itemContainer = addItemContainer();
+			rendered.push({ ctl: itemContainer, lineNum: link.lineNum });
 			// The containers are structured as follows:
 			// - groupContainer: Only if there are continued Items
 			//     - itemContainer: Holds the entire (Sub)Item
@@ -3506,9 +3518,6 @@ function render(parsed, container, cancel) {
 			//                 - text: name
 			//     - continued items
 			//     - subContainer: Only if there are subItems
-
-			// Add doubleclick event for edit to the itemContainer
-			itemContainer.addEventListener('dblclick', editIt);
 
 			// Declare textContainer to hold the name/label
 			let textContainer = null;
@@ -3671,20 +3680,24 @@ function render(parsed, container, cancel) {
 
 			// If there is continuation, output those items in this itemContainer too
 			if (contItems != null) {
-				outputItems(contItems, level, addSubContainer(true), myPath, cancel);
+				let subrendered = outputItems(contItems, level, addSubContainer(true), myPath, cancel);
+				if (subrendered) rendered.push(...subrendered);
 			}
 		}
 		// Create sub-Items in container
 		if (subItems != null) {
 			if (addSubContainer) {
 				let subContainer = addSubContainer();
-				outputItems(subItems, level+1, subContainer, myPath, cancel);
+				let subrendered = outputItems(subItems, level+1, subContainer, myPath, cancel);
+				if (subrendered) rendered.push(...subrendered);
 			}
 		}
 		// Add closing elements
 		if (addClosingElements) {
 			addClosingElements();
 		}
+
+		return rendered;
 	}
 
 	// Output a <div> element as next child of the container.
@@ -3694,6 +3707,7 @@ function render(parsed, container, cancel) {
 		div.className = 'text-block';
 		div.innerHTML = html;
 		container.appendChild(div);
+		return div;
 	}
 
 	// }}}
@@ -3802,6 +3816,11 @@ function render(parsed, container, cancel) {
 				// Update parents/children
 				updateSelFirst(true);
 			};
+			checkbox.ondblclick = function() {
+				// Stop propagation so that Settings won't be opened.
+				event.stopPropagation();  //newer method
+				return false;  //legacy method
+			};
 			let isChecked = value != null && value != '' && value != ' ';
 			checkbox.checked = isChecked;
 			retval.selFirstMe = !isChecked;
@@ -3828,7 +3847,8 @@ function render(parsed, container, cancel) {
 				isFirst = sel.name == def.first;
 				icon = renderIcon(parsed, null, sel.value);
 				checkbox.onmousedown = function() {
-					// Stop propagation so that this is not interpreted as a double click
+					// Stop propagation so that this is not interpreted as a
+					// doubleclick that would select text or open Settings.
 					event.stopPropagation();  //newer method
 					return false;  //legacy method
 				};
@@ -4193,6 +4213,61 @@ var FillScaler = new ResizeObserver(function(entries) {
 		}
 	}
 });
+
+// Item Doubleclick handing {{{
+
+let RenderedItems = null;  // array of { ctl, lineNum } objects
+
+// This function is called by render() to set the RenderedItems and, if for
+// the first time, also the event handler.
+// This event is added on the topmost container in bubbling phase, so it is
+// called last and may be stopped by any control below. This may change in
+// future, but for now if feels usable.
+function addQuickShowSettingsPanelEvent(container, renderedItems) {
+	if (RenderedItems == null)
+		container.addEventListener('dblclick', quickShowSettingsPanel);
+	RenderedItems = renderedItems;
+}
+
+// Go through the RenderedItems and open the Settings on the line that is
+// closest to the mouse pointer in the event.
+function quickShowSettingsPanel(event) {
+	let mouseX = event.clientX, mouseY = event.clientY;
+	//LogRender.devlog(`Doubleclick at (${ev.clientX}, ${ev.clientY})`);
+	let min = Number.MAX_VALUE;
+	let closest = null;
+	for (let i = 0; i < RenderedItems.length; ++i) {
+		let item = RenderedItems[i];
+		let rect = item.ctl.getBoundingClientRect();
+		// Calcualte distance between mouseX/Y and rect
+		let dx, dy;
+		if (mouseX < rect.left) dx = rect.left - mouseX;
+		else if (mouseX > rect.right) dx = mouseX - rect.right;
+		else dx = 0;
+		if (mouseY < rect.top) dy = rect.top - mouseY;
+		else if (mouseY > rect.bottom) dy = mouseY - rect.bottom;
+		else dy = 0;
+		// The standard distance:
+		//let d = Math.sqrt(dx**2 + dy**2);
+		// In this case, however, I'm more interested in the
+		// straight horizontal and vertical distance. If we
+		// just do dx+dy, we make the diagonal effectively more
+		// expensive.
+		// Also I'd like to make vertical more expensive too,
+		// because one tends to doublclick 'next to the item'.
+		let d = dx + 3*dy;
+		LogRender.debug(`Control ${i}: dx=${dx}, dy=${dy} -> d=${d}`);
+		if (d < min) {
+			LogRender.log(`Closer: ${d} < ${min}`);
+			min = d;
+			closest = item;
+		}
+	}
+	//closest.ctl.style.border = '2px dotted red';
+	showSettingsPanel(closest.lineNum);
+}
+
+// }}}
 
 // }}}
 
@@ -4893,6 +4968,8 @@ function initSettingsPanel() {
 			// in test conditions.
 			recreateOptionEntries();
 		}
+		// Scroll to the top to where the Settings will be showing
+		window.scrollTo({ top: 0, left: 100, behavior: 'smooth' });
 		// Display items for conflicted Settings
 		updateConflict();
 		// Update the contents
