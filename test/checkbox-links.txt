@@ -43,20 +43,20 @@ _
             * [☒]:checks Test optie 3
             * [▣]:checks Test optie 4
 
-!checkbox yesno _=char:U+2753 +=U+1F44D -=U+1F44E
+!checkbox yesno [_]char:U+2753 [+]U+1F44D [-]U+1F44E
         yesno
             [ ]:yesno Test optie 1
             [+]:yesno Test optie 2
             [-]:yesno Test optie 3
 
-!checkbox emo _=❓ 🙁 😐 🙂
+!checkbox emo [_]❓ 🙁 😐 🙂
         emo
             [ ]:emo Option 1
             [🙁]:emo Option 2
             [😐]:emo Option 3
             [🙂]:emo Option 4
 
-!checkbox checksR _=uncheck +=check x=cross ~=mcheck krul
+!checkbox checksR unset=[_]uncheck [+]check [x]cross [~]mcheck krul
         checksR
             [ ]:checksR Test optie 1
             [+]:checksR Test optie 2
@@ -66,7 +66,7 @@ _
                 [-]:checksR Sub optie 4b
                 [g]:checksR Sub optie 4c
 
-!checkbox favicons empty A=agb F=firefox S=sigmax B=mantis O=ovp
+!checkbox favicons empty [A]agb [F]firefox [S]sigmax [B]mantis [O]ovp
 !icon agb       http://hawaii.uxi.nl/favicon.ico
 !icon firefox   https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.ico
 !icon sigmax    https://www.sigmax.nl/wp-content/themes/sigmax/static/images/favicon/favicon-194x194.png
@@ -78,7 +78,7 @@ _
             [F]:favicons Test optie 3
             [B]:favicons Test optie 4
 
-!checkbox checkross uncheck +=html:<span&sp;style="color:#0c0">&#x2714;</span> -=U+274C
+!checkbox checkross uncheck [+]html:<span&sp;style="color:#0c0">&#x2714;</span> [-]U+274C
         checkross
             [ ]:checkross Test optie 1
             [+]:checkross Test optie 2
@@ -102,34 +102,30 @@ _
             [+]:yesno-after icon=mantis Test optie 2
             [-]:yesno-after icon=mantis Test optie 3
 
-!checkbox checkR-after checksR !back
-        checkR after
-            [ ]:checkR-after Test optie 1
-            [+]:checkR-after Test optie 2
-            [x]:checkR-after Test optie 3
-            [~]:checkR-after Test optie 4
-                [+]:checkR-after Sub optie 4a
-                [-]:checkR-after Sub optie 4b
-                [g]:checkR-after Sub optie 4c
+!checkbox checksR-after checksR !back
+        checksR after
+            [ ]:checksR-after Test optie 1
+            [+]:checksR-after Test optie 2
+            [x]:checksR-after Test optie 3
+            [~]:checksR-after Test optie 4
+                [+]:checksR-after Sub optie 4a
+                [-]:checksR-after Sub optie 4b
+                [g]:checksR-after Sub optie 4c
 
 
-// Checkbox styles for normal checkboxes with parents and/or children set
+// Checkbox styles for default and custom checkboxes with parents and/or children set
 !style
-.any-child-checked .checkbox-label.not-checked {
+.any-child-checked.cbx-opt-default-uncheck,
+.any-child-checked.cbx-opt-unset {
     background: #FBB;
-    &::before { content: ' \1F6A9 '; }
+    .checkbox-label::before { content: ' \1F6A9 '; }
 }
-.any-parent-checked .checkbox-label.not-checked {
+.any-parent-checked.cbx-opt-default-uncheck,
+.any-parent-checked.cbx-opt-unset {
     background: #BFB;
 }
-!endstyle
-
-// Checkbox styles for custom checkboxes with parents and/or children set
-!style
-.any-child-checked .checkbox-label.first-option {
-}
-.any-parent-checked .checkbox-label.first-option {
-    background: #777; color: #FFF;
+.cbx-opt-krul {
+    color: #080;
 }
 !endstyle
 

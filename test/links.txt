@@ -192,6 +192,58 @@ Also a page with different ways of Custom Checkbox definitions is linked.
         [] Default Checkbox with definition reset (should display normal at the back)
         !checkbox default
 
+    Options containing '='
+        Use =, == and ===
+            !checkbox cb-eq-A1 = char:== char:===
+            []:cb-eq-A1 Checkbox with 'char:=' (should display *=/==/===*)
+        Single '=' sequence
+            !checkbox cb-eq-B1 [A]A [B]= [C=]C [D==]D [=]E FF= [GG]=
+            [A]:cb-eq-B1 Checkbox with '='-combinations (should display *A/=/C/D/E/!ND!/=*)
+            [B]:cb-eq-B1 Checkbox with '='-combinations (should display *=/...*)
+            [C=]:cb-eq-B1 Checkbox with '='-combinations (should display *C/...*)
+            [D==]:cb-eq-B1 Checkbox with '='-combinations (should display *D/...*)
+            [=]:cb-eq-B1 Checkbox with '='-combinations (should display *E/...*)
+            [FF=]:cb-eq-B1 Checkbox with '='-combinations (should display *!ND!/...*)
+            [GG]:cb-eq-B1 Checkbox with '='-combinations (should display *=/...*)
+        Multiple '=' sequences
+            !checkbox cb-eq-C1 [A]A= =B= [=C]C
+            !icon A= char:A=
+            [A]:cb-eq-C1 Checkbox with multiple '=' sequences (should display *A=/!ND!/C*)
+            [=B=]:cb-eq-C1 Checkbox with multiple '=' sequences (should display *!ND!/...*)
+            [=C]:cb-eq-C1 Checkbox with multiple '=' sequences (should display *C/...*)
+
+    Options containing '!'
+        Use !
+            !checkbox cb-eq-D1 !f !back ! [!=]! !before
+            !icon !f char:!f
+            [!f]:cb-eq-D1 Checkbox with '!'-combinations (should display *!f/!/!*)
+            [!]:cb-eq-D1 Checkbox with '!'-combinations (should display *!/...*)
+            [!=]:cb-eq-D1 Checkbox with '!'-combinations (should display *!/...*)
+
+    Using CSS
+        Default
+            !style
+            .cbx-opt-default-uncheck .checkbox-label { color: #808 }
+            .cbx-opt-default-check .checkbox-label { color: #0A0 }
+            !endstyle
+            [ ] A color
+            [x] A color
+        Custom
+            !checkbox cb-colors [R]U+1F534 B=U+1F535 Y=U+1F7E1 G=U+1F7E2 P=U+1F7E3 Z=U+26AB W=U+26AA
+            !style
+            .cbx-opt-cb-colors-R { background: #F88 }
+            .cbx-opt-B { background: #88F }
+            .cbx-opt-Y { background: #FF8 }
+            .cbx-opt-G { background: #8F8 }
+            .cbx-opt-P { background: #D8F }
+            .cbx-opt-Z { background: #666 }
+            .cbx-opt-W { background: #FFF }
+            !endstyle
+            [R]:cb-colors A color
+            [G]:cb-colors A color
+            [B]:cb-colors A color
+            [Y]:cb-colors A color
+
 Checkbox Examples from help.html
 
 !text
@@ -200,7 +252,7 @@ verify if they work.
 !endtext
 
     Example 1
-        !checkbox standard _=uncheck x=check
+        !checkbox standard [_]uncheck [x]check
         [ ]:standard Option 1
         [x]:standard Option 2
 
@@ -224,7 +276,7 @@ verify if they work.
         [III]:roman Option 3
 
     Example 5
-        !checkbox yesno _=U+2753 yes=U+1F44D no=U+1F44E
+        !checkbox yesno [_]U+2753 [yes]U+1F44D [no]U+1F44E
         [ ]:yesno Option 1
         [yes]:yesno Option 2
         [no]:yesno Option 3
@@ -236,7 +288,7 @@ verify if they work.
         [🙂]:emo Option 3
 
     Example 7
-        !checkbox icons empty check 1=icon1 2=icon2 3=icon3 4=icon4 5=icon2
+        !checkbox icons empty check [1]icon1 [2]icon2 [3]icon3 [4]icon4 [5]icon2
         [1]:icons Option 1
         [2]:icons Option 2
         !icon icon1 http://example.com/icon1.png
@@ -275,6 +327,41 @@ verify if they work.
         !checkbox choices-after choices !after
         [ ]:choices-after Make your choice
 
+    Reference Loops
+        !checkbox options1 A B C
+        !checkbox options2 1 2 3 options1 options3
+        !checkbox options3 X Y Z options2
+        !checkbox options4 h j k l options2
+        [ ]:options1 This is fine (should display *A/B/C*)
+        [ ]:options2 Reference Loop (should display *!RL!*)
+        [ ]:options3 Reference Loop (should display *!RL!*)
+        [ ]:options4 Depends on Reference Loop (should display *!RL!*)
+
+    CSS Styles for Checkboxes css=special-styles
+        with-styles-1
+            !checkbox with-styles-1 uncheck [A]A char:B+ C=C $
+            [ ]: Matched on
+            [A]: Matched on
+            [B+]: Matched on
+            [C]: Matched on
+            [$]: Matched on
+        with-styles-2
+            !checkbox with-styles-2 uncheck [A]A char:B+ C=C $
+            [ ]: Matched on
+            [A]: Matched on
+            [B+]: Matched on
+            [C]: Matched on
+            [$]: Matched on
+        !style
+        .special-styles .cbx-opt-uncheck          { background: green;  .checkbox-label::after { content: ' global \'uncheck\'' } }
+        .special-styles .cbx-opt-with-styles-1-A  { background: yellow; .checkbox-label::after { content: ' token \'A\' for with-styles-1' } }
+        .special-styles .cbx-opt-with-styles-2-A  { background: red;    .checkbox-label::after { content: ' token \'A\' for with-styles-2' } }
+        .special-styles .cbx-opt-with-styles-1-B  { background: cyan;   .checkbox-label::after { content: ' \'B\', derived from value char:B+ for with-styles-1' } }
+        .special-styles .cbx-opt-with-styles-2-B  { background: brown;  .checkbox-label::after { content: ' \'B\', derived from value char:B+ for with-styles-2' } }
+        .special-styles .cbx-opt-C                { background: blue;   .checkbox-label::after { content: ' identifier \'C\'' } }
+        .special-styles .cbx-opt-with-styles-1-i5 { background: purple; .checkbox-label::after { content: ' index \'i5\' for with-styles-1' } }
+        .special-styles .cbx-opt-with-styles-2-i5 { background: pink;   .checkbox-label::after { content: ' index \'i5\' for with-styles-2' } }
+        !endstyle
 
 Other Links
 
