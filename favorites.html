@@ -207,6 +207,14 @@ body {
 .alert-box .label {
 	color: var(--error-foreground);
 }
+.debug-box {
+	color: #600;
+	background: #FFC;
+	border: 2px solid #F90;
+	white-space: pre-wrap;
+	border-radius: 0.4em;
+	margin: 0.2em; padding: 0.3em;
+}
 
 
 /****************************************************************************
@@ -2700,6 +2708,18 @@ function parseLinks(links) {
 				// Intermediate fields
 				_args   : args,
 			};
+			if (args != null && args.match(/(?:^|\s)!debug(?:\s|$)/i)) {
+				// !debug pragma is given
+				let debugBlock = {  //special type of Link object
+					lineNum  : i+1,  //start of this block
+					type     : 'debug',
+					level    : null,  //adjusted later
+					lines    : [ 'Line ' + (i+1) + ': ' + line.replace(/^\s*/, '') ],
+					toString : function() { return '{ !debug, #Lines=' + this.lines.length + ' }' },
+				};
+				allLinks.push(debugBlock);
+				def._debug = debugBlock;
+			}
 			//LogParse.devlog('!checkbox found ', def);
 			if (parsed._checkboxDefs[name] == null) {
 				parsed._checkboxDefs[name] = [ def ];
@@ -2971,7 +2991,7 @@ function parseLinks(links) {
 	// Go through allLinks and adjust the level if needed
 	for (let i = 0; i < allLinks.length; ++i) {
 		let item = allLinks[i];
-		if (item.type == 'text') {
+		if (item.type == 'text' || item.type == 'debug') {
 			// This is a text block
 			// Make its level the lowest of the item before and the item after
 			let before = findLinkBefore(i);
@@ -3084,6 +3104,9 @@ function parseLinks(links) {
 						continue;
 					} else if (val.match(reFront)) {
 						def.place = 'F';
+						continue;
+					} else if (val == 'debug') {
+						// already handled
 						continue;
 					}
 				}
@@ -3278,6 +3301,26 @@ function parseLinks(links) {
 		}
 		// Set defaults
 		if (def.place == null) def.place = 'F';
+		// Render debug
+		if (def._debug) {
+			let line = `Interpreted: !checkbox ${def.name}`;
+			// Add pragmas
+			if (def.place == 'B') line += ' !back';
+			else if (def.place == 'F') line += ' !front';
+			def._debug.lines.push(line);
+			// Add options
+			if (typeof def.options === 'string') {
+				def._debug.lines.push(`- <${def.options}>`);
+			} else {
+				let num = 0;
+				for (let opt = def.options[def.first]; ; opt = def.options[opt.next]) {
+					let line = `${++num}) ${opt.id}=[${opt.token}]${opt.value}`;
+					if (opt.token == def.first) line += '    <-- first';
+					def._debug.lines.push(line);
+					if (opt.next == def.first) break;
+				}
+			}
+		}
 	});
 	//LogParse.devlog('CheckboxDefs ', parsed._checkboxDefs);
 
@@ -3349,6 +3392,9 @@ function render(parsed, container, cancel) {
 				subrendered = outputItem(link, level, container, parentPath, cancel);
 			} else if (link.type == 'text') {
 				let ctl = outputText(link.lines, container);
+				subrendered = { ctl: ctl, lineNum: link.lineNum };
+			} else if (link.type == 'debug') {
+				let ctl = outputDebug(link.lines, container);
 				subrendered = { ctl: ctl, lineNum: link.lineNum };
 			}
 			if (cancel()) return;
@@ -3785,6 +3831,15 @@ function render(parsed, container, cancel) {
 		let div = document.createElement('div');
 		div.className = 'text-block';
 		div.innerHTML = html;
+		container.appendChild(div);
+		return div;
+	}
+
+	// Output a <div> element as next child of the container.
+	function outputDebug(lines, container) {
+		let div = document.createElement('div');
+		div.className = 'debug-box';
+		div.textContent = lines.join('\n');
 		container.appendChild(div);
 		return div;
 	}

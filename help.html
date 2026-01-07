@@ -616,12 +616,17 @@ be used to define a checkbox type with custom options. The allowed options are:
     </div>).
 <li><dt>!front</dt>, <dt>!before</dt>: Places the checkbox in front of the text.
 <li><dt>!back</dt>, <dt>!after</dt>: Places the checkbox after the text.
+<li><dt>!debug</dt>: Display the interpreted !checkbox definition at the point
+    of definition, so the interpretation can be inspected for debugging
+    purposes.
 </ul>
 </p>
 
 <p>
 A complete option is written as <code>identifier=[token]value</code>. Only the
-value part is mandatory.
+value part is mandatory.<br>
+Note: If the <code>!debug</code> is given, the interpreted !checkbox definition
+will be displayed.
 <ul>
 <li>The <dt>value</dt> is used to display a selected option. This field is
     mandatory.
