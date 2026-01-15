@@ -582,27 +582,60 @@ that is enabled.
 
 <p>
 In addition to standard Checkboxes, <code>!checkbox name options ...</code> can
-be used to define a checkbox type with custom options. The allowed options are:
+be used to define a checkbox type with custom options.  A checkbox using the
+definition <em>name</em> can be specified by appending that name to the
+checkbox, like so: <code>[ ]:name</code>. There should be no spaces between the
+checkbox and the name.<br>
+There is a special syntax where the name is left empty: <code>[ ]:</code>, in
+which case, the last defined checkbox definition is used.<br>
+The <em>options</em> can be single letters (or small text), icons,
+pre-defined icons, the options of another definition or flags. Each of these
+will be explained below. Some examples will be provided later too.
+</p>
+
+<p>
+<em>Single Letter</em>
+</p>
+
+<p>
+Instead of <code>[x]</code> and <code>[ ]</code>, use these letters as checkbox
+values. The following notations are supported:
 <ul>
-<li><em>Single letter</em>: Instead of <code>[x]</code> and <code>[ ]</code>,
-    use these letters as checkbox values. The following notations are supported:
-    <ul>
-    <li><em>Normal character</em>: Like 'A', '4', '+', etc.
-    <li><em>Underscore (_)</em>: Special character interpreted as a space.
-    <li><em>Unicode character</em>: Literal Unicode characters, like '&#x2611;'
-        or '&#x1F44D;'.
-    <li><em>Unicode codepoint</em>: Unicode codepoint notation, like 'U+2611'
-        or 'U+1F44D'.
-    </ul>
-    Note: This only works for single characters. For multiple characters, the
-    <code>char:ABC</code> should be used.<br>
-    See below for examples.
-<li><em>Icon</em>: By using <code>[X]icon</code>, the checkbox <code>[X]</code>
-    is displayed as icon. 'X' can be any letter or short text and 'icon' can be
-    any valid <a href="#icons">icon definition</a>.  See below for examples.
-<li><em>Other Checkbox</em>: If the name of an other checkbox definition is
-    used as an option, all its options are included. Checkboxes referring to
-    eachother (called a <i>reference loop</i>) is not allowed.
+<li><em>Normal character</em>: Like 'A', '4', '+', etc.
+<li><em>Underscore (_)</em>: Special character interpreted as a space.
+<li><em>Unicode character</em>: Literal Unicode characters, like '&#x2611;' or
+    '&#x1F44D;'.
+<li><em>Unicode codepoint</em>: Unicode codepoint notation, like 'U+2611' or
+    'U+1F44D'.
+</ul>
+Note: This only works for single characters. For multiple characters, the
+syntax for an icon should be used: <code>char:ABC</code>.
+</p>
+
+<p>
+<em>Icon</em>
+</p>
+
+<p>
+Everything that can be used for <em>icons</em>, can also be used as an option
+for a checkbox, see <a href="#icons">icon definition</a> for the
+<code>!icon</code> syntax. This includes URLs to images, HTML fragments, pieces
+of text, etc. One thing to keep in mind, though, is that the currently selected
+value is also stored in [...]. To keep this short, it is advisable to define a
+short text token in the option: <code>[x]icon</code>. Here, the token
+<code>[x]</code> will be displayed as the <code>icon</code>. The token can be a
+single letter of short text.<br>
+If no token is explicitly specified, the icon value is used as token, therefore
+<code>[X]X</code> and <code>X</code> are equivalent.
+</p>
+
+<p>
+<em>Special Shorthand Icon</em>
+</p>
+
+<p>
+For convenience some pre-defined options are available:
+<ul>
 <li><em>empty</em>: Shorthand for <code>[_]empty</code>.
 <li><em>uncheck</em>: Shorthand for <code>[_]U+2610</code> (empty box, &#x2610;).
 <li><em>check</em>: Shorthand for <code>U+2611</code> (checked box, &#x2611;).
@@ -614,8 +647,32 @@ be used to define a checkbox type with custom options. The allowed options are:
             <path d="M9.7,-0.6C8.1,-0.5 7,.8 6,1.8 4.8,3.2 3.6,4.6 3.2,6.3 2.7,7.6 3.7,8.9 4.1,9.7 2.5,11.2.9,12.7-0.7,14.3c-0.6,1.3 1.3,1.9 1.9,.7 1.6,-1.6 3.2,-3.1 4.8,-4.7 1.3,.2 3.4,1.3 2.1,2.8-1,2-2.1,3.9-2.9,5.9-0.7,1.6.8,3.5 2.5,3 1.8,-0.6 3.4,-1.7 5,-2.8C21.8,12.6 25.2,5.9 24,6.7 19.5,11.8 14.3,16.5 8.3,19.8c-1,.9-1.9,.2-1,-0.9 1,-2 2.1,-3.9 2.9,-5.9.5,-1.4-0.2,-2.9-1.5,-3.6-0.7,-0.4-1.7,-0.5-0.6,-1.2 1.5,-1.6 3,-3.1 4.2,-4.9.9,-1.4-0.1,-3.4-1.6,-3.9-0.3,-0.1-0.7,-0.2-1,-0.2zm.1,1.9c1.5,.1.9,1.7.1,2.3C8.5,5.2 7.1,6.7 5.5,8.2 4.2,7.3 5.4,5.7 6,4.7 7,3.4 8.1,2.1 9.5,1.3l.2,-0z"/>
         </svg>
     </div>).
-<li><em>!front</em>, <em>!before</em>: Places the checkbox in front of the text.
-<li><em>!back</em>, <em>!after</em>: Places the checkbox after the text.
+</ul>
+The representation of these pre-defined icons can be changed. E.g. to use a
+different icon for the checkmark, use <code>!icon check
+http://example.com/icon.png</code>.
+</p>
+
+<p>
+<em>Another Checkbox</em>
+</p>
+
+<p>
+If the name of an other checkbox definition is used as an option, all its
+options are included. Checkboxes referring to each other (called a
+<i>reference loop</i>) is not allowed.
+</p>
+
+<p>
+<em>Flags</em>
+</p>
+
+<p>
+There are also a number of flags that influence how the checkbox is used:
+<ul>
+<li><em>!front</em>, <em>!before</em>: Places the checkbox in front of the item
+    text.
+<li><em>!back</em>, <em>!after</em>: Places the checkbox after the item text.
 <li><em>!debug</em>: Display the interpreted !checkbox definition at the point
     of definition, so the interpretation can be inspected for debugging
     purposes.
@@ -623,40 +680,11 @@ be used to define a checkbox type with custom options. The allowed options are:
 </p>
 
 <p>
-A complete option is written as <code>identifier=[token]value</code>. Only the
-value part is mandatory.<br>
-Note: If the <code>!debug</code> is given, the interpreted !checkbox definition
-will be displayed.
-<ul>
-<li>The <em>value</em> is used to display a selected option. This field is
-    mandatory.
-<li>The <em>token</em> is used to represent the selected option in the
-    configuration. Each option within a !checkbox definition should be unique.
-    If this part is not defined, the identifier or value is used.
-<li>The <em>identifier</em> is used to refer to an option, e.g. for CSS
-    classes (see example below). If this part is not defined, the token or
-    value is used, prefixed with the !checkbox' name.<br>
-    Note: Given <code>!checkbox cb</code> with two definitions
-    <code>[x]A</code> and <code>x=A</code>, the former uses the token and the
-    name to give an identifier <code>cb-x</code>, whereas the second has the
-    idenfitier explicitly set as <code>x</code>.<br>
-    Note: If the default identifier is not suitable, one can always set it as
-    desired.
-</ul>
-</p>
-
-<p>
-The representation of special values can be overridden. E.g. to use a different
-icon for the checkmark, use <code>!icon check
-http://example.com/icon.png</code>.
-</p>
-
-<p>
-The checkbox definition defined with <code>!checkbox name</code> can be used
-for a specific checkbox by appending it to the checkbox: <code>[ ]:name</code>
-with no spaces between the checkbox and the name.<br>
-There is a special syntax where the name is left empty: <code>[ ]:</code>, in
-which case, the last defined checkbox definition is used.
+The full syntax of a checkbox option is <code>identifier=[token]value</code>.
+The mandatory <em>value</em> and optional <em>token</em> have already been
+described above. The <em>identifier</em> is also optional and should only
+contain letters, numbers or '_'. The identifier is used to find the correct CSS
+class for an option (see example below).
 </p>
 
 <p>
@@ -669,8 +697,8 @@ Example 1: Simple checkbox with standard Unicode icons:
 </p>
 
 <p>
-Using the special syntax to refer to the last defined type, this is the same
-as:
+Using the special shorthand syntax to refer to the last defined type, this is
+the same as:
 <pre>
 !checkbox standard [_]uncheck [x]check
 [ ]: Option 1
@@ -859,25 +887,67 @@ depend on the loop will be shows as the special <code>refloop</code> value.
 <h4>CSS Styles for Checkboxes</h4>
 
 <p>
-Use CSS style for different options. First off, this item has
-css=special-styles, so that the cbx-opt-* styles can be specific to this item
-and its children. The CSS class names depend on what is matched on:
+By using checkbox option identifiers, each option can be given a CSS style
+class. The easiest method is to use explicit identifiers like in the following
+example:
+<pre>
+!checkbox colors red=R green=G blue=B
+
+!style
+.cbx-opt-red { background: #F88 }
+.cbx-opt-green { background: #8F8 }
+.cbx-opt-blue { background: #88F }
+!endstyle
+
+[red]:colors A color
+[green]:colors A color
+[blue]:colors A color
+</pre>
+Note also that the identifier is also used as token if no explicit token (with
+<code>[...]</code>) is given.
+</p>
+
+<p>
+If the identifier is explicitly specified, the used CSS class becomes
+<code>cbx-opt-<i>identifier</i></code> as used above.
+</p>
+
+<p>
+If the identifier is not explictly given, the value or the token can be used to
+get a <em>derived identifier</em> that that will be used with the checkbox
+definition name to form the CSS class name. To explain this, see the example
+below. Here the CSS style class names are derived as follows:
 <ul>
-<li>Shorthand word like 'uncheck', 'check' or 'cross'. These will match in
-    all !checkbox definitions.
-<li>When a token is explicitly set (like with 'A') or derived (like with 'B+'),
-    that token is used together with the !checkbox definition name.
-<li>When an identifier is explicitly set (like with 'C'), that identifier is
-    used for all !checkbox definitions. If this leads to conflichts, a
-    different identifier can be chosen.
-<li>If no valid identifier can be derived from the value (like with '$'), the
-    position index can be used (index 'i5' in this case) in combination with
-    the !checkbox definition name.
+<li><code>uncheck</code>: If a <em>special shorthand icon</em> is used, that
+    name is also used as an identifier. This results in the CSS class name
+    <code>cbx-opt-uncheck</code>.
+<li><code>[A]A</code>: If an <em>option token</em> is used, that value is added
+    to the checkbox definition name and used as identifier. In this case, this
+    results in a different CSS class for each checkbox
+    (<code>cbx-opt-with-styles-1-A</code> and
+    <code>cbx-opt-with-styles-2-A</code>), even though the option is defined
+    exactly the same.
+<li><code>char:B+</code>: If only an <em>option value</em> is used, the derived
+    identifier is equal to all the letters, numbers and '_' and without the
+    'char:' prefix. In this case, this results simply in B. Like with a token
+    before, this is also combined with the checkbox definition name, resulting
+    in the CSS classes <code>cbx-opt-with-styles-1-B</code> and
+    <code>cbx-opt-with-styles-2-B</code>.
+<li><code>C=C</code>: As already described, an explicit <em>identifier</em>
+    resutls in a CSS class <code>cbx-opt-C</code>.
+<li><code>$</code>: In this case, there is only an <em>option value</em>, but
+    that doesn't have any letters, nummbers of '_', so no identifier can be
+    derived. It would be advisable to create an explicit identifier like in
+    dollar=[$]$. But if that is not done, the <em>position index</em> can be
+    used together with the checkbox definition name, resulting in the CSS
+    classes for the fifth option <code>cbx-opt-with-styles-1-i5</code> and
+    <code>cbx-opt-with-styles-2-i5</code>.
 </ul>
 </p>
+
 <p>
 <pre>
-CSS Styles for Checkboxes css=special-styles
+CSS Styles for Checkboxes
     with-styles-1
         !checkbox with-styles-1 uncheck [A]A char:B+ C=C $
         [ ]: Matched on
@@ -894,14 +964,14 @@ CSS Styles for Checkboxes css=special-styles
         [$]: Matched on
 
 !style
-.special-styles .cbx-opt-uncheck          { background: green;  .checkbox-label::after { content: ' global \'uncheck\'' } }
-.special-styles .cbx-opt-with-styles-1-A  { background: yellow; .checkbox-label::after { content: ' token \'A\' for with-styles-1' } }
-.special-styles .cbx-opt-with-styles-2-A  { background: red;    .checkbox-label::after { content: ' token \'A\' for with-styles-2' } }
-.special-styles .cbx-opt-with-styles-1-B  { background: cyan;   .checkbox-label::after { content: ' \'B\', derived from value char:B+ for with-styles-1' } }
-.special-styles .cbx-opt-with-styles-2-B  { background: brown;  .checkbox-label::after { content: ' \'B\', derived from value char:B+ for with-styles-2' } }
-.special-styles .cbx-opt-C                { background: blue;   .checkbox-label::after { content: ' identifier \'C\'' } }
-.special-styles .cbx-opt-with-styles-1-i5 { background: purple; .checkbox-label::after { content: ' index \'i5\' for with-styles-1' } }
-.special-styles .cbx-opt-with-styles-2-i5 { background: pink;   .checkbox-label::after { content: ' index \'i5\' for with-styles-2' } }
+.cbx-opt-uncheck          { background: green;  .checkbox-label::after { content: ' global \'uncheck\'' } }
+.cbx-opt-with-styles-1-A  { background: yellow; .checkbox-label::after { content: ' token \'A\' for with-styles-1' } }
+.cbx-opt-with-styles-2-A  { background: red;    .checkbox-label::after { content: ' token \'A\' for with-styles-2' } }
+.cbx-opt-with-styles-1-B  { background: cyan;   .checkbox-label::after { content: ' \'B\', derived from value char:B+ for with-styles-1' } }
+.cbx-opt-with-styles-2-B  { background: brown;  .checkbox-label::after { content: ' \'B\', derived from value char:B+ for with-styles-2' } }
+.cbx-opt-C                { background: blue;   .checkbox-label::after { content: ' identifier \'C\'' } }
+.cbx-opt-with-styles-1-i5 { background: purple; .checkbox-label::after { content: ' index \'i5\' for with-styles-1' } }
+.cbx-opt-with-styles-2-i5 { background: pink;   .checkbox-label::after { content: ' index \'i5\' for with-styles-2' } }
 !endstyle
 </pre>
 </p>

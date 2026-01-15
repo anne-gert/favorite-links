@@ -337,7 +337,13 @@ verify if they work.
         [ ]:options3 Reference Loop (should display *!RL!*)
         [ ]:options4 Depends on Reference Loop (should display *!RL!*)
 
+
     CSS Styles for Checkboxes css=special-styles
+        with-identifiers
+            !checkbox colors red=R green=G blue=B
+            [red]:colors A color
+            [green]:colors A color
+            [blue]:colors A color
         with-styles-1
             !checkbox with-styles-1 uncheck [A]A char:B+ C=C $
             [ ]: Matched on
@@ -352,6 +358,11 @@ verify if they work.
             [B+]: Matched on
             [C]: Matched on
             [$]: Matched on
+        !style
+        .special-styles .cbx-opt-red { background: #F88 }
+        .special-styles .cbx-opt-green { background: #8F8 }
+        .special-styles .cbx-opt-blue { background: #88F }
+        !endstyle
         !style
         .special-styles .cbx-opt-uncheck          { background: green;  .checkbox-label::after { content: ' global \'uncheck\'' } }
         .special-styles .cbx-opt-with-styles-1-A  { background: yellow; .checkbox-label::after { content: ' token \'A\' for with-styles-1' } }
