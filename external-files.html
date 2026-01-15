@@ -88,7 +88,7 @@ body {
 .text-block {
 	color: var(--foreground); background: var(--background);
 }
-.text-block h1, .text-block h2, .text-block h3, .text-block dt {
+.text-block h1, .text-block h2, .text-block h3, .text-block em {
 	color: var(--accent-color);
 }
 .text-block code, .text-block pre {
@@ -102,8 +102,8 @@ body {
 	margin: 0.5em 4em;
 	overflow: scroll;
 }
-.text-block dt {
-	display: inline;
+.text-block em {
+	font-style: normal;
 }
 .text-block a {
 	color: var(--link-color);
@@ -148,7 +148,7 @@ with <a href="#load-options"><i>load-options</i></a> and saving is done with <a
 href="#save-options"><i>save-options</i></a>. The following URL arguments are
 used for passing these options:
 <ul>
-<li><dt>links=</dt>: The <i>load-options</i> can be specified in two ways:
+<li><em>links=</em>: The <i>load-options</i> can be specified in two ways:
     <ul>
     <li><code>links=&lt;load-options&gt;</code>: Pass the <i>load-options</i>
         on the URL directly.
@@ -162,7 +162,7 @@ used for passing these options:
 	Using a config-name is preferred when there are credentials in the
 	<i>load-options</i> or when <i>save-options</i> are used.
     </ul>
-<li><dt>links-override=</dt>: This can also be used to specify
+<li><em>links-override=</em>: This can also be used to specify
     <i>load-options</i> and <i>save-options</i> in the same way as with links=.
 </ul>
 See below for some complete <a href="#examples">examples</a>.
@@ -227,15 +227,15 @@ The syntax of the <i>load-options</i> is: <code>url\name\token\header:value\...<
 <br>
 With:
 <ul>
-<li><dt>url</dt> (mandatory): The URL that is used for downloading. This may be
+<li><em>url</em> (mandatory): The URL that is used for downloading. This may be
     a relative or absolute URL.
-<li><dt>name</dt> (optional): Name of the resource to use on the remote side.
+<li><em>name</em> (optional): Name of the resource to use on the remote side.
     If this is not specified, the name part of <i>url</i> is used.
     This is equivalent to a <code>x-name:name</code> header.
-<li><dt>token</dt> (optional): If the <i>url</i> needs credentials in the form
+<li><em>token</em> (optional): If the <i>url</i> needs credentials in the form
     of a token, it can be passed here.
     This is equivalent to a <code>x-token:token</code> header.
-<li><dt>header:value</dt> (optional): Zero or more additional headers to send.
+<li><em>header:value</em> (optional): Zero or more additional headers to send.
     This may include credentials.
 </ul>
 </p>
@@ -303,16 +303,16 @@ The syntax of the <i>save-options</i> with data.php is: <code>url\password\heade
 <br>
 With:
 <ul>
-<li><dt>url</dt> (optional): The URL of the <a
+<li><em>url</em> (optional): The URL of the <a
     href="#data-php"><code>data.php</code></a> script. The used method will
     always be POST.
     If this is empty, the URL from the load-options is used.
     If a relative URL is used, it is taken to be with respect to the URL in the
     <i>load-options</i>.
-<li><dt>token</dt> (optional): If the <i>url</i> needs credentials in the form
+<li><em>token</em> (optional): If the <i>url</i> needs credentials in the form
     of a token, it can be passed here.
     This is equivalent to a <code>x-token:token</code> header.
-<li><dt>header:value</dt> (optional): Zero or more additional headers to send.
+<li><em>header:value</em> (optional): Zero or more additional headers to send.
     This may include credentials.
 <li>name (from <i>load-options</i>): This name is sent as a
     <code>x-name:name</code> header.
@@ -339,14 +339,14 @@ The syntax of the <i>save-options</i> with arbitrary URLs is: <code>method:url\h
 <br>
 With:
 <ul>
-<li><dt>method</dt> (mandatory): This is the method to use, <code>put</code> or
+<li><em>method</em> (mandatory): This is the method to use, <code>put</code> or
     <code>post</code>.
-<li><dt>url</dt> (optional): URL to send to. If this is not specified, the URL
+<li><em>url</em> (optional): URL to send to. If this is not specified, the URL
     from the <i>load-options</i> is used.
     If neither is specified, no online save will be done.
     If a relative URL is used, it is taken to be with respect to the URL in the
     <i>load-options</i>.
-<li><dt>header:value</dt> (optional): Zero or more additional headers to send.
+<li><em>header:value</em> (optional): Zero or more additional headers to send.
     This may include credentials.
 </ul>
 </p>
@@ -448,9 +448,9 @@ The name of this file is defined in data.php and can be changed.
 <p>
 This file contains lines of the format <code>access token</code> with:
 <ul>
-<li><dt>access</dt>: The access that this token grants. May be <code>r</code>
+<li><em>access</em>: The access that this token grants. May be <code>r</code>
     (read), <code>w</code> (write), <code>c</code> (create) or any combination.
-<li><dt>token</dt>: String that is the token that grants the access. This token
+<li><em>token</em>: String that is the token that grants the access. This token
     may be formatted as <code>&lt;user&gt;:&lt;password&gt;</code>, in which
     case <i>that</i> is the token string that should be sent in the request.
 </ul>

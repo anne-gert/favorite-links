@@ -88,7 +88,7 @@ body {
 .text-block {
 	color: var(--foreground); background: var(--background);
 }
-.text-block h1, .text-block h2, .text-block h3, .text-block dt {
+.text-block h1, .text-block h2, .text-block h3, .text-block em {
 	color: var(--accent-color);
 }
 .text-block code, .text-block pre {
@@ -102,8 +102,8 @@ body {
 	margin: 0.5em 4em;
 	overflow: scroll;
 }
-.text-block dt {
-	display: inline;
+.text-block em {
+	font-style: normal;
 }
 .text-block a {
 	color: var(--link-color);
@@ -179,7 +179,7 @@ Save the target of this link to your home page and you're set.
 </p>
 
 <p>
-<dt>Tip</dt>: By adding the <code>?links=&lt;config-name&gt;</code> in the URL,
+<em>Tip</em>: By adding the <code>?links=&lt;config-name&gt;</code> in the URL,
 multiple independent configurations can be defined, each having their own URL.
 Each configuration has its own <i>load-options</i> and <i>save-options</i>
 under Settings, but if those are left blank, the configuration is only stored
@@ -188,7 +188,7 @@ for details).
 </p>
 
 <p>
-<dt>Tip</dt>: For longer configurations, scrolling to the right place in
+<em>Tip</em>: For longer configurations, scrolling to the right place in
 Settings may be cumbersome. To make this easier, it is also possible to double
 click on the space after an item, which opens Settings with the text cursor at
 the line of that item.
@@ -234,13 +234,13 @@ The configuration consists primarily of a list of <a
 href="help.html#link-syntax">Link Definitions</a>.  The Links form an
 hierarchical structure, indicated by the line's indentation:
 <ul>
-<li><dt>Section</dt>: The first indentation level is the Section. Sections are
+<li><em>Section</em>: The first indentation level is the Section. Sections are
     separated by horizontal lines.
-<li><dt>Block</dt>: The second indentation level are the blocks within a
+<li><em>Block</em>: The second indentation level are the blocks within a
     Section. Each Block is a visual area that can be collapsed and expanded.
-<li><dt>Item</dt>: The third indentation level are the Items that populate
+<li><em>Item</em>: The third indentation level are the Items that populate
     the Blocks.
-<li><dt>SubItem</dt>: The fourth and higher indentation levels are SubItems
+<li><em>SubItem</em>: The fourth and higher indentation levels are SubItems
     that are displayed under their respective parent Items
 </ul>
 Each link can be a hyperlink, have an icon and/or a checkbox.
@@ -261,67 +261,67 @@ href="help.html#line-syntax">Line Syntax</a> for details.
 <p>
 Each line should be one of the following:
 <ul>
-  <li><dt>Empty lines</dt>: These are skipped.
-  <li><dt>Comments</dt>: Lines that start with <code>//</code>, <code>;</code>
+  <li><em>Empty lines</em>: These are skipped.
+  <li><em>Comments</em>: Lines that start with <code>//</code>, <code>;</code>
       or <code>#</code> are comments and skipped too.
-  <li><dt>Folding</dt>: If a line ends with <code>{{{</code> or
+  <li><em>Folding</em>: If a line ends with <code>{{{</code> or
       <code>}}}</code>, remove that.  These tags are used to facilitate folding
       in vim.
-  <li><dt>Link Item</dt>: Specify a Link or ToDo item. See <a
+  <li><em>Link Item</em>: Specify a Link or ToDo item. See <a
       href="#link-syntax">below</a>.
-  <li><dt>Separator</dt>: This is a line containing a name of 3 or more dashes
+  <li><em>Separator</em>: This is a line containing a name of 3 or more dashes
       (<code>---</code>).  It is rendered as an <code>&lt;hr
       class="separator"&gt;</code>.
-  <li><dt>Page Title</dt>: The line <code>!title name</code> specifies the page
+  <li><em>Page Title</em>: The line <code>!title name</code> specifies the page
       title to be displayed.
-  <li><dt>Theme</dt>: The line <code>!theme name</code> specifies the CSS class
+  <li><em>Theme</em>: The line <code>!theme name</code> specifies the CSS class
       name to use for the theme. Currently 'auto' (default), 'dark-theme' and
       'light-theme' are defined, but custom themes can be defined with a Style
       Block. See <a href="#themes">below</a> on use cases.
-  <li><dt>Font Size</dt>: The line <code>!size font-size</code> specifies the
+  <li><em>Font Size</em>: The line <code>!size font-size</code> specifies the
       base font-size to use. All CSS length quantities can be used, e.g.
       '10pt' or '120%'. This feature is experimental.
-  <li><dt>Blocks Collapsed</dt>: The line <code>!collapsed state</code>
+  <li><em>Blocks Collapsed</em>: The line <code>!collapsed state</code>
       specifies how blocks are displayed when loaded:
       <ul>
-      <li><dt>no</dt> (default): Blocks are expanded if not previously closed.
-      <li><dt>yes</dt>: Blocks are closed if not previously expanded.
-      <li><dt>always</dt>: Blocks are always closed (previous state is
+      <li><em>no</em> (default): Blocks are expanded if not previously closed.
+      <li><em>yes</em>: Blocks are closed if not previously expanded.
+      <li><em>always</em>: Blocks are always closed (previous state is
           ignored).
-      <li><dt>never</dt>: Blocks are always expanded (previous state is
+      <li><em>never</em>: Blocks are always expanded (previous state is
           ignored).
       </ul>
-  <li><dt>Search Buttons</dt>: The line <code>!search identifier | label |
+  <li><em>Search Buttons</em>: The line <code>!search identifier | label |
       tooltip | icon | url-template</code> defines a search button to be
       displayed next to the search box.  See <a
       href="#search-functions">below</a> for more details.
-  <li><dt>Icon Definitions</dt>: The line <code>!icon name replacement</code>
+  <li><em>Icon Definitions</em>: The line <code>!icon name replacement</code>
       defines an icon. If a link uses <code>icon=name</code>, it will be
       replaced by whatever is defined for name.  This also works with the
       special words <code>none</code>, <code>empty</code>, <code>html:x</code>,
       etc.  It is also allowed to write this with an <code>=</code> between
       name and replacement. See <a href="#icons">Icons</a> for more on icons.
-  <li><dt>Checkbox Definition</dt>: The line <code>!checkbox name options
+  <li><em>Checkbox Definition</em>: The line <code>!checkbox name options
       ...</code> defines a custom checkbox. See <a
       href="#checkboxes">Checkboxes</a> for more details.
-  <li><dt>Text Block</dt>: A text block is the lines of text between
+  <li><em>Text Block</em>: A text block is the lines of text between
       <code>!text</code> and <code>!endtext</code>, which each should appear
       on a line of their own. The text block will be rendered at that
       location. It can contain any HTML
-  <li><dt>Style Block</dt>: A style block is the lines of text between
+  <li><em>Style Block</em>: A style block is the lines of text between
       <code>!style</code> and <code>!endstyle</code>, which should contain CSS
       definitions. See <a href="#themes">Themes</a> for an example.
-  <li><dt>Script Block</dt>: A script block is the lines of text between
+  <li><em>Script Block</em>: A script block is the lines of text between
       <code>!script</code> and <code>!endscript</code>, which should contain
       JavaScript code that is executed at the beginning of the page. See <a
       href="#search-functions">Search Functions</a> for an example.
-  <li><dt>Automatic Upload Delay</dt>: Some events (like changing a checkbox
+  <li><em>Automatic Upload Delay</em>: Some events (like changing a checkbox
       value) triggers an upload if <a
       href="external-files.html#save-options">Online Save</a> has been set.
       To avoid many updates in quick succession, an upload delay can be set
       with <code>!auto-upload-delay value</code>, where value is a delay in
       seconds. Default is 3 seconds.
-  <li><dt>Disable Edits</dt>: The line <code>!no-edit</code> makes the
+  <li><em>Disable Edits</em>: The line <code>!no-edit</code> makes the
       configuration text in Settings unmodifiable.
 </ul>
 </p>
@@ -364,7 +364,7 @@ one in a clean page.
 <p>
 Each Link is specified on a single line as follows:
 <ul>
-  <li><dt>Indentation</dt>: The amount of indentation determines the nesting
+  <li><em>Indentation</em>: The amount of indentation determines the nesting
       depth:
       <ul>
         <li>Tabs are replace by 8 spaces.
@@ -374,10 +374,10 @@ Each Link is specified on a single line as follows:
 	    decrease the nesting depth to that of the most recent line that has
 	    an indentation that is strictly less than this line.
       </ul>
-  <li><dt>&amp;</dt> continuation: If the item starts with <code>&amp;</code>,
+  <li><em>&amp;</em> continuation: If the item starts with <code>&amp;</code>,
       this item is regarded as a continuation of a group of items that are
       displayed on a single line.
-  <li><dt>Name</dt>: Arbitrary string of characters.
+  <li><em>Name</em>: Arbitrary string of characters.
       <ul>
         <li>If no name is given, the URL is used.
 	<li>If the name is <code>_</code> and any of the following conditions
@@ -392,7 +392,7 @@ Each Link is specified on a single line as follows:
 	<li>Regions in <code>*...*</code> are displayed in bold. Multiple '*'
 	    characters are allowed, but the begin and end should match.
       </ul>
-  <li><dt>URL</dt>: A string of non-whitespace characters, beginning with
+  <li><em>URL</em>: A string of non-whitespace characters, beginning with
       <code>scheme:</code>.
       <ul>
         <li>If no URL is given, no hyperlink is created.
@@ -402,25 +402,25 @@ Each Link is specified on a single line as follows:
 	    search for this Link's Name. Note that the identifier is
 	    case-insensitive and spaces should be replaced by '_'.
       </ul>
-  <li><dt>icon=value</dt>: Defines the icon to use. See <a
+  <li><em>icon=value</em>: Defines the icon to use. See <a
       href="#icons">Icons</a> for how to define the value.
-  <li><dt>Checkbox</dt>: If <code>[ ]</code> or <code>[x]</code> is at the
+  <li><em>Checkbox</em>: If <code>[ ]</code> or <code>[x]</code> is at the
       start of a line, render a standard checkbox for this item, so it can be
       used as a todo list item. Custom checkboxes with icons can also be used
       by specifying <code>[]:name</code> where <i>name</i> is the name of a
       <code>!checkbox</code> definition, see <a
       href="#checkboxes">Checkboxes</a> for more details.
-  <li><dt>url=URL</dt>: Target of this link. If this exists, no URL is
+  <li><em>url=URL</em>: Target of this link. If this exists, no URL is
       attempted to be recognized in the rest of the line. So this is also a way
       to override the URL (possibly to empty) if a URL occurs in the Name too.
-  <li><dt>target=target</dt>: Open the URL in the defined target. Typical values are:
+  <li><em>target=target</em>: Open the URL in the defined target. Typical values are:
       <ul>
         <li><code>absent</code>: Use same window (default)
         <li><code>_blank</code>: Use a new window or tab.
 	<li><code>manual</code>: Display text to instruct the user to paste the
 	    user to manually paste the URL in the address bar.
       </ul>
-  <li><dt>css=class-name</dt>: Add the specified CSS class to this item. This
+  <li><em>css=class-name</em>: Add the specified CSS class to this item. This
       class can be used to select this item and its children.
 </ul>
 The elements may be specified in any order on the line.
@@ -532,10 +532,10 @@ It is allowed to redefine an icon, but only the last definition will be used.
 If an icon definition is used that is not defined, the special
 <code>undefided</code> icon will be shown. This definition can be redefined.
 <pre>
-icon=unknown Not Defined     : shows <dt>!ND!</dt> ('not defined')
+icon=unknown Not Defined     : shows <em>!ND!</em> ('not defined')
 </pre>
 <pre>
-icon=unknown Not Defined     : shows <dt>?</dt>
+icon=unknown Not Defined     : shows <em>?</em>
 
 !icon undefined char:?       : define undefined as '?'
 </pre>
@@ -551,10 +551,10 @@ icon will be shown. This definition can be redefined.
 !icon icon2 icon1
 !icon icon1 icon2            : icon1 and icon2 are now in a reference loop
 
-icon=icon1 Reference Loop    : shows <dt>!ND!</dt> ('not defined')
+icon=icon1 Reference Loop    : shows <em>!ND!</em> ('not defined')
 </pre>
 <pre>
-icon=icon1 Reference Loop    : shows <dt>&#x221E;</dt>
+icon=icon1 Reference Loop    : shows <em>&#x221E;</em>
 
 !icon refloop char:U+221E    : define refloop as &#x221E;
 </pre>
@@ -584,39 +584,39 @@ that is enabled.
 In addition to standard Checkboxes, <code>!checkbox name options ...</code> can
 be used to define a checkbox type with custom options. The allowed options are:
 <ul>
-<li><dt>Single letter</dt>: Instead of <code>[x]</code> and <code>[ ]</code>,
+<li><em>Single letter</em>: Instead of <code>[x]</code> and <code>[ ]</code>,
     use these letters as checkbox values. The following notations are supported:
     <ul>
-    <li><dt>Normal character</dt>: Like 'A', '4', '+', etc.
-    <li><dt>Underscore (_)</dt>: Special character interpreted as a space.
-    <li><dt>Unicode character</dt>: Literal Unicode characters, like '&#x2611;'
+    <li><em>Normal character</em>: Like 'A', '4', '+', etc.
+    <li><em>Underscore (_)</em>: Special character interpreted as a space.
+    <li><em>Unicode character</em>: Literal Unicode characters, like '&#x2611;'
         or '&#x1F44D;'.
-    <li><dt>Unicode codepoint</dt>: Unicode codepoint notation, like 'U+2611'
+    <li><em>Unicode codepoint</em>: Unicode codepoint notation, like 'U+2611'
         or 'U+1F44D'.
     </ul>
     Note: This only works for single characters. For multiple characters, the
     <code>char:ABC</code> should be used.<br>
     See below for examples.
-<li><dt>Icon</dt>: By using <code>[X]icon</code>, the checkbox <code>[X]</code>
+<li><em>Icon</em>: By using <code>[X]icon</code>, the checkbox <code>[X]</code>
     is displayed as icon. 'X' can be any letter or short text and 'icon' can be
     any valid <a href="#icons">icon definition</a>.  See below for examples.
-<li><dt>Other Checkbox</dt>: If the name of an other checkbox definition is
+<li><em>Other Checkbox</em>: If the name of an other checkbox definition is
     used as an option, all its options are included. Checkboxes referring to
     eachother (called a <i>reference loop</i>) is not allowed.
-<li><dt>empty</dt>: Shorthand for <code>[_]empty</code>.
-<li><dt>uncheck</dt>: Shorthand for <code>[_]U+2610</code> (empty box, &#x2610;).
-<li><dt>check</dt>: Shorthand for <code>U+2611</code> (checked box, &#x2611;).
-<li><dt>cross</dt>: Shorthand for <code>U+2612</code> (crossed box, &#x2612;).
-<li><dt>mcheck</dt>: Shorthand for <code>U+25A3</code> (filled box, &#x25A3;).
-<li><dt>krul</dt>: Shorthand for <code>[g]krul</code> (Dutch 'krul' icon,
+<li><em>empty</em>: Shorthand for <code>[_]empty</code>.
+<li><em>uncheck</em>: Shorthand for <code>[_]U+2610</code> (empty box, &#x2610;).
+<li><em>check</em>: Shorthand for <code>U+2611</code> (checked box, &#x2611;).
+<li><em>cross</em>: Shorthand for <code>U+2612</code> (crossed box, &#x2612;).
+<li><em>mcheck</em>: Shorthand for <code>U+25A3</code> (filled box, &#x25A3;).
+<li><em>krul</em>: Shorthand for <code>[g]krul</code> (Dutch 'krul' icon,
     <div class="svg-icon">
         <svg width="1.4em" height="1.4em" xmlns="http://www.w3.org/2000/svg">
             <path d="M9.7,-0.6C8.1,-0.5 7,.8 6,1.8 4.8,3.2 3.6,4.6 3.2,6.3 2.7,7.6 3.7,8.9 4.1,9.7 2.5,11.2.9,12.7-0.7,14.3c-0.6,1.3 1.3,1.9 1.9,.7 1.6,-1.6 3.2,-3.1 4.8,-4.7 1.3,.2 3.4,1.3 2.1,2.8-1,2-2.1,3.9-2.9,5.9-0.7,1.6.8,3.5 2.5,3 1.8,-0.6 3.4,-1.7 5,-2.8C21.8,12.6 25.2,5.9 24,6.7 19.5,11.8 14.3,16.5 8.3,19.8c-1,.9-1.9,.2-1,-0.9 1,-2 2.1,-3.9 2.9,-5.9.5,-1.4-0.2,-2.9-1.5,-3.6-0.7,-0.4-1.7,-0.5-0.6,-1.2 1.5,-1.6 3,-3.1 4.2,-4.9.9,-1.4-0.1,-3.4-1.6,-3.9-0.3,-0.1-0.7,-0.2-1,-0.2zm.1,1.9c1.5,.1.9,1.7.1,2.3C8.5,5.2 7.1,6.7 5.5,8.2 4.2,7.3 5.4,5.7 6,4.7 7,3.4 8.1,2.1 9.5,1.3l.2,-0z"/>
         </svg>
     </div>).
-<li><dt>!front</dt>, <dt>!before</dt>: Places the checkbox in front of the text.
-<li><dt>!back</dt>, <dt>!after</dt>: Places the checkbox after the text.
-<li><dt>!debug</dt>: Display the interpreted !checkbox definition at the point
+<li><em>!front</em>, <em>!before</em>: Places the checkbox in front of the text.
+<li><em>!back</em>, <em>!after</em>: Places the checkbox after the text.
+<li><em>!debug</em>: Display the interpreted !checkbox definition at the point
     of definition, so the interpretation can be inspected for debugging
     purposes.
 </ul>
@@ -628,12 +628,12 @@ value part is mandatory.<br>
 Note: If the <code>!debug</code> is given, the interpreted !checkbox definition
 will be displayed.
 <ul>
-<li>The <dt>value</dt> is used to display a selected option. This field is
+<li>The <em>value</em> is used to display a selected option. This field is
     mandatory.
-<li>The <dt>token</dt> is used to represent the selected option in the
+<li>The <em>token</em> is used to represent the selected option in the
     configuration. Each option within a !checkbox definition should be unique.
     If this part is not defined, the identifier or value is used.
-<li>The <dt>identifier</dt> is used to refer to an option, e.g. for CSS
+<li>The <em>identifier</em> is used to refer to an option, e.g. for CSS
     classes (see example below). If this part is not defined, the token or
     value is used, prefixed with the !checkbox' name.<br>
     Note: Given <code>!checkbox cb</code> with two definitions
@@ -849,9 +849,9 @@ depend on the loop will be shows as the special <code>refloop</code> value.
 !checkbox options3 X Y Z options2
 !checkbox options4 h j k l options2
 [ ]:options1 This is fine                   : shows A/B/C
-[ ]:options2 Reference Loop                 : shows <dt>!RL!</dt>
-[ ]:options3 Reference Loop                 : shows <dt>!RL!</dt>
-[ ]:options4 Depends on Reference Loop      : shows <dt>!RL!</dt>
+[ ]:options2 Reference Loop                 : shows <em>!RL!</em>
+[ ]:options3 Reference Loop                 : shows <em>!RL!</em>
+[ ]:options4 Depends on Reference Loop      : shows <em>!RL!</em>
 </pre>
 </p>
 
@@ -916,22 +916,22 @@ url-template</code> defines a search button to be displayed next to the search
 box. The fields are separated by <code>|</code> with whitespace allowed.  These
 are the fields to be specified:
 <ul>
-<li><dt>Identifier</dt> (mandatory): Unique name for this button definition.
-<li><dt>Label</dt> (default: <i>Identifier</i>): This is the text to be
+<li><em>Identifier</em> (mandatory): Unique name for this button definition.
+<li><em>Label</em> (default: <i>Identifier</i>): This is the text to be
     displayed next to the icon on the button. If '_' is specified, no label
     will be displayed.
-<li><dt>Tooltip</dt> (default: <i>Identifier</i>): This is the text to be
+<li><em>Tooltip</em> (default: <i>Identifier</i>): This is the text to be
     displayd if the mouse is hovered over the button. If '_' is specified, no
     tooltip will be displayed.
-<li><dt>Icon</dt> (default: <code>default</code> if SearchFunction exists,
+<li><em>Icon</em> (default: <code>default</code> if SearchFunction exists,
     <code>char:U+1F50D</code> (magnifying glass, &#x1F50D;) if not):
     This is the specification of the icon to display. See the <a
     href="#icons">Icons</a> for the syntax.
-<li><dt>URL-Template</dt>: If this is defined, this string is used as the
+<li><em>URL-Template</em>: If this is defined, this string is used as the
     Search URL Function result. This template recogizes the following special
     values:
     <ul>
-    <li><dt>%urlinput</dt>: This will be filled with the URL-encoded search
+    <li><em>%urlinput</em>: This will be filled with the URL-encoded search
         string.
     </ul>
     If the URL-Template is not supplied, it is derived as described below.
@@ -941,7 +941,7 @@ are the fields to be specified:
 <p>
 The following properties are derived:
 <ul>
-<li><dt>Search URL Function</dt>:
+<li><em>Search URL Function</em>:
     Function to call to retrieve the URL to go to for the results if
     the search query does not look like a domain.
     Input of this function is the contents of the SearchBox.
@@ -949,7 +949,7 @@ The following properties are derived:
     SearchFunctions and then the 'text' sub-function.
     If no SearchFunction can be found, use the one with
     Identifier='default'.
-<li><dt>Domain Search URL Function</dt>:
+<li><em>Domain Search URL Function</em>:
     Function to call to retrieve the URL to go to for the results if
     the search query does look like a domain.
     Input of this function is the contents of the SearchBox.
@@ -1079,29 +1079,29 @@ the browser's dark/light-mode preference setting is used.
 <p>
 The current variables are:
 <ul>
-<li><dt>--foreground</dt>,
-    <dt>--background</dt>:
+<li><em>--foreground</em>,
+    <em>--background</em>:
     Default foreground and background colors.
-<li><dt>--accent-color</dt>:
+<li><em>--accent-color</em>:
     Color for titles, labels and icons.
-<li><dt>--block-foreground</dt>,
-    <dt>--block-background</dt>,
-    <dt>--block-border</dt>:
+<li><em>--block-foreground</em>,
+    <em>--block-background</em>,
+    <em>--block-border</em>:
     Foreground, background and border colors for Block level items.
-<li><dt>--selection-foreground</dt>,
-    <dt>--selection-background</dt>:
+<li><em>--selection-foreground</em>,
+    <em>--selection-background</em>:
     Foreground and background color for selected text.
-<li><dt>--code-foreground</dt>,
-    <dt>--code-background</dt>:
+<li><em>--code-foreground</em>,
+    <em>--code-background</em>:
     Foreground and background color for <code>&lt;code&gt;</code> and
     <code>&lt;pre&gt;</code> fragments.
-<li><dt>--link-color</dt>: 
+<li><em>--link-color</em>:
     Foreground color of hyperlinks.
-<li><dt>--disabled-color</dt>:
+<li><em>--disabled-color</em>:
     Foreground color for disabled items.
-<li><dt>--error-foreground</dt>,
-    <dt>--error-background</dt>,
-    <dt>--error-border</dt>:
+<li><em>--error-foreground</em>,
+    <em>--error-background</em>,
+    <em>--error-border</em>:
     Foreground, background and border color for search box in case of
     unrecognized input.
 </ul>

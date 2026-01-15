@@ -225,7 +225,7 @@ body {
 .text-block {
 	color: var(--foreground); background: var(--background);
 }
-.text-block h1, .text-block h2, .text-block h3, .text-block dt {
+.text-block h1, .text-block h2, .text-block h3, .text-block em {
 	color: var(--accent-color);
 }
 .text-block code, .text-block pre {
@@ -239,7 +239,7 @@ body {
 	margin: 0.5em 4em;
 	overflow: scroll;
 }
-.text-block dt {
+.text-block em {
 	display: inline;
 }
 .text-block a {
@@ -899,13 +899,13 @@ The configuration consists primarily of a list of <a
 href="help.html#link-syntax">Link Definitions</a>.  The Links form an
 hierarchical structure, indicated by the line's indentation:
 <ul>
-<li><dt>Section</dt>: The first indentation level is the Section. Sections are
+<li><em>Section</em>: The first indentation level is the Section. Sections are
     separated by horizontal lines.
-<li><dt>Block</dt>: The second indentation level are the blocks within a
+<li><em>Block</em>: The second indentation level are the blocks within a
     Section. Each Block is a visual area that can be collapsed and expanded.
-<li><dt>Item</dt>: The third indentation level are the Items that populate
+<li><em>Item</em>: The third indentation level are the Items that populate
     the Blocks.
-<li><dt>SubItem</dt>: The fourth and higher indentation levels are SubItems
+<li><em>SubItem</em>: The fourth and higher indentation levels are SubItems
     that are displayed under their respective parent Items
 </ul>
 </p>
