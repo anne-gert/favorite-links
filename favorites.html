@@ -3163,17 +3163,19 @@ function parseLinks(links) {
 			// Derive them as follows:
 			// 1) <value>          -> <token> is equal to cleaned <value>,
 			//                        <id> is cleaned <token> or empty (compare rule 3)
-			// 2) <id>=<value>     -> <token> is equal to <id>
+			// 2) <id>=<value>     -> <token> is equal to the shorter of <id> and <value>
+			//                        Use shorter, because that allows red=R to work
 			// 3) [<token>]<value> -> <id> is cleaned <token> or <value> or empty
+			let val_token = val.replace(/^char:(?!$)/, '');  //remove prefix from char:X
+			let val_id = val_token.replaceAll(/\W+/g, '');
 			if (id == null && token == null) {  //rule 1
-				token = val.replace(/^char:(?!$)/, '');  //remove prefix from char:X
-				let n = token.replaceAll(/\W+/g, '');
-				if (n != '') id = '+' + n;  //'+' will be replaces with name
+				token = val_token;
+				if (val_id != '') id = '+' + val_id;  //'+' will be replaces with name
 			} else if (token == null) {  //rule 2
-				token = id;
+				token = (id.length <= val_token.length) ? id : val_token;
 			} else if (id == null) {  //rule 3
 				let n = token.replaceAll(/\W+/g, '');
-				if (n == '') n = val.replaceAll(/\W+/g, '');  //remove non-word
+				if (n == '') n = val_id;
 				if (n != '') id = '+' + n;  //'+' will be replaces with name
 			}
 			if (token == '_') token = ' ';

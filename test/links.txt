@@ -197,14 +197,16 @@ Also a page with different ways of Custom Checkbox definitions is linked.
             !checkbox cb-eq-A1 = char:== char:===
             []:cb-eq-A1 Checkbox with 'char:=' (should display *=/==/===*)
         Single '=' sequence
-            !checkbox cb-eq-B1 [A]A [B]= [C=]C [D==]D [=]E FF= [GG]=
-            [A]:cb-eq-B1 Checkbox with '='-combinations (should display *A/=/C/D/E/!ND!/=*)
+            !checkbox cb-eq-B1 [A]A [B]= [C=]C [D==]D [=]E FF= [GG]= hhh=char:H h=char:HHH
+            [A]:cb-eq-B1 Checkbox with '='-combinations (should display *A/=/C/D/E/!ND!/=/H/HHH*)
             [B]:cb-eq-B1 Checkbox with '='-combinations (should display *=/...*)
             [C=]:cb-eq-B1 Checkbox with '='-combinations (should display *C/...*)
             [D==]:cb-eq-B1 Checkbox with '='-combinations (should display *D/...*)
             [=]:cb-eq-B1 Checkbox with '='-combinations (should display *E/...*)
             [FF=]:cb-eq-B1 Checkbox with '='-combinations (should display *!ND!/...*)
             [GG]:cb-eq-B1 Checkbox with '='-combinations (should display *=/...*)
+            [H]:cb-eq-B1 Checkbox with token derived from value (should display *H/...*)
+            [h]:cb-eq-B1 Checkbox with token derived from identifier (should display *HHH/...*)
         Multiple '=' sequences
             !checkbox cb-eq-C1 [A]A= =B= [=C]C
             !icon A= char:A=
@@ -341,9 +343,9 @@ verify if they work.
     CSS Styles for Checkboxes css=special-styles
         with-identifiers
             !checkbox colors red=R green=G blue=B
-            [red]:colors A color
-            [green]:colors A color
-            [blue]:colors A color
+            [R]:colors A color
+            [G]:colors A color
+            [B]:colors A color
         with-styles-1
             !checkbox with-styles-1 uncheck [A]A char:B+ C=C $
             [ ]: Matched on

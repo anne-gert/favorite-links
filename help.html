@@ -899,12 +899,12 @@ example:
 .cbx-opt-blue { background: #88F }
 !endstyle
 
-[red]:colors A color
-[green]:colors A color
-[blue]:colors A color
+[R]:colors A color
+[G]:colors A color
+[B]:colors A color
 </pre>
-Note also that the identifier is also used as token if no explicit token (with
-<code>[...]</code>) is given.
+Note that if no token is specifiedi (i.e. no <code>[...]</code>), generally the
+shorter of identifier or value is used as token. In this case the R/G/B value.
 </p>
 
 <p>
@@ -938,9 +938,9 @@ below. Here the CSS style class names are derived as follows:
 <li><code>$</code>: In this case, there is only an <em>option value</em>, but
     that doesn't have any letters, nummbers of '_', so no identifier can be
     derived. It would be advisable to create an explicit identifier like in
-    dollar=[$]$. But if that is not done, the <em>position index</em> can be
-    used together with the checkbox definition name, resulting in the CSS
-    classes for the fifth option <code>cbx-opt-with-styles-1-i5</code> and
+    dollar=$. But if that is not done, the <em>position index</em> can be used
+    together with the checkbox definition name, resulting in the CSS classes
+    for the fifth option <code>cbx-opt-with-styles-1-i5</code> and
     <code>cbx-opt-with-styles-2-i5</code>.
 </ul>
 </p>
