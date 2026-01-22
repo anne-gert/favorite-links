@@ -342,19 +342,19 @@ verify if they work.
 
     CSS Styles for Checkboxes css=special-styles
         with-identifiers
-            !checkbox colors red=R green=G blue=B
+            !checkbox colors red=R green=G blue=B !debug
             [R]:colors A color
             [G]:colors A color
             [B]:colors A color
         with-styles-1
-            !checkbox with-styles-1 uncheck [A]A char:B+ C=C $
+            !checkbox with-styles-1 uncheck [A]A char:B+ C=C $ !debug
             [ ]: Matched on
             [A]: Matched on
             [B+]: Matched on
             [C]: Matched on
             [$]: Matched on
         with-styles-2
-            !checkbox with-styles-2 uncheck [A]A char:B+ C=C $
+            !checkbox with-styles-2 uncheck [A]A char:B+ C=C $ !debug
             [ ]: Matched on
             [A]: Matched on
             [B+]: Matched on
