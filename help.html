@@ -618,13 +618,15 @@ syntax for an icon should be used: <code>char:ABC</code>.
 
 <p>
 Everything that can be used for <em>icons</em>, can also be used as an option
-for a checkbox, see <a href="#icons">icon definition</a> for the
-<code>!icon</code> syntax. This includes URLs to images, HTML fragments, pieces
-of text, etc. One thing to keep in mind, though, is that the currently selected
-value is also stored in [...]. To keep this short, it is advisable to define a
-short text token in the option: <code>[x]icon</code>. Here, the token
-<code>[x]</code> will be displayed as the <code>icon</code>. The token can be a
-single letter of short text.<br>
+for a checkbox, like image URLs, char:&lt;x&gt;, html:&lt;fragment&gt;, see <a
+href="#icons">Icons</a> for more details and <a href="line-syntax">Line
+Syntax</a> for the <code>!icon</code> syntax. This allows the use of URLs to
+images, HTML fragments, pieces of text, etc. One thing to keep in mind, though,
+is that the currently selected value is also stored in the configuration inside
+[...]. To keep this short, it is advisable to define a short text token in the
+option: <code>[x]icon</code>. Here, the token <code>[x]</code> will be
+displayed as the <code>icon</code>. The token can be a single letter of short
+text.<br>
 If no token is explicitly specified, the icon value is used as token, therefore
 <code>[X]X</code> and <code>X</code> are equivalent.
 </p>
@@ -659,8 +661,8 @@ http://example.com/icon.png</code>.
 
 <p>
 If the name of an other checkbox definition is used as an option, all its
-options are included. Checkboxes referring to each other (called a
-<i>reference loop</i>) is not allowed.
+options are included. Checkboxes referring to each other in a circular
+dependency (called a <i>reference loop</i>) is not allowed.
 </p>
 
 <p>
@@ -903,8 +905,10 @@ example:
 [G]:colors A color
 [B]:colors A color
 </pre>
-Note that if no token is specifiedi (i.e. no <code>[...]</code>), generally the
-shorter of identifier or value is used as token. In this case the R/G/B value.
+<span class="important">Note</span>: If no token is specifiedi (i.e. no
+<code>[...]</code>), generally the shorter of identifier or value is used as
+token. In this case the R/G/B values rather than the red/green/blue
+identifiers.
 </p>
 
 <p>
@@ -913,10 +917,11 @@ If the identifier is explicitly specified, the used CSS class becomes
 </p>
 
 <p>
-If the identifier is not explictly given, the value or the token can be used to
-get a <em>derived identifier</em> that that will be used with the checkbox
-definition name to form the CSS class name. To explain this, see the example
-below. Here the CSS style class names are derived as follows:
+Specifying the identifier explicitly is more straightforward, but if you really
+want to, the following section describes how to get a <em>derived
+identifier</em> from the value or token, combined with the checkbox' definition
+name.  To explain this, see the example below. Here the CSS style class names
+are derived as follows:
 <ul>
 <li><code>uncheck</code>: If a <em>special shorthand icon</em> is used, that
     name is also used as an identifier. This results in the CSS class name
@@ -943,6 +948,7 @@ below. Here the CSS style class names are derived as follows:
     for the fifth option <code>cbx-opt-with-styles-1-i5</code> and
     <code>cbx-opt-with-styles-2-i5</code>.
 </ul>
+Note that <em>!debug</em> can be used to display the derived identifiers.
 </p>
 
 <p>
