@@ -277,7 +277,13 @@ Each line should be one of the following:
   <li><em>Theme</em>: The line <code>!theme name</code> specifies the CSS class
       name to use for the theme. Currently 'auto' (default), 'dark-theme' and
       'light-theme' are defined, but custom themes can be defined with a Style
-      Block. See <a href="#themes">below</a> on use cases.
+      Block.
+      See <a href="#themes">below</a> for examples.
+  <li><em>Wallpaper</em>: The line <code>!wallpaper background</code> specifies
+      the background image to use. This can be specified as an absolute or
+      relative URL or as anything that is acceptable by the CSS
+      background-image property.
+      See <a href="#themes">below</a> for examples.
   <li><em>Font Size</em>: The line <code>!size font-size</code> specifies the
       base font-size to use. All CSS length quantities can be used, e.g.
       '10pt' or '120%'. This feature is experimental.
@@ -1142,18 +1148,59 @@ registerSearchFunction(getSearchFunctionId('Random'), input =&gt; {
 <a name="themes"></a>
 <h2>Themes</h2>
 
+
+<h3>Light and Dark</h3>
+
 <p>
 Themes are implemented in a very basic way. The colors that are used are
 defined as CSS variables in a *-theme CSS class. Currently there is a
 <code>dark-theme</code> and and a <code>light-theme</code>.
 <br>
-The theme can be changed by using <code>!theme name</code> where name is the
-CSS class name of the theme or <code>auto</code> (the default)  in which case
+The theme can be set by using <code>!theme name</code> where name is the
+CSS class name of the theme or <code>auto</code> (the default) in which case
 the browser's dark/light-mode preference setting is used.
 </p>
 
 <p>
-The current variables are:
+Examples:
+<pre>
+!theme dark-theme
+
+!theme light-theme
+
+!theme auto
+</pre>
+</p>
+
+
+<h3>Background</h3>
+
+<p>
+A background image (wallpaper) can be specified with a relative or absolute
+URL or with anything else that is acceptable by the CSS background-image
+property.
+</p>
+
+<p>
+Background image with relative URL:
+<pre>
+!wallpapar images/my-background.jpg
+</pre>
+Random background image (with absolute URL):
+<pre>
+!wallpaper https://lipsum.app/random/1920x1080
+</pre>
+Rainbow:
+<pre>
+!wallpaper linear-gradient(120deg, red,orange,yellow,green,blue,indigo,violet,red,orange,yellow,green,blue,indigo,violet)
+</pre>
+</p>
+
+
+<h3>Colors</h3>
+
+<p>
+A theme is defined by the following variables:
 <ul>
 <li><em>--foreground</em>,
     <em>--background</em>:
@@ -1181,6 +1228,8 @@ The current variables are:
     Foreground, background and border color for search box in case of
     unrecognized input.
 </ul>
+These variables can be modified in a <code>!style</code> block to modify or
+create a new style.
 </p>
 
 <p>
@@ -1192,25 +1241,10 @@ A theme can be modified like this:
 } 
 !endstyle
 </pre>
-Or you can go wild with:
-<pre>
-!style
-body {
-    background-image: linear-gradient(120deg, red,orange,yellow,green,blue,indigo,violet,red,orange,yellow,green,blue,indigo,violet);
-}
-.dark-theme {
-    --background: #2E323B99;
-    --code-background: #28282899;
-    --block-background: #C9CDD099;
-}
-.light-theme {
-    --background: #E8F0F877;
-    --code-background: #C0C0C077;
-    --block-background: #D9DDE099;
-}
-!endstyle
-</pre>
-Or more rustic with:
+</p>
+
+<p>
+It is also possible to override any element:
 <pre>
 !style
 body {

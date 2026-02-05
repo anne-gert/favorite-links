@@ -2,6 +2,9 @@
 
 !title Test Links
 
+!wallpaper https://lipsum.app/random/1920x1080
+//!wallpaper linear-gradient(120deg, red,orange,yellow,green,blue,indigo,violet,red,orange,yellow,green,blue,indigo,violet)
+
 Section
     Block
         Item 1
