@@ -2778,6 +2778,13 @@ function parseLinks(links) {
 			continue;
 		}
 
+		// Skip all other pragma lines, so that newer functions can be silently ignored
+		m = line.match(/^\s*(!\S)/i);
+		if (m) {
+			LogParse.error('Unsupported pragma at line ' + (i+1) + ': ' + m[1]);
+			continue;
+		}
+
 		// Take out indentation
 		let indent = 0;
 		m = line.match(/^(\s+)(.*)$/);
