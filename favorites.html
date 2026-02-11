@@ -1160,6 +1160,7 @@ function CreateLogger(level = 'important') {
 		log         : Func(2, null),
 		debug       : Func(3, 'color:#888888'),
 		devlog      : Func(4, 'color:black;background-color:#008888'),
+		trace       : console.trace,
 	};
 	return obj;
 }
@@ -1311,7 +1312,8 @@ function addClass(widget, className, op) {
 			}
 			if (rm.length > 0) lst.remove(rm);
 		} else {
-			LogEvents.error('Unknown value for operation: \'' + op +'\'');
+			LogEvents.error(`Unknown value for operation for addClass '${className}': '${op}'`);
+			LogEvents.trace();
 		}
 	}
 }
@@ -5091,7 +5093,8 @@ function initSettingsPanel() {
 			// - Clean should be set (there was once a remote file)
 			// - Local should be different (Dirty)
 			// - SaveOptions set (so the User can actually fix it)
-			conflicted = UrlResolver.getSaveOptions() && Data.linksDirty();
+			let saveOpt = UrlResolver.getSaveOptions();
+			conflicted = saveOpt != null && saveOpt != '' && Data.linksDirty();
 		}
 		Data.setConflictState(conflicted);
 		// Change visibility
