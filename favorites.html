@@ -4905,7 +4905,8 @@ function initSettingsPanel() {
 
 		// Configure settingsPanel
 		settingsPanel.onkeydown = function(e) {
-			if (isKey(e, 'c', 's')) {
+			if (isKey(e, 'c', 's')) {  //Ctrl-S
+				if (textRO) return false;  //silently discard
 				if (visible) hideSettings(true);
 				return false;  //stop default button action
 			}
@@ -4913,7 +4914,7 @@ function initSettingsPanel() {
 		};
 		// Bind entire document
 		window.addEventListener('keydown', function(e) {
-			if (isKey(e, 'c', 'q')) {
+			if (isKey(e, 'c', 'q')) {  //Ctrl-Q
 				if (visible) {  //only if Settings visible
 					hideSettings(false);
 					e.preventDefault();
@@ -4945,17 +4946,25 @@ function initSettingsPanel() {
 		settingsText.className = 'textbox';
 		settingsText.readOnly = textRO;
 		settingsText.onkeydown = function(e) {
-			if (isKey(e, '?s', 'Tab')) {
-				return !tabInsert(this, !e.shiftKey);
-			} else if (isKey(e, '', 'Enter')) {
-				// Copy indentation from current line
-				return !textInsert(this, (before, mid, after) => {
-					let m = before.match(/(?:^|\r|\n)([ \t]*)[^\r\n]*$/);  //match: 'linebreak whitespace line end'
-					return '\n' + m[1];  //insert linebreak plus matched whitespace
-				});
-			} else if (isKey(e, '', 'Home')) {
+			if (isKey(e, '', 'Home')) {
 				// Go to first non-whitespace character or first column
 				return !gotoHome(this);
+			} else if (textRO) {
+				// Keys for ReadOnly mode
+				if (isKey(e, '?s', 'Tab')) {  //Tab, Shift-Tab
+					return false;  //silently discard
+				}
+			} else {
+				// Keys for Edit mode
+				if (isKey(e, '?s', 'Tab')) {  //Tab, Shift-Tab
+					return !tabInsert(this, !e.shiftKey);
+				} else if (isKey(e, '', 'Enter')) {
+					// Copy indentation from current line
+					return !textInsert(this, (before, mid, after) => {
+						let m = before.match(/(?:^|\r|\n)([ \t]*)[^\r\n]*$/);  //match: 'linebreak whitespace line end'
+						return '\n' + m[1];  //insert linebreak plus matched whitespace
+					});
+				}
 			}
 			return true;
 		};
@@ -5210,6 +5219,12 @@ function initSettingsPanel() {
 		for (let i = 0; i < saveOptionEntries.length; ++i) {
 			saveOptionEntries[i].showData();
 		}
+		// Update buttons
+		if (textRO) {
+			iconSave.style.display = 'none';
+		} else {
+			iconSave.style.display = '';
+		}
 		// Slide panel to visible
 		settingsPanel.classList.add('expanding');
 		settingsPanel.classList.add('show');
@@ -5380,8 +5395,8 @@ function textInsert(ctl, inserter) {
 	let mid2 = inserter(before, mid, after);
 	ctl.value = before + mid2 + after;
 	// Put the insertion point after the insertion
-	let newPos = start + mid2.length;
-	ctl.selectionStart = ctl.selectionEnd = newPos;
+	let newpos = start + mid2.length;
+	ctl.setSelectionRange(newpos, newpos);
 	return true;
 }
 
@@ -5466,9 +5481,7 @@ function tabInsert(ctl, add) {
 		// Put back the parts
 		ctl.value = parts.join('');
 		// Set the new selection
-		ctl.selectionStart = start;
-		ctl.selectionEnd = end;
-		ctl.selectionDirection = sel[2];
+		ctl.setSelectionRange(start, end, sel[2]);
 	} else {
 		// There is no selection -> add/remove N spaces at current position
 		let before = val.substring(0, caret), after = val.substring(caret);
@@ -5484,7 +5497,7 @@ function tabInsert(ctl, add) {
 		}
 		ctl.value = newBefore + after;
 		// Put the insertion point after the change
-		ctl.selectionStart = ctl.selectionEnd = newBefore.length;
+		ctl.setSelectionRange(newBefore.length, newBefore.length);
 	}
 	return true;
 }
@@ -5555,7 +5568,7 @@ function gotoHome(ctl) {
 		}
 	}
 	// Change posisiton
-	ctl.selectionStart = ctl.selectionEnd = newpos;
+	ctl.setSelectionRange(newpos, newpos);
 	return true;
 }
 
