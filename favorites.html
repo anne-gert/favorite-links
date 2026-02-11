@@ -4945,7 +4945,81 @@ function initSettingsPanel() {
 		settingsText.placeholder = 'Settings';
 		settingsText.className = 'textbox';
 		settingsText.readOnly = textRO;
+		// BUG: Firefox on Windows 11 seems to have an issue when using
+		// the Home key behavior of 'first Home goes to start of text,
+		// second Home goes to start of line'.
+		// The issue is as follows: If you start at a position (X,Y),
+		// then press Down(Up) - Home - Down(Up), one would expect to
+		// be at position (X2,Y+2) with X2 is start-of-text. Instead,
+		// the position becomes (X,Y+2) on the second Up/Down.
+		// Analogous for Up arrow.
+		// To fix this, detect the Up/Down - Home - Up/Down sequence
+		// in the KeyUp. Also remember the cursor position in KeyDown
+		// and KeyUp to differentiate between 'Editing' keys and 'non-
+		// Editing' keys.
+		// To prevent this behavior, change the text value.
+		// Record all this state in homeFix.
+		let homeFix = {
+			// State transitions
+			//   Input: key-name '-' Make/Break
+			//   Output: [ next-state, perform fix ]
+			0: {  //normal state
+				'ARROWUP-':   [ 1, false ],
+				'ARROWDOWN-': [ 1, false ],
+			},
+			1: {  //Up/Down pressed
+				'ARROWUP-':   [ 1, false ],
+				'ARROWDOWN-': [ 1, false ],
+				'HOME-':      [ 2, false ],
+				'CHPOS-':     [ 0, false ],
+			},
+			2: {  //Home pressed
+				'ARROWUP+':   [ 1,  true ],
+				'ARROWDOWN+': [ 1,  true ],
+				'HOME-':      [ 2, false ],
+				'CHPOS-':     [ 0, false ],
+			},
+			onkey: (event, down) => {
+				let ukey = event.key.toUpperCase();
+				let mb = down ? '+' : '-';  //make(+)/break(-)
+				let cs = homeFix[homeFix.state];  //current state
+				let ns = cs[ukey + mb];  //next state
+				if (!down && homeFix.state > 0) {
+					// On keyup, record new position before event transition
+					let pos = getSelection(settingsText);
+					if (!ns) {
+						let caretChanged = homeFix.pos[3] != pos[3];
+						ukey = caretChanged ? 'CHPOS' : 'OTHER';
+						ns = cs[ukey + mb];
+					}
+					homeFix.pos = pos;
+					//LogSettings.debug(`HomeFix: Set pos=${homeFix.pos}`);
+				}
+				if (ns) {
+					LogSettings.debug(`HomeFix: onkey(${ukey}${mb}): state ${homeFix.state} -> ${ns[0]}`);
+					// Execute the state change
+					homeFix.state = ns[0];
+					if (ns[1]) {
+						LogSettings.log('HomeFix: Activate fix');
+						let v = settingsText.value;
+						settingsText.value = v + ' ';
+						settingsText.value = v;
+						settingsText.setSelectionRange(homeFix.pos[0], homeFix.pos[1], homeFix.pos[2]);
+					}
+				}
+				if (down && homeFix.state > 0) {
+					// On keydown, record new position after event transition
+					homeFix.pos = getSelection(settingsText);
+					//LogSettings.debug(`HomeFix: Set pos=${homeFix.pos}`);
+				}
+			},
+			// State variables
+			state: 0,
+			pos: null,
+		};
 		settingsText.onkeydown = function(e) {
+			homeFix.onkey(e, true);
+
 			if (isKey(e, '', 'Home')) {
 				// Go to first non-whitespace character or first column
 				return !gotoHome(this);
@@ -4967,6 +5041,9 @@ function initSettingsPanel() {
 				}
 			}
 			return true;
+		};
+		settingsText.onkeyup = function(e) {
+			homeFix.onkey(e, false);
 		};
 		settingsArea.appendChild(settingsText);
 
@@ -5567,7 +5644,7 @@ function gotoHome(ctl) {
 			//LogSettings.devlog(`Home pressed: posLine=${posLine} <= caret=${caret} -> newpos=${newpos}`);
 		}
 	}
-	// Change posisiton
+	// Change position
 	ctl.setSelectionRange(newpos, newpos);
 	return true;
 }
