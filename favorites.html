@@ -60,10 +60,20 @@ For syntax description of Links, see help.html
 	--error-border: #FFBB88;
 }
 
+.dark-theme, .light-theme {
+	--background-f: color(from var(--background) srgb r g b / var(--background-opacity));
+	--block-background-f: color(from var(--block-background) srgb r g b / calc(var(--background-opacity) * 1.2));
+	--selection-background-f: color(from var(--selection-background) srgb r g b / var(--background-opacity));
+	--code-background-f: color(from var(--code-background) srgb r g b / var(--background-opacity));
+	--error-background-f: color(from var(--error-background) srgb r g b / var(--background-opacity));
+	--disabled-color-f: color-mix(in srgb, var(--disabled-color) var(--background-opacity), var(--block-foreground) calc(100% - var(--background-opacity)));
+}
+
 :root {
-	/* Define variables that will be used on visible elements */
+	/* Define default variables values that will be used on visible elements */
 	--font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
-	--font-size: 100%
+	--font-size: 100%;
+	--background-opacity: 1;
 	/* Set default font and size */
 	font-family: var(--font-family);
 	font-size: 12pt;  /* absolute, so --font-size can be relative too */
@@ -110,26 +120,6 @@ For syntax description of Links, see help.html
 
 
 /* Calculate modified (filtered) colors */
-
-/* Unfiltered */
-.dark-theme, .light-theme {
-	--background-f: var(--background);
-	--block-background-f: var(--block-background);
-	--selection-background-f: var(--selection-background);
-	--code-background-f: var(--code-background);
-	--error-background-f: var(--error-background);
-	--disabled-color-f: var(--disabled-color);
-}
-
-/* Make backgrounds translucent */
-.translucent {
-	--background-f: color(from var(--background) srgb r g b / 0.6);
-	--block-background-f: color(from var(--block-background) srgb r g b / 0.65);
-	--selection-background-f: color(from var(--selection-background) srgb r g b / 0.6);
-	--code-background-f: color(from var(--code-background) srgb r g b / 0.6);
-	--error-background-f: color(from var(--error-background) srgb r g b / 0.6);
-	--disabled-color-f: color-mix(in srgb, var(--disabled-color) 80%, var(--block-foreground) 20%);
-}
 
 /* Adapt elements to be shown on top of a background image. Image (url("...")) should be set in JS. */
 .image-background {
@@ -2567,6 +2557,7 @@ function parseLinks(links) {
 		pageTitle                    : null,
 		pageTheme                    : null,
 		pageBackground               : null,
+		pageBgOpacity                : '60%',
 		fontSize                     : null,
 		blocksCollapsedInitially     : false,
 		blocksCollapsedAlwaysInitial : false,
@@ -2723,10 +2714,17 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a wallpaper definition
-		m = line.match(/^\s*!wallpaper\s+(.+?)\s*$/i);
+		m = line.match(/^\s*!wallpaper\s+(.+?)(?:\s+(\d*\.\d+|\d+)(%?)\s*)?\s*$/i);
 		if (m) {
 			// This is a CSS background value
 			parsed.pageBackground = m[1];  //save string
+			if (m[2] == null) {
+				// Keep default
+			} else if (m[3] === '%') {
+				parsed.pageBgOpacity = m[2] + '%';  //percentage
+			} else {
+				parsed.pageBgOpacity = (m[2] * 100) + '%';  //fraction to percentage
+			}
 			continue;
 		}
 
@@ -5728,7 +5726,7 @@ var PrefersColorSchemeListener = null;
 
 // Function to set the theme of the body to the specified string.
 // NB: The string theme can contain multiple CSS-class names.
-function setPageTheme(theme, bgImage) {
+function setPageTheme(theme, bgImage, bgOpacity) {
 	// Determine value or default
 	if (theme == null) theme = 'dark-theme';
 	LogInit.log('Set PageTheme to \'' + theme + '\'');
@@ -5753,7 +5751,8 @@ function setPageTheme(theme, bgImage) {
 		document.body.classList.add('image-background');
 		let loaded = () => {
 			LogInit.log('Activate background image');
-			document.body.classList.add('translucent', 'image-background-loaded');
+			document.body.classList.add('image-background-loaded');
+			document.documentElement.style.setProperty('--background-opacity', bgOpacity);
 		};
 		if (url) {
 			// Use an <img> to load the URL into the cache.
@@ -5770,7 +5769,7 @@ function setPageTheme(theme, bgImage) {
 }
 
 // Initialize monitoring of light/dark theme and adjust PageTheme accordingly.
-function initMonitorPreferColorScheme(enable, bgImage) {
+function initMonitorPreferColorScheme(enable, bgImage, bgOpacity) {
 	// Remove existing listener
 	if (PrefersColorSchemeListener) {
 		LogInit.log('call PrefersColorSchemeListener.finit()');
@@ -5804,13 +5803,13 @@ function initMonitorPreferColorScheme(enable, bgImage) {
 				if (!PrefersColorSchemeListener) return;
 				if (PrefersColorSchemeListener.dark.matches) {
 					LogInit.log('User prefers dark mode.');
-					setPageTheme('dark-theme', bgImage);
+					setPageTheme('dark-theme', bgImage, bgOpacity);
 				} else if (PrefersColorSchemeListener.light.matches) {
 					LogInit.log('User prefers light mode.');
-					setPageTheme('light-theme', bgImage);
+					setPageTheme('light-theme', bgImage, bgOpacity);
 				} else {
 					LogInit.log('No specific preference detected, use default.');
-					setPageTheme(null, bgImage);
+					setPageTheme(null, bgImage, bgOpacity);
 				}
 			},
 		};
@@ -5980,10 +5979,10 @@ function processLinks(links, cancel = null) {
 	// Set page title, theme and font size
 	setPageTitle(parsed.pageTitle);
 	if (parsed.pageTheme == null || parsed.pageTheme.toLowerCase() == 'auto') {
-		initMonitorPreferColorScheme(true, parsed.pageBackground);
+		initMonitorPreferColorScheme(true, parsed.pageBackground, parsed.pageBgOpacity);
 	} else {
-		initMonitorPreferColorScheme(false, parsed.pageBackground);
-		setPageTheme(parsed.pageTheme, parsed.pageBackground);
+		initMonitorPreferColorScheme(false, parsed.pageBackground, parsed.pageBgOpacity);
+		setPageTheme(parsed.pageTheme, parsed.pageBackground, parsed.pageBgOpacity);
 	}
 	setFontSize(parsed.fontSize);
 

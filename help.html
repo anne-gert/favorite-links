@@ -282,7 +282,9 @@ Each line should be one of the following:
   <li><em>Wallpaper</em>: The line <code>!wallpaper background</code> specifies
       the background image to use. This can be specified as an absolute or
       relative URL or as anything that is acceptable by the CSS
-      background-image property.
+      background-image property. As a second parameter a percentage can be
+      given (<code>!wallpaper background percentage</code>) to control the
+      opacity of the elements on top of the background.
       See <a href="#themes">below</a> for examples.
   <li><em>Font Size</em>: The line <code>!size font-size</code> specifies the
       base font-size to use. All CSS length quantities can be used, e.g.
@@ -1189,6 +1191,10 @@ Background image with relative URL:
 Random background image (with absolute URL):
 <pre>
 !wallpaper https://lipsum.app/random/1920x1080
+</pre>
+Random background image with no translucency:
+<pre>
+!wallpaper https://lipsum.app/random/1920x1080 100%
 </pre>
 Rainbow:
 <pre>
