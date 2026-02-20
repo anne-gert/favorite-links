@@ -1361,6 +1361,16 @@ function isKey(keyEvent, state, key) {
 	return ok;
 }
 
+// Returns always true; useful in function composition.
+function True() {
+	return true;
+}
+
+// Returns always false; useful in function composition.
+function False() {
+	return false;
+}
+
 // }}}
 
 // Links Data {{{
@@ -3437,7 +3447,7 @@ function parseLinks(links) {
 function render(parsed, container, cancel) {
 	// Render the RootLinks in the container.
 	container.textContent = '';
-	let rendered = outputItems(parsed.rootLinks, 1, container, '', cancel);
+	let rendered = outputItems(parsed.rootLinks, 1, container, null, cancel);
 
 	// Set/update event handler to quick-open Settings
 	addQuickShowSettingsPanelEvent(container, rendered);
@@ -3470,19 +3480,31 @@ function render(parsed, container, cancel) {
 	}
 
 	// Render array of Links to the container at specified level.
-	function outputItems(links, level, container, parentPath, cancel) {
+	function outputItems(links, level, container, parent, cancel) {
 		let rendered = [];
 		for (let i = 0; i < links.length; ++i) {
 			let link = links[i];
 			let subrendered = null;
 			if (link.type == 'link') {
-				subrendered = outputItem(link, level, container, parentPath, cancel);
+				subrendered = outputItem(link, level, container, parent, cancel);
 			} else if (link.type == 'text') {
 				let ctl = outputText(link.lines, container);
-				subrendered = { ctl: ctl, lineNum: link.lineNum };
+				subrendered = {
+					ctl: ctl,
+					lineNum: link.lineNum,
+					parent: parent,
+					visible: parent?.visible ?? True,
+					path: null,
+				};
 			} else if (link.type == 'debug') {
 				let ctl = outputDebug(link.lines, container);
-				subrendered = { ctl: ctl, lineNum: link.lineNum };
+				subrendered = {
+					ctl: ctl,
+					lineNum: link.lineNum,
+					parent: parent,
+					visible: parent?.visible ?? True,
+					path: null,
+				};
 			}
 			if (cancel()) return;
 			if (subrendered) {
@@ -3502,7 +3524,7 @@ function render(parsed, container, cancel) {
 	// Level 2 is called Block and is rendered as a rectangular block.
 	// Level 3 is called Item and is rendered as a line in a Block.
 	// Level 4 and higher are called sub-Items and are rendered as indented Items.
-	function outputItem(link, level, container, parentPath, cancel) {
+	function outputItem(link, level, container, parent, cancel) {
 		//LogRender.log('outputItem ' + link.toString());
 		// Copy input data
 		let name = link.name;
@@ -3522,7 +3544,7 @@ function render(parsed, container, cancel) {
 		if (icon == '') icon = null;
 		if (target == '') target = null;
 		if (cssName == '') cssName = null;
-		let myPath = parentPath + '->' + name;
+		let myPath = (parent?.path ?? '') + '->' + name;
 		link['output'] = {
 			icon     : null,
 			checkbox : null,
@@ -3556,6 +3578,7 @@ function render(parsed, container, cancel) {
 		let addItemContainer;  //function to add a container to put the Item into
 		let addSubContainer;  //function to add a container to put the subItems into
 		let addClosingElements = null;  //function to add closing elements to the container
+		let meExpanded = null;  //function that returns if this item is expanded
 		// Create element container
 		if (level == 1) {
 			// Render Item as Section
@@ -3608,6 +3631,7 @@ function render(parsed, container, cancel) {
 							isExpanded = true;
 						}
 					}
+					meExpanded = () => isExpanded;
 					let displayExpandState = function() {
 						LogBlockExpand.debug('Display isExpanded for \'' + myPath + '\' as ' + isExpanded);
 						if (isExpanded) {
@@ -3708,16 +3732,31 @@ function render(parsed, container, cancel) {
 		}
 		// Create element itself
 		let rendered = [];
+		let renderedItem;
 		if (name == '---') {
 			// Special separator item
 			let item = document.createElement('hr');
 			item.className = 'separator';
 			if (cssName != null) item.classList.add(cssName);
 			container.appendChild(item);
-			rendered.push({ ctl: item, lineNum: link.lineNum });
+			renderedItem = {
+				ctl: item,
+				lineNum: link.lineNum,
+				parent: parent,
+				visible: parent?.visible ?? True,
+				path: myPath,
+			};
+			rendered.push(renderedItem);
 		} else {
 			let itemContainer = addItemContainer();
-			rendered.push({ ctl: itemContainer, lineNum: link.lineNum });
+			renderedItem = {
+				ctl: itemContainer,
+				lineNum: link.lineNum,
+				parent: parent,
+				visible: parent?.visible ?? True,  //main item always visible if parent is
+				path: myPath,
+			};
+			rendered.push(renderedItem);
 			// The containers are structured as follows:
 			// - groupContainer: Only if there are continued Items
 			//     - itemContainer: Holds the entire (Sub)Item
@@ -3892,7 +3931,8 @@ function render(parsed, container, cancel) {
 
 			// If there is continuation, output those items in this itemContainer too
 			if (contItems != null) {
-				let subrendered = outputItems(contItems, level, addSubContainer(true), myPath, cancel);
+				let subrendered = outputItems(contItems, level, addSubContainer(true), renderedItem, cancel);
+				// Do not include meExpanded in the visibility of contItems
 				if (subrendered) rendered.push(...subrendered);
 			}
 		}
@@ -3900,8 +3940,20 @@ function render(parsed, container, cancel) {
 		if (subItems != null) {
 			if (addSubContainer) {
 				let subContainer = addSubContainer();
-				let subrendered = outputItems(subItems, level+1, subContainer, myPath, cancel);
-				if (subrendered) rendered.push(...subrendered);
+				let subrendered = outputItems(subItems, level+1, subContainer, renderedItem, cancel);
+				if (subrendered) {
+					if (meExpanded) {
+						// Include meExpanded in the visibility of subItems
+						for (let i = 0; i < subrendered.length; ++i) {
+							let sub = subrendered[i];
+							let vis = sub.visible;
+							sub.visible = () => meExpanded() && vis();
+							rendered.push(sub);
+						}
+					} else {
+						rendered.push(...subrendered);
+					}
+				}
 			}
 		}
 		// Add closing elements
@@ -4466,6 +4518,11 @@ function quickShowSettingsPanel(event) {
 	let closest = null;
 	for (let i = 0; i < RenderedItems.length; ++i) {
 		let item = RenderedItems[i];
+		//LogRender.devlog('Control ' + item.path);
+		if (!item.visible()) {
+			LogRender.debug(`Control ${i}: hidden`);
+			continue;
+		}
 		let rect = item.ctl.getBoundingClientRect();
 		// Calcualte distance between mouseX/Y and rect
 		let dx, dy;
