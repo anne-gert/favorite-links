@@ -533,6 +533,10 @@ svg {
 	cursor: pointer;
 	padding: 0px 0.1em;
 }
+.settings-separator {
+	display:inline-block;
+	width: 1em;
+}
 /* Zoom on hover */
 .settings-icon {
 	display: inline-block;
@@ -891,6 +895,9 @@ const UNICODE_ANTICLOCKWISE_TOP_SEMICIRCLE_ARROW = '\u{21B6}';  //a 180 degree a
 const UNICODE_CLOCKWISE_TOP_SEMICIRCLE_ARROW = '\u{21B7}';  //a 180 degree arc
 const UNICODE_ANTICLOCKWISE_OPEN_CIRCLE_ARROW = '\u{21BA}';  //a 270 degree arc
 const UNICODE_CLOCKWISE_OPEN_CIRCLE_ARROW = '\u{21BB}';  //a 270 degree arc
+const UNICODE_APL_QUAD_QUESTION = '\u{2370}';  //questino mark in box
+const UNICODE_UNCERTAINTY_SIGN = '\u{2BD1}';  //question mark in rhombus
+const UNICODE_FULLWIDTH_QUESTION_MARK = '\u{FF1F}';
 // Unicode Block: Geometric Shapes
 const UNICODE_WHITE_SQUARE_CONTAINING_BLACK_SMALL_SQUARE = '\u{25A3}';  //checkbox with square
 const UNICODE_BLACK_DOWN_POINTING_TRIANGLE = '\u{25BC}';
@@ -4876,7 +4883,7 @@ function initSettingsPanel() {
 	let iconBarClosed = document.getElementById('SettingsIconBarClosed');  //iconbar for closed status
 	let iconBarOpen = document.getElementById('SettingsIconBarOpen');  //iconbar for open status
 	let settingsPanel = null;
-	let iconOpen, iconSave, iconClear, iconCancel, warningDirty;
+	let iconOpen, iconSave, iconClear, iconHelp, iconCancel, warningDirty;
 
 	// Status
 	let visible = false;
@@ -4911,6 +4918,16 @@ function initSettingsPanel() {
 		// the panel. Keep the buttons basic to not end up in a
 		// exception, breaking the buttons to close.
 
+		// Create iconHelp
+		iconHelp = document.createElement('span');
+		iconHelp.title = 'Help';
+		iconHelp.className = 'settings-icon';
+		iconHelp.onclick = () => window.open('./help.html#syntax', '_blank');
+		iconBarOpen.appendChild(iconHelp);
+		// Add separator
+		let sep = document.createElement('span');
+		sep.className = 'settings-separator';
+		iconBarOpen.appendChild(sep);
 		// Create iconSave
 		iconSave = document.createElement('span');
 		iconSave.title = 'Save (Ctrl-S)';
@@ -4932,6 +4949,7 @@ function initSettingsPanel() {
 
 		setUnicodeText(iconSave, UNICODE_WHITE_HARD_SHELL_FLOPPY_DISK, UNICODE_CHECK_MARK, '[OK]');
 		setUnicodeText(iconClear, UNICODE_EMPTY_DOCUMENT, UNICODE_CLOCKWISE_OPEN_CIRCLE_ARROW, 'C');
+		setUnicodeText(iconHelp, '?');
 		setUnicodeText(iconCancel, UNICODE_CANCELLATION, UNICODE_CROSS_MARK + UNICODE_VARIATION_SELECTOR_15, 'X');
 
 		//// Create buttonBar
