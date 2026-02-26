@@ -142,6 +142,89 @@ different domain, a different configuration might be present in the local
 storage.
 </p>
 
+
+<a name="tldr"></a>
+<h2>TL;DR - The Standard Setup</h2>
+
+<p>
+The standard setup uses a webserver to host the pages (static HTML) and
+configuration (requires PHP). This setup requires some one-time configuration on the
+webserver as well as on the browser.
+</p>
+
+<p>
+<b>Webserver setup</b>
+<ol>
+<li>Create a directory on the webserver to serve the pages, e.g.
+    <code>/var/www/favorites</code>.
+<li>Copy (or symlink) all <code>*.html</code> pages from the repository into
+    that directory.
+<li>To host the links data:
+    <ol>
+    <li>Copy (or symlink) <code>data.php</code> from the repository into that
+        directory.
+    <li>Copy the file example-links.txt to <code>links.txt</code>.
+    <li>Make that file writable by the webserver.
+    <li>Create the token file, default location is
+        <code>/etc/favorites/tokens</code> with the following contents:
+        <pre>
+# No token needed for reading
+r
+
+# Write tokens
+w your-save-token-here
+        </pre>
+    </ol>
+<li>Make the contents readable by the webserver.
+</ol>
+</p>
+
+<p>
+<b>Browser setup</b>
+<ol>
+<li>Set browser's homepage to
+    <code>https://your-server.net/favorites/favorites.html?links=my-config</code>.
+    Firefox needs an add-on (<a href="https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/">New
+    Tab Override</a>) to set the starting page for a new tab.
+<li>Open the page, click the gears (&#x2699;) icon to access the Settings.
+    At the bottom are the options to load and save the items. Set the load
+    options:
+    <ul>
+    <li>Config 'my-config': data.php\links.txt<br>
+        This URL is relative to the location of favorites.html itself.
+    </ul>
+<li>Save. The example items should now be displayed.
+<li>Open the Settings again and set the save options:
+    <ul>
+    <li>Online save 'my-config': \your-save-token-here<br>
+	Don't forget the '\' at the front. When the cursor leaves this field,
+	the contents is hidden.
+    </ul>
+<li>Save, the items can now be changed.
+</ol>
+</p>
+
+<p>
+<b>Notes</b>
+<ul>
+<li>The file with tokens should be saved outside of the webroot.
+<li>The name of the configuration (here 'my-config'), the name of the links
+    file on the server (here 'links.txt') and the passwords (here
+    'your-save-token-here') can be chosen as desired.
+<li>The general form of load options is <code>url\name\token\headers...</code>,
+    see <a href="#load-options">Load-options</a>.
+<li>The general form of save options is <code>url\token\headers...</code>,
+    see <a href="#save-options-data-php">Save to data.php</a>.
+<li>Details on the server configuration of data.php and token file are <a
+    href="#data-php">here</a>.
+</ul>
+</p>
+
+<hr>
+
+
+<h2>Specify the Locations</h2>
+
 <p>
 It is also possible to load and save the configuration online. Loading is done
 with <a href="#load-options"><i>load-options</i></a> and saving is done with <a
@@ -290,6 +373,7 @@ https.
 </p>
 
 
+<a name="save-options-data-php"></a>
 <h3>Save to data.php</h3>
 
 <p>
@@ -299,7 +383,7 @@ This script can be put in the same directory as the links.txt file on a PHP
 enabled server. See <a href"#data-php">here</a> on how it exactly works.
 </p>
 
-The syntax of the <i>save-options</i> with data.php is: <code>url\password\header:value\...</code>
+The syntax of the <i>save-options</i> with data.php is: <code>url\token\header:value\...</code>
 <br>
 With:
 <ul>
@@ -318,7 +402,7 @@ With:
     <code>x-name:name</code> header.
 </ul>
 Note that if the URL is not specified, the <code>\</code>-separator should be
-kept to not confuse the password with the URL. If the password is also empty,
+kept to not confuse the token with the URL. If the token is also empty,
 only a single <code>\</code> remains as <i>save-option</i>. This is to
 distinguish from an empty setting, where saving is disabled altogether.
 </p>
