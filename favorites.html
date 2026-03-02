@@ -2713,12 +2713,20 @@ function parseLinks(links) {
 		// Remove vim folding markers at the end of lines
 		line = line.replace(/\s*(?:{{{|}}})\s*$/, '');
 
+		// Take out indentation
+		let indent = '';
+		m = line.match(/^(\s+)(.*)$/);
+		if (m) {
+			indent = m[1];
+			line = m[2];  //the rest
+		}
+
 		// Skip empty lines
-		if (line.match(/^\s*(?:\/\/|#|;|$)/))
+		if (line.match(/^(?:\/\/|#|;|$)/))
 			continue;
 
 		// Check if it is a title definition
-		m = line.match(/^\s*!title\s+(.+?)\s*$/i);
+		m = line.match(/^!title\s+(.+?)\s*$/i);
 		if (m) {
 			// This is an title
 			parsed.pageTitle = m[1];  //save string
@@ -2726,7 +2734,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a theme definition
-		m = line.match(/^\s*!theme\s+(.+?)\s*$/i);
+		m = line.match(/^!theme\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a theme (css classes)
 			parsed.pageTheme = m[1];  //save string
@@ -2734,7 +2742,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a wallpaper definition
-		m = line.match(/^\s*!wallpaper\s+(.+?)(?:\s+(\d*\.\d+|\d+)(%?)\s*)?\s*$/i);
+		m = line.match(/^!wallpaper\s+(.+?)(?:\s+(\d*\.\d+|\d+)(%?)\s*)?\s*$/i);
 		if (m) {
 			// This is a CSS background value
 			parsed.pageBackground = m[1];  //save string
@@ -2749,7 +2757,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a font-size definition
-		m = line.match(/^\s*!size\s+(.+?)\s*$/i);
+		m = line.match(/^!size\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a size
 			parsed.fontSize = m[1];  //save string
@@ -2757,7 +2765,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a blocks-closed definition
-		m = line.match(/^\s*!collapsed\s+(always|never|yes|no)\s*$/i);
+		m = line.match(/^!collapsed\s+(always|never|yes|no)\s*$/i);
 		if (m) {
 			// This is a blocks-closed definition
 			let v = m[1].toLowerCase();
@@ -2767,7 +2775,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a upload-delay definition
-		m = line.match(/^\s*!auto-upload-delay\s+(.+?)\s*$/i);
+		m = line.match(/^!auto-upload-delay\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a delay time
 			parsed.autoUploadDelay = 1*m[1];  //save value
@@ -2775,7 +2783,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a no-edit definition
-		m = line.match(/^\s*!no-edit\s*$/i);
+		m = line.match(/^!no-edit\s*$/i);
 		if (m) {
 			// This is a no-edit flag
 			parsed.noEdit = true;  //save flag
@@ -2784,7 +2792,7 @@ function parseLinks(links) {
 
 		// Check if it is an icon definition (also support old syntax
 		// with !icondef.
-		m = line.match(/^\s*!icon(?:def)?\s+(\S+)(?:\s+|\s*=\s*)(\S+)\s*$/i);
+		m = line.match(/^!icon(?:def)?\s+(\S+)(?:\s+|\s*=\s*)(\S+)\s*$/i);
 		if (m) {
 			// This is an icon definition
 			parsed._iconDefs[m[1]] = m[2];  //save mapping
@@ -2792,7 +2800,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a checkbox definition
-		m = line.match(/^\s*!checkbox\s+(\S+)(?:\s+(.+?))?\s*$/i);
+		m = line.match(/^!checkbox\s+(\S+)(?:\s+(.+?))?\s*$/i);
 		if (m) {
 			// This is a checkbox definition
 			let name = m[1], args = m[2];
@@ -2810,6 +2818,7 @@ function parseLinks(links) {
 				let debugBlock = {  //special type of Link object
 					lineNum  : i+1,  //start of this block
 					type     : 'debug',
+					indent   : indent,
 					level    : null,  //adjusted later
 					lines    : [ 'Line ' + (i+1) + ': ' + line.replace(/^\s*/, '') ],
 					toString : function() { return '{ !debug, #Lines=' + this.lines.length + ' }' },
@@ -2828,7 +2837,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is a search button definition
-		m = line.match(/^\s*!search\s+(.+?)\s*$/i);
+		m = line.match(/^!search\s+(.+?)\s*$/i);
 		if (m) {
 			// This is a search button definition
 			let def = m[1].split(/\s*\|\s*/);  //split fields on '|', allowing whitespace
@@ -2837,12 +2846,13 @@ function parseLinks(links) {
 		}
 
 		// Check if it is the start of a literal !text block
-		m = line.match(/^\s*!text\s*$/i);
+		m = line.match(/^!text\s*$/i);
 		if (m) {
 			// Mark the start of the block
 			textBlock = {  //special type of Link object
 				lineNum  : i+1,  //start of this block
 				type     : 'text',
+				indent   : indent,
 				level    : null,  //adjusted later
 				lines    : [],
 				toString : function() { return '{ !text, #Lines=' + this.lines.length + ' }' },
@@ -2851,7 +2861,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is the start of a literal !style block
-		m = line.match(/^\s*!style\s*$/i);
+		m = line.match(/^!style\s*$/i);
 		if (m) {
 			// Mark the start of the block
 			styleBlock = {
@@ -2863,7 +2873,7 @@ function parseLinks(links) {
 		}
 
 		// Check if it is the start of a literal !script block
-		m = line.match(/^\s*!script\s*$/i);
+		m = line.match(/^!script\s*$/i);
 		if (m) {
 			// Mark the start of the block
 			scriptBlock = {
@@ -2875,19 +2885,12 @@ function parseLinks(links) {
 		}
 
 		// Skip all other pragma lines, so that newer functions can be silently ignored
-		m = line.match(/^\s*(!\S)/i);
+		m = line.match(/^!\S/);
 		if (m) {
-			LogParse.error('Unsupported pragma at line ' + (i+1) + ': ' + m[1]);
+			LogParse.error('Unsupported pragma at line ' + (i+1) + ': ' + line);
 			continue;
 		}
 
-		// Take out indentation
-		let indent = 0;
-		m = line.match(/^(\s+)(.*)$/);
-		if (m) {
-			indent = m[1].replaceAll('\t', '        ').length;
-			line = m[2];  //the rest
-		}
 		// Take out continucation: & ...
 		let cont = false;
 		m = line.match(/^&\s*(.*)$/);
@@ -2960,26 +2963,28 @@ function parseLinks(links) {
 		}
 
 		// Determine level of this object
+		let iindent = indent.replaceAll('\t', '        ').length;
 		let level;
 		if (cont) {
 			// This link is a continuation, ignore the indentation
 			level = null;
 		} else {
 			// Find level with indentation strictly less
-			for (level = openIndentLevels.length - 1; level >= 0 && openIndentLevels[level] >= indent; --level) {}
+			for (level = openIndentLevels.length - 1; level >= 0 && openIndentLevels[level] >= iindent; --level) {}
 			// We found the parent's level (-1 if no parent), add 1 for this level
 			++level;
 			if (maxLevel == null || level > maxLevel) maxLevel = level;
 			// Remove all open levels after that
 			openIndentLevels.length = level;
 			// Add this link as open parent
-			openIndentLevels.push(indent);
+			openIndentLevels.push(iindent);
 		}
 
 		// Create the Link object
 		let link = {
 			lineNum    : i+1,
 			type       : 'link',
+			indent     : indent,
 			level      : level,
 			name       : name,
 			url        : url,
@@ -2992,7 +2997,7 @@ function parseLinks(links) {
 			subs       : [],
 			toString   : function() { return '{ Name=\'' + this.name + '\', URL=' + this.url + ', Icon=' + this.icon + ', check=' + check + ', #SubItems=' + this.subs.length + ' }' },
 		};
-		//LogParse.log('Indentation=' + indent + ', Link=' + link);
+		//LogParse.log('Indentation=' + iindent + ', Link=' + link);
 
 		// Add this Link
 		if (cont) {
@@ -3043,6 +3048,7 @@ function parseLinks(links) {
 			let section = {
 				lineNum    : 0,
 				type       : 'link',
+				indent     : '',
 				level      : 0,
 				name       : '_',  //this makes this section not render
 				url        : null,
@@ -3060,6 +3066,7 @@ function parseLinks(links) {
 				let block = {
 					lineNum    : 0,
 					type       : 'link',
+					indent     : '',
 					level      : 1,
 					name       : firstLink.name,  //give it the same name as the first link
 					url        : null,
@@ -3458,10 +3465,15 @@ function parseLinks(links) {
 function render(parsed, container, cancel) {
 	// Render the RootLinks in the container.
 	container.textContent = '';
-	let rendered = outputItems(parsed.rootLinks, 1, container, null, cancel);
+	RenderedItems = outputItems(parsed.rootLinks, 1, container, null, cancel);
 
 	// Set/update event handler to quick-open Settings
-	addQuickShowSettingsPanelEvent(container, rendered);
+	container.ondblclick = e => {
+		// Go through the RenderedItems and open the Settings on the
+		// line that is closest to the mouse pointer in the event.
+		let closest = findClosestItem(e);
+		showSettingsPanel(closest.link.lineNum);
+	};
 
 	// Collect all checkboxes in a hierarchy
 	let toplevel = [];
@@ -3502,7 +3514,7 @@ function render(parsed, container, cancel) {
 				let ctl = outputText(link.lines, container);
 				subrendered = {
 					ctl: ctl,
-					lineNum: link.lineNum,
+					link: link,
 					parent: parent,
 					visible: parent?.visible ?? True,
 					path: null,
@@ -3511,7 +3523,7 @@ function render(parsed, container, cancel) {
 				let ctl = outputDebug(link.lines, container);
 				subrendered = {
 					ctl: ctl,
-					lineNum: link.lineNum,
+					link: link,
 					parent: parent,
 					visible: parent?.visible ?? True,
 					path: null,
@@ -3796,7 +3808,7 @@ function render(parsed, container, cancel) {
 			container.appendChild(item);
 			renderedItem = {
 				ctl: item,
-				lineNum: link.lineNum,
+				link: link,
 				parent: parent,
 				visible: parent?.visible ?? True,
 				path: myPath,
@@ -3806,7 +3818,7 @@ function render(parsed, container, cancel) {
 			let itemContainer = addItemContainer();
 			renderedItem = {
 				ctl: itemContainer,
-				lineNum: link.lineNum,
+				link: link,
 				parent: parent,
 				visible: parent?.visible ?? True,  //main item always visible if parent is
 				path: myPath,
@@ -4549,26 +4561,16 @@ var FillScaler = new ResizeObserver(function(entries) {
 	}
 });
 
-// Item Doubleclick handing {{{
+let RenderedItems = null;  // array of { ctl, link, parent, visible, path } objects
 
-let RenderedItems = null;  // array of { ctl, lineNum } objects
+// Go through the RenderedItems and find the one that is closest to the
+// moustEvent location.
+// Return null if not found.
+function findClosestItem(mouseEvent) {
+	if (RenderedItems == null || RenderedItems.length <= 0) return null;
 
-// This function is called by render() to set the RenderedItems and, if for
-// the first time, also the event handler.
-// This event is added on the topmost container in bubbling phase, so it is
-// called last and may be stopped by any control below. This may change in
-// future, but for now if feels usable.
-function addQuickShowSettingsPanelEvent(container, renderedItems) {
-	if (RenderedItems == null)
-		container.addEventListener('dblclick', quickShowSettingsPanel);
-	RenderedItems = renderedItems;
-}
-
-// Go through the RenderedItems and open the Settings on the line that is
-// closest to the mouse pointer in the event.
-function quickShowSettingsPanel(event) {
-	let mouseX = event.clientX, mouseY = event.clientY;
-	//LogRender.devlog(`Doubleclick at (${ev.clientX}, ${ev.clientY})`);
+	let mouseX = mouseEvent.clientX, mouseY = mouseEvent.clientY;
+	//LogRender.devlog(`Doubleclick at (${mouseX}, ${mouseY})`);
 	let min = Number.MAX_VALUE;
 	let closest = null;
 	for (let i = 0; i < RenderedItems.length; ++i) {
@@ -4604,10 +4606,9 @@ function quickShowSettingsPanel(event) {
 		}
 	}
 	//closest.ctl.style.border = '2px dotted red';
-	showSettingsPanel(closest.lineNum);
+	//LogRender.devlog('Closest item: ', closest);
+	return closest;
 }
-
-// }}}
 
 // }}}
 
