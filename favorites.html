@@ -2890,6 +2890,7 @@ function parseLinks(links) {
 			// Mark the start of the block
 			styleBlock = {
 				lineNum  : i+1,  //start of this block
+				type     : 'style',
 				lines    : [],
 				toString : function() { return '{ !style, #Lines=' + this.lines.length + ' }' },
 			};
@@ -2902,6 +2903,7 @@ function parseLinks(links) {
 			// Mark the start of the block
 			scriptBlock = {
 				lineNum  : i+1,  //start of this block
+				type     : 'script',
 				lines    : [],
 				toString : function() { return '{ !script, #Lines=' + this.lines.length + ' }' },
 			};
@@ -4589,8 +4591,9 @@ let RenderedItems = null;  // array of { ctl, link, parent, visible, path } obje
 
 // Go through the RenderedItems and find the one that is closest to the
 // moustEvent location.
+// If reType is set, it should be set to a RegExp that matches all wanted Items.
 // Return null if not found.
-function findClosestItem(mouseEvent) {
+function findClosestItem(mouseEvent, reType = null) {
 	if (RenderedItems == null || RenderedItems.length <= 0) return null;
 
 	let mouseX = mouseEvent.clientX, mouseY = mouseEvent.clientY;
@@ -4602,6 +4605,10 @@ function findClosestItem(mouseEvent) {
 		//LogRender.devlog('Control ' + item.path);
 		if (!item.visible()) {
 			LogRender.debug(`Control ${i}: hidden`);
+			continue;
+		}
+		if (reType && !item.link.type.match(reType)) {
+			LogRender.debug(`Control ${i}: unwanted type`);
 			continue;
 		}
 		let rect = item.ctl.getBoundingClientRect();
