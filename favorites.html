@@ -246,6 +246,26 @@ body {
 ::selection {
 	color: var(--selection-foreground); background: var(--selection-background-f);
 }
+#drop-target {
+	position: absolute;
+	z-index: 9999;
+	background: transparent; color: transparent;
+	border: 0px;
+}
+#drop-target-bg {
+	position: fixed;
+	display: flex;
+	font-size: 30vmin; font-weight: bold;
+	background: #ffffff33; color: #00000033;
+	text-shadow: 0 0 0.3em #ffffff55;
+	border: 2px solid var(--accent-color);
+	top: 0; left: 0;
+	width: calc(100% - 4px); height: calc(100% - 4px);
+	justify-content: center; align-items: center;
+	span {
+		transform: rotate(-20deg);
+	}
+}
 
 .normal {
 	color: var(--foreground);
@@ -1014,6 +1034,8 @@ your home page). Upon first opening, it shows a default example page.  This
 page can be edited by going to the Settings (gears (&#x2699;) icon) and just
 edit and save the textual configuration. Optionally, this configuration can be
 maintained in a separate text file and copy-pasted into the Settings.
+<br>
+Drag-and-Drop of URL links and text is also supported.
 <br>
 Since GitHub provides for a way to serve HTML pages directly, this can be used
 to open and use favorites.html directly from <a
@@ -2698,7 +2720,7 @@ function parseLinks(links) {
 	let scriptBlock = null;  //used for literal !script ... !endscript blocks
 	let lastCheckboxType = 'default';  //name of last !checkbox definition
 	let openIndentLevels = [];  //indentation level (number of spaces) for each open level
-	let maxLevel = null;  //keep track of the maximum level
+	let maxLevel = -1;  //keep track of the maximum level
 
 	// Calculate the level from the current open levels.
 	// If update==true, take this indent as new parent, discarding previous
@@ -2710,7 +2732,7 @@ function parseLinks(links) {
 		// We found the parent's level (-1 if no parent), add 1 for this level
 		++level;
 		if (update) {
-			if (maxLevel == null || level > maxLevel) maxLevel = level;
+			if (level > maxLevel) maxLevel = level;
 			// Remove all open levels after that
 			openIndentLevels.length = level;
 			// Add this link as open parent
@@ -2731,6 +2753,7 @@ function parseLinks(links) {
 			m = line.match(/^\s*!endtext\s*$/i);
 			if (m) {
 				// It is the end, save the object and reset textBlock.
+				textBlock.lineEnd = i+1;
 				allLinks.push(textBlock);  //all items go here
 				textBlock = null;  //reset
 				continue;
@@ -2747,6 +2770,7 @@ function parseLinks(links) {
 			if (m) {
 				// It is the end, save the object and reset styleBlock.
 				LogParse.log('Add !style block (' + styleBlock.lines.length + ' lines)');
+				styleBlock.lineEnd = i+1;
 				parsed.styleBlocks.push(styleBlock);
 				styleBlock = null;  //reset
 				continue;
@@ -2763,6 +2787,7 @@ function parseLinks(links) {
 			if (m) {
 				// It is the end, save the object and reset scriptBlock.
 				LogParse.log('Add !script block (' + scriptBlock.lines.length + ' lines)');
+				scriptBlock.lineEnd = i+1;
 				parsed.scriptBlocks.push(scriptBlock);
 				scriptBlock = null;  //reset
 				continue;
@@ -2881,7 +2906,10 @@ function parseLinks(links) {
 					lineNum  : i+1,  //start of this block
 					type     : 'debug',
 					indent   : indent,
+					flevel   : calcLevel(indent, false),
 					level    : null,  //adjusted later
+					prevLink : null,  //will be set later
+					nextLink : null,  //will be set later
 					lines    : [ 'Line ' + (i+1) + ': ' + line.replace(/^\s*/, '') ],
 					toString : function() { return '{ !debug, #Lines=' + this.lines.length + ' }' },
 				};
@@ -2911,11 +2939,16 @@ function parseLinks(links) {
 		m = line.match(/^!text\s*$/i);
 		if (m) {
 			// Mark the start of the block
+			let level = calcLevel(indent, false);
 			textBlock = {  //special type of Link object
 				lineNum  : i+1,  //start of this block
+				lineEnd  : null,  //end of this block
 				type     : 'text',
 				indent   : indent,
-				level    : calcLevel(indent, false),  //may be adjusted later
+				flevel   : level,
+				level    : level > 0 ? level : null,  //may be adjusted later
+				prevLink : null,  //will be set later
+				nextLink : null,  //will be set later
 				lines    : [],
 				toString : function() { return '{ !text, #Lines=' + this.lines.length + ' }' },
 			};
@@ -2928,6 +2961,7 @@ function parseLinks(links) {
 			// Mark the start of the block
 			styleBlock = {
 				lineNum  : i+1,  //start of this block
+				lineEnd  : null,  //end of this block
 				type     : 'style',
 				lines    : [],
 				toString : function() { return '{ !style, #Lines=' + this.lines.length + ' }' },
@@ -2941,6 +2975,7 @@ function parseLinks(links) {
 			// Mark the start of the block
 			scriptBlock = {
 				lineNum  : i+1,  //start of this block
+				lineEnd  : null,  //end of this block
 				type     : 'script',
 				lines    : [],
 				toString : function() { return '{ !script, #Lines=' + this.lines.length + ' }' },
@@ -3040,7 +3075,8 @@ function parseLinks(links) {
 			lineNum    : i+1,
 			type       : 'link',
 			indent     : indent,
-			level      : level,
+			flevel     : level,  //level in file
+			level      : level,  //may be adjusted later
 			name       : name,
 			url        : url,
 			icon       : icon,
@@ -3064,50 +3100,56 @@ function parseLinks(links) {
 		}
 	}
 
-	// Search from position to the front in allLinks and find the first
-	// link item that has a level set.
-	// Returns item or null if not found.
-	let findLinkBefore = function(position) {
-		for (let i = position - 1; i >= 0; --i) {
-			let item = allLinks[i];
-			if (item.type === 'link' && item.level != null) return item;
-		}
-		return null;
-	}
-
-	// Search from position to the end in allLinks and find the first
-	// link item that has a level set.
-	// Returns item or null if not found.
-	let findLinkAfter = function(position) {
-		for (let i = position + 1; i < allLinks.length; ++i) {
-			let item = allLinks[i];
-			if (item.type === 'link' && item.level != null) return item;
-		}
-		return null;
-	}
+	// All nodes have a file-level (flevel). This is the level as is
+	// interpreted from the indentation in the file. Together with the
+	// indentation, this value is not changed.
+	// Nodes also have a level, which is initially the same as flevel,
+	// but can be changed in post-parsing (e.g. by being a separator,
+	// continuation or text or inserted dummy elements when maxLevel<2)
+	// Use level for on-screen display. Use flevel and indent to handle
+	// file indentation.
 
 	// If maxLevel==0, all items are at root level. It was probably
 	// intended to have all items in a block. To fix this, add a
 	// dummy Section (level 0) and Block (level 1).
 	// Similarly with maxLevel==1. Now all items are separate blocks.
 	// Fix this by adding a dummy Section (level 0).
-	if (maxLevel < 2) {
+	if (maxLevel < 0) {
+		// There are no links at all.
+		// In this case, there is nothing to adjust
+	} else if (maxLevel < 2) {
 		// These are the special cases
-		let firstLink = findLinkAfter(-1);
-		if (firstLink == null) {
-			// There are no links at all.
-			// In this case, there is nothing to adjust
-		} else {
-			// Add 1 or 2 levels in the front of allLinks.
-			// These levels don't exist in the file, so leave
-			// the indent empty.
-			// In either case, we need to add a Section
-			let section = {
+		// Add 1 or 2 levels in the front of allLinks.
+		// These levels don't exist in the file, so leave
+		// the indent empty.
+		// In either case, we need to add a Section
+		let section = {
+			lineNum    : 0,
+			type       : 'link',
+			indent     : '',
+			flevel     : 0,
+			level      : 0,
+			name       : '_',  //this makes this section not render
+			url        : null,
+			icon       : null,
+			checkType  : null,
+			checkValue : null,
+			target     : null,
+			cssName    : null,
+			cont       : [],
+			subs       : [],
+			toString   : function() { return '{ Dummy Section }' },
+		};
+		let block = null, renameBlock = false;
+		if (maxLevel == 0) {
+			// Only in this case, we need to add a Block level too
+			block = {
 				lineNum    : 0,
 				type       : 'link',
 				indent     : '',
-				level      : 0,
-				name       : '_',  //this makes this section not render
+				flevel     : 0,
+				level      : 1,
+				name       : 'Block',  //may be adjusted later
 				url        : null,
 				icon       : null,
 				checkType  : null,
@@ -3116,53 +3158,53 @@ function parseLinks(links) {
 				cssName    : null,
 				cont       : [],
 				subs       : [],
-				toString   : function() { return '{ Dummy Section }' },
+				toString   : function() { return '{ Dummy Block }' },
 			};
-			if (maxLevel == 0) {
-				// Only in this case, we need to add a Block level too
-				let block = {
-					lineNum    : 0,
-					type       : 'link',
-					indent     : '',
-					level      : 1,
-					name       : firstLink.name,  //give it the same name as the first link
-					url        : null,
-					icon       : null,
-					checkType  : null,
-					checkValue : null,
-					target     : null,
-					cssName    : null,
-					cont       : [],
-					subs       : [],
-					toString   : function() { return '{ Dummy Block }' },
-				};
-				LogParse.log('Add dummy Block');
-				allLinks.unshift(block);
-			}
-			LogParse.log('Add dummy Section');
-			allLinks.unshift(section);
-			// Increase level of all existing items
-			//  maxLevel | num items added | start original items | increase
-			// ----------|-----------------|----------------------|----------
-			//         0 |               2 |                    2 |        2
-			//         1 |               1 |                    1 |        1
-			//        >2 |               0 |                  n/a |      n/a
-			let x = 2 - maxLevel;
-			for (let i = x; i < allLinks.length; ++i) {
-				let level = allLinks[i].level;
-				if (level != null) {
-					allLinks[i].level = level + x;
-				}
+			renameBlock = true;
+		}
+		// Increase level of all existing items
+		// And rename block
+		let extra = block ? 2 : 1;
+		for (let i = 0; i < allLinks.length; ++i) {
+			let item = allLinks[i];
+			if (item.level != null) item.level += extra;
+			if (item.type === 'link' && renameBlock) {
+				block.name = item.name;  //give it the same name as the first link
+				renameBlock = false;
 			}
 		}
+		// Add added links
+		if (block) {
+			LogParse.log('Add dummy Block');
+			allLinks.unshift(block);
+		}
+		LogParse.log('Add dummy Section');
+		allLinks.unshift(section);
 	}
 	//LogParse.devlog(allLinks);
 
 	// Go through allLinks and adjust the level if needed
+	let lastLink = null;
 	for (let i = 0; i < allLinks.length; ++i) {
 		let item = allLinks[i];
-		if (item.type == 'text' || item.type == 'debug') {
+		if (item.type === 'link') {
+			if (item.name == '---') {
+				// This is a separator.
+				// A separator is only useful at block level or lower
+				if (item.level <= 1) item.level = null;
+			}
+			lastLink = item;
+		} else if (item.type === 'text' || item.type === 'debug') {
 			// This is a text block
+			let before = item.prevLink = lastLink;
+			let after = null;
+			for (let j = i+1; j < allLinks.length; ++j) {
+				if (allLinks[j].type === 'link') {
+					after = allLinks[j];  //found next
+					break;
+				}
+			}
+			item.nextLink = after;
 			// 1. If the level is explicitly set, take that
 			// 2. Make its level the deepest of the item before and after
 			// 3. If at the end, make the level 1 (=Block)
@@ -3175,33 +3217,17 @@ function parseLinks(links) {
 				// Case 1: Take explicit level
 			} else {
 				// No explicit level
-				let before = findLinkBefore(i);
-				let after = findLinkAfter(i);
 				if (before && after) {
 					// Case 2: Take deepest of line before and after
-					if (before.level >= after.level) {
-						item.level = before.level;
-						item.indent = before.indent;
-					} else {
-						item.level = after.level;
-						item.indent = after.indent;
-					}
+					item.level = Math.max(before.level, after.level);
 				} else if (!before) {
 					// There is no one before to be this item's
 					// parent, set level at 0.
 					item.level = 0;
-					item.indent = '';
 				} else {
 					// Case 3: Default to Block level
 					item.level = 1;
-					item.indent = OneIndent;
 				}
-			}
-		} else if (item.type == 'link' && item.name == '---') {
-			// This is a separator.
-			// A separator is only useful at block level or lower
-			if (item.level <= 1) {
-				item.level = null;
 			}
 		}
 	}
@@ -3746,8 +3772,9 @@ function render(parsed, container, cancel) {
 		// State variables for this item; will be used in closures
 		let addItemContainer;  //function to add a container to put the Item into
 		let addSubContainer;  //function to add a container to put the subItems into
-		let addClosingElements = null;  //function to add closing elements to the container
+		let addClosingElements = null;  //optional function to add closing elements to the container
 		let meExpanded = null;  //function that returns if this item is expanded
+		let boxContainer = null;  //optional function that returns container for Item+children
 		// Create element container
 		if (level == 1) {
 			// Render Item as Section
@@ -3775,6 +3802,7 @@ function render(parsed, container, cancel) {
 			// Render Item as Block
 			//LogRender.log('Render Block ' + name);
 			let _blockContainer;
+			boxContainer = () => _blockContainer;
 			let getBlockContainer = function() {
 				if (_blockContainer) {
 					return _blockContainer;
@@ -3920,11 +3948,13 @@ function render(parsed, container, cancel) {
 			let itemContainer = addItemContainer();
 			renderedItem = {
 				ctl: itemContainer,
+				box: null,
 				link: link,
 				parent: parent,
 				visible: parent?.visible ?? True,  //main item always visible if parent is
 				path: myPath,
 			};
+			if (boxContainer) renderedItem.box = boxContainer();
 			rendered.push(renderedItem);
 			// The containers are structured as follows:
 			// - groupContainer: Only if there are continued Items
@@ -4663,38 +4693,155 @@ var FillScaler = new ResizeObserver(function(entries) {
 	}
 });
 
-let RenderedItems = null;  // array of { ctl, link, parent, visible, path } objects
+let RenderedItems = null;  // array of { ctl, box?, link, parent, visible, path } objects
 
-// Go through the RenderedItems and find the one that is closest to the
-// moustEvent location.
-// If reType is set, it should be set to a RegExp that matches all wanted Items.
+// All RendereedItems have a parent.
+// This function builds a look-up structure and returns the item's children.
+// Added properties (if not already present):
+// - children: Child nodes of all types.
+// - childIdx: Index of this node in its parent's children.
+function buildRenderedChildren(item) {
+	if (RenderedItems != null && RenderedItems.length > 0 && !RenderedItems[0].children) {
+		// Not already built
+		// Ensure RenderedItems is sorted in order of lineNum, since that's the
+		// order of definition and the order the children should be in.
+		RenderedItems.sort((a, b) => a.link.lineNum - a.link.lineNum);
+		// Visit each element exactly once in correct order
+		RenderedItems.roots = [];
+		for (let i = 0; i < RenderedItems.length; ++i) {
+			let item2 = RenderedItems[i];
+			if (!item2.children) item2.children = [];
+			let sibs;
+			if (item2.parent) {
+				// This item2 is a child
+				if (!item2.parent.children) {  //should already exist
+					item2.parent.children = [];
+				}
+				sibs = item2.parent.children;
+			} else {
+				sibs = RenderedItems.roots;
+			}
+			sibs.push(item2);
+			item2.childIdx = sibs.length-1;
+		}
+	}
+	if (item) {
+		return item.parent ? item.parent.children : RenderedItems.roots;
+	} else {
+		return undefined;
+	}
+}
+
+// Find sibling of type 'link' that is before item.
+// Returns null if not found.
+function findLinkBefore(item) {
+	let sibs = buildRenderedChildren(item);
+	for (let i = item.childIdx-1; i >= 0; --i) {
+		if (sibs[i].link.type === 'link') return sibs[i];
+	}
+	return null;  //not found
+}
+
+// Find sibling of type 'link' that is after item.
+// Returns null if not found.
+function findLinkAfter(item) {
+	let sibs = buildRenderedChildren(item);
+	for (let i = item.childIdx+1; i < sibs.length; ++i) {
+		if (sibs[i].link.type === 'link') return sibs[i];
+	}
+	return null;  //not found
+}
+
+// Find first child of type 'link' of this item.
+// Returns null if not found.
+function findLinkFirstImmediateChild(item) {
+	buildRenderedChildren();
+	let chlds = item.children;
+	for (let i = 0; i < chlds.length; ++i) {  //search forward
+		if (chlds[i].link.type === 'link') return chlds[i];
+	}
+	return null;  //not found
+}
+
+// Find last child of type 'link' of this item.
+// Returns null if not found.
+function findLinkLastImmediateChild(item) {
+	buildRenderedChildren();
+	let chlds = item.children;
+	for (let i = chlds.length-1; i >= 0; --i) {  //search backward
+		if (chlds[i].link.type === 'link') return chlds[i];
+	}
+	return null;  //not found
+}
+
+// Find the last (indirect) child of type 'link' of this item.
+// Returns item if no children.
+function findLinkLastChild(item) {
+	let lastChild = item;
+	while (true) {
+		let newChild = findLinkLastImmediateChild(lastChild);
+		if (!newChild) {
+			// We found the end of the chain
+			return lastChild;
+		}
+		lastChild = newChild;
+	}
+}
+
+// Recurse through all item's direct and indirect children and call visitor.
+function recurseRenderedChildren(item, visitor) {
+	buildRenderedChildren();
+	if (!item.children) return;
+	for (let i = 0; i < item.children.length; ++i) {
+		let child = item.children[i];
+		visitor(child);
+		recurseRenderedChildren(child, visitor);
+	}
+}
+
+// Return list of item and all of its children.
+function getRenderedItemsRecursive(item) {
+	let items = [ item ];
+	recurseRenderedChildren(item, child => items.push(child));
+	return items;
+}
+
+// Go through the items (RenderedItems by default) and find the one that is
+// closest to the (x,y) coordinate.
+// If getControl is defined, it should be function that returns the control to
+// get the bounding box rectangle from that should be considered. This may be
+// a larger or smaller container or null if the item should be ignored.
+// Default is item.ctl.
 // Return null if not found.
-function findClosestItem(mouseEvent, reType = null) {
-	if (RenderedItems == null || RenderedItems.length <= 0) return null;
+function findClosestItem(x, y, items = RenderedItems, getControl = null) {
+	if (items == null || items.length <= 0) return null;
+	if (!getControl) getControl = item => item.ctl;
 
-	let mouseX = mouseEvent.clientX, mouseY = mouseEvent.clientY;
-	//LogRender.devlog(`Doubleclick at (${mouseX}, ${mouseY})`);
+	//LogRender.devlog(`Doubleclick at (${x}, ${y})`);
 	let min = Number.MAX_VALUE;
 	let closest = null;
-	for (let i = 0; i < RenderedItems.length; ++i) {
-		let item = RenderedItems[i];
+	for (let i = 0; i < items.length; ++i) {
+		let item = items[i];
 		//LogRender.devlog('Control ' + item.path);
 		if (!item.visible()) {
 			LogRender.debug(`Control ${i}: hidden`);
 			continue;
 		}
-		if (reType && !item.link.type.match(reType)) {
-			LogRender.debug(`Control ${i}: unwanted type`);
+		let ctl = getControl(item);
+		if (!ctl) {
+			LogRender.debug(`Control ${i}: unwanted`);
+			//item.ctl.style.border = '2px dotted black';
 			continue;
 		}
-		let rect = item.ctl.getBoundingClientRect();
-		// Calcualte distance between mouseX/Y and rect
+		//ctl.style.border = '2px dotted green';
+		let rect = ctl.getBoundingClientRect();
+		// Calcualte distance between x/Y and rect
 		let dx, dy;
-		if (mouseX < rect.left) dx = rect.left - mouseX;
-		else if (mouseX > rect.right) dx = mouseX - rect.right;
+		if (x < rect.left) dx = rect.left - x;
+		else if (x > rect.right) dx = x - rect.right;
 		else dx = 0;
-		if (mouseY < rect.top) dy = rect.top - mouseY;
-		else if (mouseY > rect.bottom) dy = mouseY - rect.bottom;
+		if (y < rect.top) dy = rect.top - y;
+		else if (y > rect.bottom) dy = y - rect.bottom;
 		else dy = 0;
 		// The standard distance:
 		//let d = Math.sqrt(dx**2 + dy**2);
@@ -5066,7 +5213,7 @@ function initSettingsPanel() {
 	window.ondblclick = e => {
 		// Go through the RenderedItems and open the Settings on the
 		// line that is closest to the mouse pointer in the event.
-		let closest = findClosestItem(e);
+		let closest = findClosestItem(e.clientX, e.clientY);
 		if (closest) {
 			showSettings(closest.link.lineNum);
 		} else {
@@ -6067,6 +6214,470 @@ function initMonitorPreferColorScheme(enable, bgImage, bgOpacity) {
 
 // }}}
 
+// Drag-and-Drop handling {{{
+
+// Function that will be set by initDragDrop() that inserts lines near a
+// targetItem on screen.
+let dropLinesTarget = null;
+
+function initDragDrop() {
+	// The object that overlays the screen to catch drop events.
+	// On window.ondragenter, the dropTarget is displayed. On drop or
+	// dragleave, it is undisplayed.
+	let dropTarget = null;  //dropTarget control
+	let dropTargetBg = null;  //background
+	let displaying = false;  //whether the dropTarget is currently showing
+	let internalDrag = false;  //whether the current drag action is not from external
+	let newDrag = false;  //true if new drag detected
+
+	function createDropTarget() {
+		// Create GUI
+		dropTarget = document.createElement('textarea');
+		dropTarget.id = 'drop-target';
+		dropTargetBg = document.createElement('div');
+		dropTargetBg.id = 'drop-target-bg';
+		let text = document.createElement('span');
+		text.appendChild(document.createTextNode('Add Item'));
+		dropTargetBg.appendChild(text);
+		dropTarget.ondrop = e => {
+			//LogSettings.devlog('Dropped in drop target');
+			// Note: for an <input> textbox, the default is to put the value in the
+			// box, so do not call preventDefault().
+			// The text will be updated after this event, so that's why I do it on
+			// a setTimeout() (the timeout can be 0, because it will be scheduled
+			// after this event).
+			let dropX = e.clientX, dropY = e.clientY;
+			window.setTimeout(() => {
+				let lines = dropTarget.value;
+				dropTarget.value = '';
+				undisplay();
+				dropLinesXY(dropX, dropY, lines);
+			}, 0);
+		};
+		dropTarget.ondragleave = e => {
+			if (displaying) {
+				LogSettings.log('Leave drop target');
+				undisplay();
+			}
+		};
+	}
+
+	// Drop the content in lines at location (dropX, dropY).
+	function dropLinesXY(dropX, dropY, lines) {
+		function getWhere(item, box) {
+			if (!item) return null;
+			// Find where dropped with respect to this Item
+			let ctl;
+			if (box) ctl = item.box;
+			if (!ctl) ctl = item.ctl;
+			let rect = ctl.getBoundingClientRect();
+			return (dropY < rect.top) ? 'ABOVE'  //above Item
+				: (dropY > rect.bottom) ? 'BELOW'  //below Item
+				: (dropX < rect.left) ? 'LEFT'  //left of Item
+				: (dropX > rect.right) ? 'RIGHT'  //right of Item
+				: (2*dropY < rect.top + rect.bottom) ? 'TOP'  //top half
+				: 'BOTTOM';  //bottom half
+		}
+		function logClosest(phase, item, where) {
+			if (item) {
+				LogSettings.log(`Drop at (${dropX}, ${dropY}), ${phase}: Closest: ${where} lineNum=${item.link.lineNum}, item='${item.link.name ?? item.link.url ?? item.link.lines[0]}'`);
+			} else {
+				LogSettings.log(`Drop at (${dropX}, ${dropY}), ${phase}: No closest item found`);
+			}
+		}
+		// Returns control to use for finding level 0/1
+		function isBlock(item) {
+			if (!item.link.type.match(/link|text/)) return null;  //Link or Text
+			if (item.link.level == null || item.link.level > 1) return null;  //level 0 or 1
+			let ctl = item.box ? item.box : item.ctl;  //bounding box or control
+			//ctl.style.border = '2px dotted #0b0';
+			return ctl;
+		}
+		// Returns control to use for finding any Link or Text
+		function isLinkText(item) {
+			if (!item.link.type.match(/link|text/)) return null;  //Link or Text
+			let ctl = item.ctl;
+			//ctl.style.border = '2px dotted #6f6';
+			return ctl;
+		}
+		let closestItem = findClosestItem(dropX, dropY, RenderedItems, isBlock);
+		let where = getWhere(closestItem, true);
+		logClosest('phase 1 (Block)', closestItem, where);
+		if (closestItem && (where == 'TOP' || where == 'BOTTOM')) {
+			// It's inside a Block. Check its children
+			let items = getRenderedItemsRecursive(closestItem);
+			closestItem = findClosestItem(dropX, dropY, items, isLinkText);
+			where = getWhere(closestItem);
+			logClosest('phase 2 (Item)', closestItem, where);
+		}
+		dropLinesTarget(closestItem, where, lines);
+	}
+
+	// State table to describe how a dropped Item should be handled:
+	// The key represents whether a Text(t)/Link(l) is dropped Before(<)/Onto(o)/After(>)
+	// the target Text(t)/Link(l).
+	// There is a value per level (the last value is used for all deeper levels) with:
+	// - Use as reference:
+	//   c: Closest Item
+	//   l/L: previous/next Link Item
+	// - 0/1/..: Insert at this relative level wrt target
+	// - n/.: Always create a New child or allow to attach below an existing Item
+	// - </>/+: Before/After refItem of after Last of its children
+	let DropHow = {
+		'l<l' : [ 'l1.+', 'c0n<' ],
+		'lOl' : [ 'c1.+' ],
+		'l>l' : [ 'c1.>', 'c0.+' ],
+		'm<l' : [ 'l2.+', 'c1n<' ],
+		'mOl' : [ 'c1.+' ],
+		'm>l' : [ 'c2.>', 'c1n+' ],
+
+		't<l' : [ 'c0n<' ],
+		'tOl' : [ 'c1.+' ],
+		't>l' : [ 'c0.>' ],
+
+		'l<t' : [ 'c1.<', 'c0n<' ],
+		'l>t' : [ 'c1.>', 'c0.>' ],
+		'm<t' : [ 'c2.<', 'c1n<' ],
+		'm>t' : [ 'c2.>', 'c1.>' ],
+
+		't<t' : [ 'c0.<' ],
+		't>t' : [ 'c0.>' ],
+	};
+
+	// Drop the content near closestItem, determined by where.
+	dropLinesTarget = (closestItem, where, lines) => {
+		// Classify the input: Single URL, Multiple URL, Textblock
+		let isLink;  //true if all lines are Links
+		lines = lines.replaceAll(/^\s+|\s+$/g, '');  //remove leading&trailing whitespace
+		let isHtml = lines.match(/<\/?\w+>/);  //true if any line contains HTML
+		if (isHtml) {
+			isLink = false;
+			LogSettings.debug(`Received ${lines.length} HTML lines`);
+		} else {
+			lines = lines.split(/(?:(?!\n)\s)*\n(?:(?!\n)\s)*/);  //split on '\n', remove other leading&trailing whitespace
+			isLink = true;
+			for (let i = 0; i < lines.length; ++i) {
+				let l = lines[i];
+				if (l === '') continue;
+				let hasURL = l.match(/\b(?:(?:https?|ftps?):\/\/|(?:search|mailto):\S)/i);
+				let isTitle = l.length < 80 && !l.match(/\w[.,?!](?:\s|$)/);  //short and no punctuation
+				if (!hasURL && !isTitle) isLink = false;
+			}
+			if (isLink) {
+				// Change sequentual white lines to separator
+				let lines2 = [], sep = false;;
+				for (let i = 0; i < lines.length; ++i) {
+					if (lines[i] === '') {
+						if (!sep) {
+							lines2.push('---');
+							sep = true;
+						}
+					} else {
+						sep = false;
+						lines2.push(lines[i]);
+					}
+				}
+				lines = lines2;
+			}
+			LogSettings.debug(`Received ${lines.length} ${isLink ? 'Link' : 'Text'} lines`);
+			if (lines.length <= 0) {
+				LogSettings.important('Dropped content was empty');
+				return;
+			}
+		}
+		// Prepare variables
+		let lineNum = -1;
+		let startLevel, relLevel, startIndent, nextIndent = null;
+		if (closestItem) {
+			// Determine where
+			let dtype = isLink ? lines.length > 1 ? 'm' : 'l' : 't';
+			let ttype = closestItem.link.type;
+			if (ttype === 'link' && where.match(/TOP|BOTTOM/i)) where = 'O';  //onto
+			else if (where.match(/ABOVE|LEFT|TOP/i)) where = '<';  //before
+			else where = '>';  //after
+			LogSettings.log(`Dropped '${lines}' ${where} closestItem='${closestItem.link.name ?? closestItem.link.url ?? closestItem.link.lines[0]}' on line ${closestItem.link.lineNum}`);
+			// Determine indentRef
+			let level;
+			let indentRef;  //NB: This is not a RenderedItem, but an Item, i.e. value of 'link' property
+			let linkExistsBeforeText;  //true if indentRef is before text (only valid for Link(s) on Text)
+			if (isLink && ttype !== 'link') {
+				// Indentation of Link on Text depends on Link before or after it
+				if (where == '<') {
+					// Before text, prefer indent of link before
+					indentRef = closestItem.link.prevLink ?? closestItem.link.nextLink;
+					LogSettings.debug('Prefer Link before Text as indentRef');
+					linkExistsBeforeText = closestItem.link.prevLink != null;
+				} else {
+					// After text, prefer indent of link after
+					indentRef = closestItem.link.nextLink ?? closestItem.link.prevLink;
+					LogSettings.debug('Prefer Link after Text as indentRef');
+				}
+				if (indentRef) {
+					level = indentRef.level;
+				} else {
+					indentRef = closestItem.link;
+					level = indentRef.flevel;
+				}
+			} else {
+				indentRef = closestItem.link;
+				level = indentRef.level;
+			}
+			// Consult DropHow
+			let key = dtype + where + ttype[0];
+			let how = DropHow[key];
+			// level is the 'visual level'. Use that to determine
+			// what should happen when adding this Item.
+			how = how[Math.min(level, how.length-1)];
+			LogSettings.log(`DropHow[${key}] -> ${how} (use level=${level})`);
+			// Determine reference Item
+			let refItem, logItem;
+			if (how[0] === 'l') {
+				// Find previous Link
+				refItem = findLinkBefore(closestItem);
+				logItem = refItem ? 'PREVIOUS' : 'NEW FIRST';
+			} else if (how[0] === 'L') {
+				// Find next Link
+				refItem = findLinkAfter(closestItem);
+				logItem = refItem ? 'NEXT' : 'NEW LAST';
+			} else {
+				refItem = closestItem;
+				logItem = 'CLOSEST';
+			}
+			LogSettings.debug(`Determine refItem: Use ${logItem}`);
+			// Determine lineNum
+			let asLast, logWhere;
+			if (!refItem) {  //No reference item
+				lineNum = 0;
+				logWhere = 'BEGIN';
+			} else if (how[3] == '<') {  //Before
+				lineNum = refItem.link.lineNum - 1;
+				logWhere = 'BEFORE';
+			} else if (how[3] == '>') {  //After
+				asLast = false;
+				logWhere = 'AFTER';
+			} else if (how[3] == '+') {  //Last
+				asLast = true;
+				logWhere = 'AS LAST';
+			} else {
+				LogSettings.error('Unknown how position: ' + how[3]);
+				logWhere = 'UNKNOWN';
+			}
+			if (asLast !== undefined) {
+				lineNum = getLastLine(refItem, asLast);
+			}
+			LogSettings.debug(`Determine lineNum: Put Item ${logWhere} refItem (at lineNum=${lineNum})`);
+			// Determine indent
+			relLevel = +how[1];  //relative level
+			if (refItem) {
+				// Determine Item that is used for reference for indentation
+				if (refItem.link.type.match(/link/)) {
+					// Drop any on link
+					startLevel = refItem.link.level;
+					startIndent = refItem.link.indent;
+					LogSettings.debug(`Use target link as indent ref (' 'x${startIndent.length})`);
+					// Adjust if we should go to child level
+					if (relLevel > 0) {
+						// Need more indentation
+						let child = asLast
+							? findLinkLastImmediateChild(refItem)
+							: findLinkFirstImmediateChild(refItem);
+						if (child) {
+							// Use child to determine next indentation
+							nextIndent = child.link.indent;
+						}
+						if (how[2] == 'n') {
+							LogSettings.debug('Do not add to existing child');
+						} else {
+							++startLevel; --relLevel;
+							if (nextIndent != null) {
+								startIndent = nextIndent; nextIndent = null;
+							} else {
+								startIndent += OneIndent;
+							}
+							LogSettings.debug(`Use child to add to at indent (' 'x${startIndent.length})`);
+						}
+					}
+				} else {
+					if (isLink) {
+						// Drop link on text -> there is no nesting
+						if (indentRef) {
+							// A Link reference for indentation exists
+							startLevel = indentRef.level;
+							startIndent = indentRef.indent;
+							if (relLevel > 0) {
+								if (how[2] == 'n') {
+									LogSettings.debug('Do not append to Link before');
+								} else if (!linkExistsBeforeText) {
+									LogSettings.debug(`No possible parent Link before`);
+								} else {
+									++startLevel; --relLevel;
+									startIndent += OneIndent;
+									LogSettings.debug(`Use Link before as indent ref (' 'x${startIndent.length})`);
+								}
+							}
+						} else {
+							// Only a Text reference for indentation exists
+							LogSettings.debug('Use target text as indentRef');
+							startLevel = refItem.link.level;
+							startIndent = refItem.link.indent;
+						}
+					} else {
+						// Drop text on text
+						LogSettings.debug('Use target text as indentRef');
+						startLevel = refItem.link.level;
+						startIndent = refItem.link.indent;
+					}
+				}
+			} else {
+				LogSettings.debug('No refItem for indentation');
+				startLevel = 0;
+				startIndent = '';
+			}
+			LogSettings.debug(`Determine indentation: startLevel=${startLevel}, relLevel=${relLevel}, startIndent=' 'x${startIndent.length}`);
+			LogSettings.important(`Add Item (level +${relLevel}) ${logWhere} (line ${lineNum}) of ${logItem} Item`);
+		} else {
+			LogSettings.important('No closest Item, append at end');
+			startLevel = 0;
+			startIndent = '';
+			relLevel = 0;
+		}
+		// Find correct linebreak
+		let links = Data.readLocalLinks();
+		let tail = '';
+		let lb = links.match(/(?<!\r)\n/) ? '\n' : '\r\n';  //used linebreak
+		if (lineNum == -1) {
+			// Do the insert at the end
+		} else if (lineNum == 0) {
+			// Do the insert at the beginning
+			tail = links;
+			links = '';
+		} else {
+			// Split at this line number
+			let pos = 0;
+			let n = lineNum;
+			while (pos < links.length && n > 0) {
+				if (links[pos] == '\n') --n;
+				++pos;
+			}
+			tail = links.slice(pos);
+			links = links.slice(0, pos);
+		}
+		// Insert missing levels (if any)
+		if (links.match(/[^\r\n]$/)) links += lb;  //linebreak if not already there
+		let indent = startIndent;
+		if (relLevel > 0) {
+			// We need to add missing levels
+			// Derive nextIndent and stepIndent
+			let stepIndent = OneIndent;  //default indent step
+			if (nextIndent != null) {
+				if (nextIndent.startsWith(startIndent)) {
+					stepIndent = nextIndent.substring(startIndent.length);
+				}
+			} else {
+				nextIndent = startIndent + stepIndent;
+			}
+			// Iterate missing steps
+			for (let l = startLevel; l < startLevel + relLevel; ++l) {
+				let name = (l == 0) ? 'Heading'
+					: (l == 1) ? isLink ? 'Links' : 'Block'
+					: isLink ? 'Links' : 'Item';
+				LogSettings.debug(`Add dummy '${name}' at level ${l}`);
+				links += indent + name + lb;
+				indent = nextIndent;
+				nextIndent += OneIndent;
+			}
+		}
+		// Insert new Item
+		LogSettings.debug(`Add Item at indent ' 'x${indent.length}'`);
+		if (isHtml) {
+			links += indent + '!text' + lb;
+			links += lines.replaceAll(/\r*\n\r*/g, lb) + lb;
+			links += indent + '!endtext' + lb;
+		} else {
+			if (isLink) {
+				for (let i = 0; i < lines.length; ++i) links += indent + lines[i] + lb;
+			} else {
+				links += indent + '!text' + lb;
+				for (let i = 0, m = lines.length-1; i <= m; ++i) {
+					links += lines[i];
+					if (i < m) links += '<br>';
+					links += lb;
+				}
+				links += indent + '!endtext' + lb;
+			}
+		}
+		links += tail;
+		Data.writeLocalLinks(links);
+		// Refresh screen
+		let saveScroll = saveScrollPos();
+		updateLinks(links, null, true, null)
+		restoreScrollPos(saveScroll);
+	}
+
+	// Find the last line occupied by this link optionally including its children.
+	function getLastLine(item, includeChildren) {
+		if (includeChildren) item = findLinkLastChild(item);
+		let lineNum = item.link.lineNum;
+		let lineEnd = item.link.lineEnd;
+		if (lineEnd != null && lineEnd > lineNum) lineNum = lineEnd;  //for blocks
+		return lineNum;
+	}
+
+	function display() {
+		if (!dropTarget) createDropTarget();
+		dropTarget.style.top = 0;
+		dropTarget.style.left = 0;
+		dropTarget.style.height = (document.documentElement.scrollHeight - 8) + 'px';
+		dropTarget.style.width = (document.documentElement.scrollWidth - 8) + 'px';
+		document.body.appendChild(dropTargetBg);
+		document.body.appendChild(dropTarget);
+		displaying = true;
+	}
+
+	function undisplay() {
+		document.body.removeChild(dropTargetBg);
+		document.body.removeChild(dropTarget);
+		displaying = false;
+	}
+
+	// If there is a drag event, an internal control is being dragged
+	window.ondragstart = e => internalDrag = true;
+	// End of this internal drag
+	window.ondragend = e => internalDrag = false;
+
+	// Use dragover, because that contains dataTransfer.types, which is
+	// an array that can be used to classify the incoming item.
+	// dragover is fired a lot. Use dragenter to only do it once for
+	// each drag.
+	window.ondragenter = e => newDrag = true;
+	window.ondragover = e => {
+		if (!displaying && newDrag) {
+			newDrag = false;
+			let allowed = false;
+			if (e.dataTransfer.types) {
+				for (let i = 0; i < e.dataTransfer.types.length; ++i) {
+					let t = e.dataTransfer.types[i];
+					if (t.match(/^text\//)) {
+						allowed = true;
+					}
+				}
+			}
+			if (internalDrag) {
+				LogSettings.debug('Ignore internal drag', e);
+			} else if (!allowed) {
+				LogSettings.debug('Data type not allowed for drag', e.dataTransfer);
+			} else {
+				// An external object is being dragged onto the window,
+				// display the dropTarget to catch it.
+				LogSettings.log('Window drag enter', e);
+				display();
+			}
+		}
+	};
+}
+
+// }}}
+
 // Initialization {{{
 
 // The input is direct content or an array with blocks that contain lines and
@@ -6721,6 +7332,9 @@ function initLinks() {
 			LogInit.important(reason + ', keep preliminary Links');
 		}
 	}
+
+	// Initialize event to start drag-and-drop.
+	initDragDrop();
 
 	// Start download (if defined)
 	return downloadUpdateLinks(null, false, preliminaryLinksCancel, handleFallbackLinks);

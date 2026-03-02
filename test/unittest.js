@@ -449,6 +449,31 @@ async function sleep(timeout) {
 	await promise;
 }
 
+// Wait until the eventloop has been processed.
+async function wait() {
+	// sleep() posts a timer event at the end of the eventloop
+	await sleep(0);
+}
+
+// Find first item with specified name (for a link) or first line (for text).
+function findItemWithTarget(str) {
+	if (RenderedItems == null || RenderedItems.length <= 0) return null;
+
+	for (let i = 0; i < RenderedItems.length; ++i) {
+		let item = RenderedItems[i];
+		if (item.link.type === 'link') {
+			if (item.link.name == str) {
+				return item;
+			}
+		} else if (item.link.type === 'text') {
+			if (item.link.lines.length > 0 && item.link.lines[0] == str) {
+				return item;
+			}
+		}
+	}
+	return null;  //no Item found
+}
+
 // }}}
 
 // Initialization {{{
@@ -504,8 +529,8 @@ async function readTests(url) {
 	//LogTest.devlog(contents);
 	let records = contents.split(/[\r\n]+/);  //split in lines
 	let names = null;
-	for (let i = 0; i < records.length; ++i) {
-		let record = records[i];
+	for (let r = 0; r < records.length; ++r) {
+		let record = records[r];
 		if (record.match(/^\s*(?:#|;|\/\/|$)/)) {
 			// Empty or comment line
 			continue;
@@ -520,8 +545,25 @@ async function readTests(url) {
 		}
 		if (names == null) {
 			// Take first line as headings
-			names = fields;
+			names = [];
+			for (let n = 0; n < fields.length; ++n) {
+				let tags = getMultiTags(fields[n]);
+				if (tags) {
+					// Is multi-valued
+					let multiName = [];
+					for (let t = 0; t < tags.length; ++t) {
+						let tag = tags[t];
+						let name = getMultiValue(fields[n], tag);
+						multiName.push({ tag: tag, name: name });
+					}
+					names.push(multiName);
+				} else {
+					// Is single valued
+					names.push(fields[n]);
+				}
+			}
 			LogTest.log('Number of columns: ' + names.length);
+			//LogTest.devlog('Column names: ', names);
 		} else {
 			// Check length of data
 			if (fields.length != names.length) {
@@ -531,12 +573,25 @@ async function readTests(url) {
 			}
 			// Create entry
 			let entry = {};
-			for (let j = 0; j < fields.length; ++j) {
-				let name = names[j];
-				let value = fields[j];
+			let addEntry = (name, value) => {
+				// Unescape
 				value = value.replace(/^("?)(.*)\1$/, '$2');  //remove surrounding double quotes
 				value = value.replaceAll(/""/g, '"');  //un-escape double quotes "" -> "
 				value = value.replaceAll(/\\"/g, '"');  //un-escape double quotes \" -> "
+				value = value.replaceAll(/\\n/g, '\n');  //un-escape linefeed \\n -> \n
+				value = value.replaceAll(/\\r/g, '\r');  //un-escape carriage return \\r -> \r
+				value = value.replaceAll(/\\t/g, OneIndent);  //replace tabs \\t -> OneIndent
+				// Perform '~' shorthand (to avoid many \n\t)
+				let m = value.match(/^~(.*)$/s);  //indicates this shorthand syntax
+				if (m) {
+					value = m[1].split(/~/)  //split lines
+						.map(line => line
+							// Replace leading '.' with indent
+							.replace(/^(\.+)/, m => OneIndent.repeat(m.length))
+							// Replace "text" with text block
+							.replace(/^(\s*)"(.*)"$/s, (_, s, t) => `${s}!text\n${t}\n${s}!endtext`)
+						).join('\n');
+				}
 				// Check special words (all capitals)
 				if (value == 'TRUE') value = true;
 				if (value == 'FALSE') value = false;
@@ -544,6 +599,21 @@ async function readTests(url) {
 				if (value == 'DEFAULT_LINKS') value = DefaultLinks;
 				// Set field value (and type)
 				entry[name] = value;
+			};
+			for (let j = 0; j < fields.length; ++j) {
+				let name = names[j];
+				let value = fields[j];
+				//LogTest.devlog(name);
+				if (Array.isArray(name)) {
+					// Is multi-valued
+					for (let n = 0; n < name.length; ++n) {
+						let v = getMultiValue(value, name[n].tag);
+						addEntry(name[n].name, v);
+					}
+				} else {
+					// Is single value
+					addEntry(name, value);
+				}
 			}
 			test_cases.push(entry);
 		}
@@ -551,6 +621,58 @@ async function readTests(url) {
 	LogTest.log('Number of test cases: ' + test_cases.length);
 	//LogTest.devlog(test_cases);
 	return test_cases;
+}
+
+// A value can be a multi-value by using |+...+| and |-...-| syntax. When this
+// is present, this function returns an array with tags as keys (here '+' and
+// '-') and its associated value. There is also a 'default' key with the value
+// with all tags removed.
+// Note this syntax is prepared to support extensions like |n...n| with n a
+// number.
+// When there are only 2 tags (like +-), the syntax |-...|...+| can be used to
+// mean |-...-||+...+|.
+// Examples:
+// - A|-B-|C      : '-' -> 'ABC'; default -> 'AC'
+// - A|+B+|C      : '+' -> 'ABC'; default -> 'AC'
+// - A|-B-||+C+|D : '-' -> 'ABD'; '+' -> 'ACD'; default -> 'AD'
+// - A|-B|C+|D    : equivalent to A|-B-||+C+|D
+// - A|+C|B-|D    : equivalent to A|-B|C+|D
+
+const ReTags = /\|(.)([^|]*)\1\|/gu;  //match |n...n| and return all 'n' and value
+
+function normalizeMultiValue(value) {
+	// Expand short syntax
+	// |-...|...+| -> |-...-||+...+|
+	let val = value.replaceAll(/\|-([^|]*)\|([^|]*)\+\|/gu, '|-$1-||+$2+|')
+	// |+...|...-| -> |+...+||-...-|
+		.replaceAll(/\|\+([^|]*)\|([^|]*)-\|/gu, '|+$1+||-$2-|');
+	return val;
+}
+
+// Return all non-default tags in value. Returns null if no tags.
+function getMultiTags(value) {
+	let val = normalizeMultiValue(value);
+	// Discover the tags
+	let tags = [];
+	let ms = val.matchAll(ReTags);
+	//LogTest.devlog(ms);
+	for (const m of ms) {
+		tags.push(m[1]);
+	}
+	if (tags.length > 0) {
+		LogTest.debug(`${value}: MultiValue tags: ${tags}`);
+		return tags;
+	} else {
+		return null;
+	}
+}
+
+// Take value and return the variant for the specified tag.
+function getMultiValue(value, tag) {
+	let val = normalizeMultiValue(value);
+	val = val.replaceAll(ReTags, (_, t, v) => t === tag ? v : '');
+	//LogTest.devlog(`${value}: MultiValue for tag '${tag}': ${val}`);
+	return val;
 }
 
 // }}}
@@ -631,6 +753,24 @@ async function executeTest(data) {
 		showSettingsPanel();
 		await HOOK_Ready.wait();
 		//LogTest.devlog('Finished ChangeSettings');
+	}
+
+	// If we should do a Drag-and-Drop, trigger that and wait for it
+	// NB: We use dropLinesTarget() rather than dropLinesXY(), because it
+	// is difficult to calculate the (x,y) coordinate of the drop, because:
+	// 1) The rendition is not yet stable
+	// 2) Items may border each other, so that it is not always possible
+	//    to click outside of the Item (depends on CSS!)
+	// In practice, going to coordinates does not add much to the test,
+	// except unnecessary instabilty in the tests.
+	if (data.dropSource != null || data.dropWhere != null || data.dropTarget != null) {
+		let dropTarget = null, where = null;
+		if (data.dropTarget != null && data.dropWhere != null) {
+			// Find dropTarget Item in RenderedItems
+			dropTarget = findItemWithTarget(data.dropTarget);
+		}
+		dropLinesTarget(dropTarget, data.dropWhere, data.dropSource);
+		await wait();
 	}
 
 	// Check expected result (only if the expected result is available)
