@@ -2941,15 +2941,17 @@ function parseLinks(links) {
 			line = m[1] + m[3];  //the rest
 		}
 		// Take out URL: /url=non-whitespace/ or last /schema:non-whitespace/
-		let url = null;
-		m = line.match(/^(.*)(?:\s|^)url=(\S*)(.*)$/i);
-		if (!m) m = line.match(/^(.*)(?:\s|^)([-+a-zA-Z]{2,}:\S+)(.*)$/);
+		let url = null, nameq = false;
+		m = line.match(/^(.*)(?:\s|^)url=()(\S*)(.*)$/i);
+		if (!m) m = line.match(/^(.*)(?:\s|^)(=?)([-+a-zA-Z]{2,}:\S+)(.*)$/);
 		if (m) {
-			url = m[2];
-			line = m[1] + m[3];  //the rest
+			nameq = m[2] == '=';
+			url = m[3];
+			line = m[1] + m[4];  //the rest
 		}
 		// Take out Name: what remains without leading&trailing whitespae
 		let name = line.trim();
+		if (name == '' && nameq) name = '=';  //'=url' interpreted as '= url'
 
 		// Handle special items
 		if (name.match(/^---+$/)) {  //name with 3 or more '-'
@@ -3561,10 +3563,54 @@ function render(parsed, container, cancel) {
 		// Fill in defaults for missing elements
 		if (name == null) {
 			if (url != null) {
-				name = url;  //name defaults to url
+				// Derive name from url
+				let m;
+				// - Remove schema
+				name = url.replace(/^[\w-]+:\/+/, '');
+				// - Remove querystring and fragment
+				name = name.replace(/(\?.*)?(#.*)?$/, '');
+				// - Remove trailing '/' and extension
+				name = name.replace(/(?:\/+|\.[a-zA-Z0-9]+)$/, '');
+				// - Remove known suffixes
+				name = name.replace(/\/+(index)$/i, '');
+				// - Take last component (file/directory name)
+				m = name.match(/(.*)\/([^\/]+)$/);
+				if (m) {
+					// There is a last component
+					// - Replace %xx
+					name = m[2].replaceAll(/%([0-9a-fA-F]{2})/g, m2 => {
+						try {
+							let c = parseInt(m2.slice(1), 16);
+							return String.fromCharCode(c);
+						} catch (e) {
+							return m2;
+						}
+					});
+					// - If multiple '-', '_', '.', '+', replace by spaces
+					m = name.match(/([-_.+]).*\1/);
+					if (m) name = name.replaceAll(m[1], ' ');
+					// - Replace each starting letter to upper case
+					name = name.replaceAll(/(?<=^|\s)[a-z]/g, m2 => {
+						try {
+							return m2.toUpperCase();
+						} catch (e) {
+							return m2;
+						}
+					});
+				} else {
+					// There is no last component, take domain
+					// - Remove path
+					name = name.replace(/\/.*$/, '');
+					// - Remove known prefixes
+					name = name.replace(/^(www)\./i, '');
+				}
+				// If nothing left, take the URL
+				if (name == null || name == '') name = url;
 			} else {
 				name = '_';  //indicates the name may be hidden
 			}
+		} else if (name == '=') {
+			name = url;
 		}
 		// Change URL if target=manual
 		if (target == 'manual') {
