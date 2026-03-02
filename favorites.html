@@ -1380,6 +1380,28 @@ function False() {
 	return false;
 }
 
+// Save and return scroll position of widget as fraction.
+function saveScrollPos(widget = document.documentElement) {
+	let maxH = widget.scrollHeight - widget.clientHeight;
+	if (maxH <= 0) maxH = 1;
+	let maxW = widget.scrollWidth - widget.clientWidth;
+	if (maxW <= 0) maxW = 1;
+	let pos = [ widget.scrollTop / maxH, widget.scrollLeft / maxW ];
+	LogRender.log(`Save scroll position (${pos})`);
+	return pos;
+}
+
+// Restore scroll position of widget.
+function restoreScrollPos(position, widget = document.documentElement) {
+	LogRender.log(`Restore scroll position (${position})`);
+	let maxH = widget.scrollHeight - widget.clientHeight;
+	if (maxH <= 0) maxH = 1;
+	let maxW = widget.scrollWidth - widget.clientWidth;
+	if (maxW <= 0) maxW = 1;
+	widget.scrollTop = position[0] * maxH;
+	widget.scrollLeft = position[1] * maxW;
+}
+
 // }}}
 
 // Links Data {{{
