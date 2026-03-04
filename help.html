@@ -176,11 +176,11 @@ maintained in a separate text file and copy-pasted into the Settings.
 Since GitHub provides for a way to serve HTML pages directly, this can be used
 to open and use favorites.html directly from <a
 href="https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html">GitHub</a>.
-Save the target of this link to your home page and you're set.
+Save the target of this link as your home page and you're set.
 </p>
 
 <p>
-<em>Tip</em>: By adding the <code>?links=&lt;config-name&gt;</code> in the URL,
+<em>Tip</em>: By using <code>favorites.html?links=&lt;config-name&gt;</code>,
 multiple independent configurations can be defined, each having their own URL.
 Each configuration has its own <i>load-options</i> and <i>save-options</i>
 under Settings, but if those are left blank, the configuration is only stored
@@ -260,19 +260,41 @@ href="help.html#line-syntax">Line Syntax</a> for details.
 <h3>Line Syntax</h3>
 
 <p>
-Each line should be one of the following:
+Each line can contain a Link, a text, a comment or a special setting. Below
+is a list of all of them.
+</p>
+
+<p>
+<b>Content</b>
 <ul>
-  <li><em>Empty lines</em>: These are skipped.
-  <li><em>Comments</em>: Lines that start with <code>//</code>, <code>;</code>
-      or <code>#</code> are comments and skipped too.
-  <li><em>Folding</em>: If a line ends with <code>{{{</code> or
-      <code>}}}</code>, remove that.  These tags are used to facilitate folding
-      in vim.
   <li><em>Link Item</em>: Specify a Link or ToDo item. See <a
       href="#link-syntax">below</a>.
   <li><em>Separator</em>: This is a line containing a name of 3 or more dashes
       (<code>---</code>).  It is rendered as an <code>&lt;hr
       class="separator"&gt;</code>.
+  <li><em>Text Block</em>: A text block is the lines of text between
+      <code>!text</code> and <code>!endtext</code>, which each should appear
+      on a line of their own. The text block will be rendered at that
+      location. It can contain any HTML.
+  <li><em>Search Buttons</em>: The line <code>!search identifier | label |
+      tooltip | icon | url-template</code> defines a search button to be
+      displayed next to the search box.  See <a
+      href="#search-functions">below</a> for more details.
+  <li><em>Icon Definitions</em>: The line <code>!icon name replacement</code>
+      defines an icon. If a link uses <code>icon=name</code>, it will be
+      replaced by whatever is defined for name.  This also works with the
+      special words <code>none</code>, <code>empty</code>, <code>html:x</code>,
+      etc.  It is also allowed to write this with an <code>=</code> between
+      name and replacement. See <a href="#icons">Icons</a> for more on icons.
+  <li><em>Checkbox Definition</em>: The line <code>!checkbox name options
+      ...</code> defines a custom checkbox. See <a
+      href="#checkboxes">Checkboxes</a> for more details.
+</ul>
+</p>
+
+<p>
+<b>Appearance</b>
+<ul>
   <li><em>Page Title</em>: The line <code>!title name</code> specifies the page
       title to be displayed.
   <li><em>Theme</em>: The line <code>!theme name</code> specifies the CSS class
@@ -290,6 +312,17 @@ Each line should be one of the following:
   <li><em>Font Size</em>: The line <code>!size font-size</code> specifies the
       base font-size to use. All CSS length quantities can be used, e.g.
       '10pt' or '120%'. This feature is experimental.
+  <li><em>Style Block</em>: A style block is the lines of text between
+      <code>!style</code> and <code>!endstyle</code>, which should contain CSS
+      definitions. See <a href="#themes">Themes</a> for an example.
+</ul>
+</p>
+
+<p>
+<b>Settings and miscellaneous</b>
+<ul>
+  <li><em>Disable Edits</em>: The line <code>!no-edit</code> makes the
+      configuration text in Settings unmodifiable.
   <li><em>Blocks Collapsed</em>: The line <code>!collapsed state</code>
       specifies how blocks are displayed when loaded:
       <ul>
@@ -300,38 +333,22 @@ Each line should be one of the following:
       <li><em>never</em>: Blocks are always expanded (previous state is
           ignored).
       </ul>
-  <li><em>Search Buttons</em>: The line <code>!search identifier | label |
-      tooltip | icon | url-template</code> defines a search button to be
-      displayed next to the search box.  See <a
-      href="#search-functions">below</a> for more details.
-  <li><em>Icon Definitions</em>: The line <code>!icon name replacement</code>
-      defines an icon. If a link uses <code>icon=name</code>, it will be
-      replaced by whatever is defined for name.  This also works with the
-      special words <code>none</code>, <code>empty</code>, <code>html:x</code>,
-      etc.  It is also allowed to write this with an <code>=</code> between
-      name and replacement. See <a href="#icons">Icons</a> for more on icons.
-  <li><em>Checkbox Definition</em>: The line <code>!checkbox name options
-      ...</code> defines a custom checkbox. See <a
-      href="#checkboxes">Checkboxes</a> for more details.
-  <li><em>Text Block</em>: A text block is the lines of text between
-      <code>!text</code> and <code>!endtext</code>, which each should appear
-      on a line of their own. The text block will be rendered at that
-      location. It can contain any HTML
-  <li><em>Style Block</em>: A style block is the lines of text between
-      <code>!style</code> and <code>!endstyle</code>, which should contain CSS
-      definitions. See <a href="#themes">Themes</a> for an example.
-  <li><em>Script Block</em>: A script block is the lines of text between
-      <code>!script</code> and <code>!endscript</code>, which should contain
-      JavaScript code that is executed at the beginning of the page. See <a
-      href="#search-functions">Search Functions</a> for an example.
   <li><em>Automatic Upload Delay</em>: Some events (like changing a checkbox
       value) triggers an upload if <a
       href="external-files.html#save-options">Online Save</a> has been set.
       To avoid many updates in quick succession, an upload delay can be set
       with <code>!auto-upload-delay value</code>, where value is a delay in
       seconds. Default is 3 seconds.
-  <li><em>Disable Edits</em>: The line <code>!no-edit</code> makes the
-      configuration text in Settings unmodifiable.
+  <li><em>Script Block</em>: A script block is the lines of text between
+      <code>!script</code> and <code>!endscript</code>, which should contain
+      JavaScript code that is executed at the beginning of the page. See <a
+      href="#search-functions">Search Functions</a> for an example.
+  <li><em>Empty lines</em>: These are skipped.
+  <li><em>Comments</em>: Lines that start with <code>//</code>, <code>;</code>
+      or <code>#</code> are comments and skipped too.
+  <li><em>Folding</em>: If a line ends with <code>{{{</code> or
+      <code>}}}</code>, remove that.  These tags are used to facilitate folding
+      in vim.
 </ul>
 </p>
 
@@ -1114,6 +1131,23 @@ The following support functions are available:
 Example on how to create a search button for Amazon:
 <pre>
 !search Amazon |||| https://www.amazon.com/s?k=%urlinput
+</pre>
+</p>
+
+<p>
+If you don't want a search button, but want Amazon to be available as the
+special <code>search:amazon</code> link in a shopping list, do this:
+<pre>
+!script
+// Register the Amazon search
+registerSearchTemplate('Amazon', 'https://www.amazon.com/s?k=%urlinput');
+!endscript
+
+Shopping List
+    Amazon
+        [x] Laptop search:amazon
+            [ ] How to configure a laptop search:youtube
+        [ ] Funny gifts search:amazon
 </pre>
 </p>
 
