@@ -5,6 +5,10 @@
 !wallpaper https://lipsum.app/random/1920x1080
 //!wallpaper linear-gradient(120deg, red,orange,yellow,green,blue,indigo,violet,red,orange,yellow,green,blue,indigo,violet)
 
+!text
+Textblock before first Section.
+!endtext
+
 Section
     Block
         Item 1
@@ -51,6 +55,30 @@ Section
         Name is set, relative url=URL url=/path.html
         Name is set, only query url=URL url=?query
         url=?only-url-query
+
+Section
+
+!text
+Text block on Block level (lowest of Section/Block).
+!endtext
+
+    Block
+
+!text
+Text block on Item level (lowest of Block/Item).
+!endtext
+
+        Item
+
+!text
+Text block on Item level.
+!endtext
+
+        Item
+
+!text
+Text block on Block level.
+!endtext
 
 Test Cases for Icons
 

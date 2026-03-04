@@ -159,6 +159,11 @@ For syntax description of Links, see help.html
 		transition-duration: 0.3s;
 		transition-timing-function: ease;
 	}
+	.block .text-block {
+		text-shadow: initial;
+		background: initial;
+		backdrop-filter: initial;
+	}
 }
 
 
@@ -276,7 +281,10 @@ body {
  ****************************************************************************/
 
 .text-block {
-	color: var(--foreground); background: var(--background-f);
+	color: var(--foreground);
+}
+.block .text-block {
+	color: initial;
 }
 .text-block h1, .text-block h2, .text-block h3, .text-block em {
 	color: var(--accent-color);
