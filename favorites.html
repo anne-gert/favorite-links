@@ -3501,14 +3501,6 @@ function render(parsed, container, cancel) {
 	container.textContent = '';
 	RenderedItems = outputItems(parsed.rootLinks, 1, container, null, cancel);
 
-	// Set/update event handler to quick-open Settings
-	container.ondblclick = e => {
-		// Go through the RenderedItems and open the Settings on the
-		// line that is closest to the mouse pointer in the event.
-		let closest = findClosestItem(e);
-		showSettingsPanel(closest.link.lineNum);
-	};
-
 	// Collect all checkboxes in a hierarchy
 	let toplevel = [];
 	function discover(links, parent) {
@@ -4993,6 +4985,18 @@ function initSettingsPanel() {
 	iconOpen.className = 'settings-icon';
 	iconOpen.onclick = () => showSettings();
 	iconBarClosed.appendChild(iconOpen);
+
+	// Set event handler to quick-open Settings
+	window.ondblclick = e => {
+		// Go through the RenderedItems and open the Settings on the
+		// line that is closest to the mouse pointer in the event.
+		let closest = findClosestItem(e);
+		if (closest) {
+			showSettings(closest.link.lineNum);
+		} else {
+			showSettings();
+		}
+	};
 
 	// Create rest of the Settings panel. This is called at first showing.
 	function createSettings() {
