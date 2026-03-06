@@ -5040,7 +5040,7 @@ function initSettingsPanel() {
 		iconBarOpen.appendChild(iconSave);
 		// Create iconClear
 		iconClear = document.createElement('span');
-		iconClear.title = 'Clear';
+		iconClear.title = 'Clear (Ctrl-R)';
 		iconClear.className = 'settings-icon';
 		iconClear.onclick = () => hideSettings('clear');
 		iconBarOpen.appendChild(iconClear);
@@ -5097,6 +5097,10 @@ function initSettingsPanel() {
 					hideSettings(false);
 					e.preventDefault();
 					return false;  //stop default button action
+				}
+			} else if (isKey(e, 'c', 'r')) {  //Ctrl-R
+				if (visible) {  //only if Settings visible
+					hideSettings('clear');
 				}
 			}
 			return true;
