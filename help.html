@@ -275,7 +275,9 @@ is a list of all of them.
   <li><em>Text Block</em>: A text block is the lines of text between
       <code>!text</code> and <code>!endtext</code>, which each should appear
       on a line of their own. The text block will be rendered at that
-      location. It can contain any HTML.
+      location. It can contain any HTML. If indentation is used, the contents
+      will be rendered at that (Block, Item, SubItem) level, otherwise an
+      automatic level is used.
   <li><em>Search Buttons</em>: The line <code>!search identifier | label |
       tooltip | icon | url-template</code> defines a search button to be
       displayed next to the search box.  See <a
