@@ -3168,14 +3168,22 @@ function parseLinks(links) {
 				let after = findLinkAfter(i);
 				if (before && after) {
 					// Case 2: Take deepest of line before and after
-					item.level = Math.max(before.level, after.level);
+					if (before.level >= after.level) {
+						item.level = before.level;
+						item.indent = before.indent;
+					} else {
+						item.level = after.level;
+						item.indent = after.indent;
+					}
 				} else if (!before) {
 					// There is no one before to be this item's
 					// parent, set level at 0.
 					item.level = 0;
+					item.indent = '';
 				} else {
 					// Case 3: Default to Block level
 					item.level = 1;
+					item.indent = OneIndent;
 				}
 			}
 		} else if (item.type == 'link' && item.name == '---') {
