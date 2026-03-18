@@ -1406,14 +1406,20 @@ function saveScrollPos(widget = document.documentElement) {
 }
 
 // Restore scroll position of widget.
-function restoreScrollPos(position, widget = document.documentElement) {
-	LogRender.log(`Restore scroll position (${position})`);
-	let maxH = widget.scrollHeight - widget.clientHeight;
-	if (maxH <= 0) maxH = 1;
-	let maxW = widget.scrollWidth - widget.clientWidth;
-	if (maxW <= 0) maxW = 1;
-	widget.scrollTop = position[0] * maxH;
-	widget.scrollLeft = position[1] * maxW;
+// If post=true, restore is posted to the eventloop with a setTimeout(..., 0).
+// This is needed if the screen is still rendering and the SearchBox will get
+// focus, in which case, the screen would scroll that into view.
+function restoreScrollPos(position, widget = document.documentElement, post = true) {
+	let doit = () => {
+		LogRender.log(`Restore scroll position (${position})`);
+		let maxH = widget.scrollHeight - widget.clientHeight;
+		if (maxH <= 0) maxH = 1;
+		let maxW = widget.scrollWidth - widget.clientWidth;
+		if (maxW <= 0) maxW = 1;
+		widget.scrollTop = position[0] * maxH;
+		widget.scrollLeft = position[1] * maxW;
+	};
+	if (post) window.setTimeout(doit, 0); else doit();
 }
 
 // }}}
