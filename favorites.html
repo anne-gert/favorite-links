@@ -3089,7 +3089,9 @@ function parseLinks(links) {
 			// There are no links at all.
 			// In this case, there is nothing to adjust
 		} else {
-			// Add 1 or 2 levels in the front of allLinks
+			// Add 1 or 2 levels in the front of allLinks.
+			// These levels don't exist in the file, so leave
+			// the indent empty.
 			// In either case, we need to add a Section
 			let section = {
 				lineNum    : 0,
