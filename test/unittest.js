@@ -704,7 +704,10 @@ async function doTests() {
 	LogTest.important('Start running tests');
 
 	// Read and execute the tests
-	let test_sets = [ 'test/testcases.tsv' ];
+	let test_sets = [
+		'test/testcases-settings.tsv',
+		'test/testcases-updatelinks.tsv',
+	];
 	let results = [];
 	for (let i = 0; i < test_sets.length; ++i) {
 		let test_set = test_sets[i];
