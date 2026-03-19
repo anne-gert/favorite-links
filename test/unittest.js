@@ -616,59 +616,88 @@ async function executeTest(data) {
 		//LogTest.devlog('Finished ChangeSettings');
 	}
 
-	// Check expected result
-	let links = Data.readLocalLinks();
-	if (links != data.expLinks) {
-		LogTest.error('Test ' + data.name + ': Links (=' + renderValue(links) + ') has not expected value (=' + renderValue(data.expLinks) + ')');
-		++result.errors;
-	}
-	let cleanLinks = Data.readCleanLinks();
-	if (cleanLinks != data.expCleanLinks) {
-		LogTest.error('Test ' + data.name + ': CleanLinks (=' + renderValue(cleanLinks) + ') has not expected value (=' + renderValue(data.expCleanLinks) + ')');
-		++result.errors;
-	}
-	let dispLinks = Data.getDisplayedLinks();
-	if (dispLinks != data.expDispLinks) {
-		LogTest.error('Test ' + data.name + ': DisplayedLinks (=' + renderValue(dispLinks) + ') has not expected value (=' + renderValue(data.expDispLinks) + ')');
-		++result.errors;
-	}
-	let conflictState = Data.getConflictState();
-	if (conflictState != data.expConflict) {
-		LogTest.error('Test ' + data.name + ': ConflictState (=' + renderValue(conflictState) + ') has not expected value (=' + renderValue(data.expConflict) + ')');
-		++result.errors;
-	}
-	let uploadDisabled = UrlResolver.getUploadDisabled();
-	if (data.expUplDisabled) {
-		if (uploadDisabled == null) {
-			LogTest.error('Test ' + data.name + ': UploadDisabled (=' + renderValue(uploadDisabled) + ') has not expected value (=set)');
+	// Check expected result (only if the expected result is available)
+	LogTest.important('Test ' + data.name + ': Verify results');
+	if (data.expLinks !== undefined) {
+		let links = Data.readLocalLinks();
+		if (links != data.expLinks) {
+			LogTest.error('Test ' + data.name + ': Links (=' + renderValue(links) + ') has not expected value (=' + renderValue(data.expLinks) + ')');
 			++result.errors;
 		}
 	} else {
-		if (uploadDisabled != null) {
-			LogTest.error('Test ' + data.name + ': UploadDisabled (=' + renderValue(uploadDisabled) + ') has not expected value (=not set)');
-			++result.errors;
-		}
+		LogTest.log('Test ' + data.name + ': expLinks undefined -> Skip check');
 	}
-	if (data.expRemoteFile != null) {
-		let content = remoteFile.content();
-		if (content != data.expRemoteFile) {
-			LogTest.error('Test ' + data.name + ': RemoteFile (=' + renderValue(content) + ') has not expected value (=' + renderValue(data.expRemoteFile) + ')');
+	if (data.expCleanLinks !== undefined) {
+		let cleanLinks = Data.readCleanLinks();
+		if (cleanLinks != data.expCleanLinks) {
+			LogTest.error('Test ' + data.name + ': CleanLinks (=' + renderValue(cleanLinks) + ') has not expected value (=' + renderValue(data.expCleanLinks) + ')');
 			++result.errors;
 		}
+	} else {
+		LogTest.log('Test ' + data.name + ': expCleanLinks undefined -> Skip check');
 	}
-	if (data.expStatus != null) {
-		let status = document.getElementById('StatusLine').textContent;
-		let curStatus = status.replace(/[^a-zA-Z0-9]/g, '');
-		let fullStatus = (prevStatus != '') ? prevStatus + ' + ' + data.expStatus : data.expStatus;
-		let expStatus = fullStatus.replace(/[^a-zA-Z0-9]/g, '');
-		if (curStatus != expStatus) {
-			LogTest.error('Test ' + data.name + ': Status (=' + renderValue(status) + ') has not expected value (=' + renderValue(fullStatus) + ')');
-			LogTest.debug('Full Status: \'' + status + '\'');
-			LogTest.debug('Actual string: \'' + curStatus +'\'');
-			LogTest.debug('Expected string: \'' + expStatus +'\'');
+	if (data.expDispLinks !== undefined) {
+		let dispLinks = Data.getDisplayedLinks();
+		if (dispLinks != data.expDispLinks) {
+			LogTest.error('Test ' + data.name + ': DisplayedLinks (=' + renderValue(dispLinks) + ') has not expected value (=' + renderValue(data.expDispLinks) + ')');
 			++result.errors;
 		}
-		prevStatus = fullStatus;  //for next testcase
+	} else {
+		LogTest.log('Test ' + data.name + ': expDispLinks undefined -> Skip check');
+	}
+	if (data.expConflict !== undefined) {
+		let conflictState = Data.getConflictState();
+		if (conflictState != data.expConflict) {
+			LogTest.error('Test ' + data.name + ': ConflictState (=' + renderValue(conflictState) + ') has not expected value (=' + renderValue(data.expConflict) + ')');
+			++result.errors;
+		}
+	} else {
+		LogTest.log('Test ' + data.name + ': expConflict undefined -> Skip check');
+	}
+	if (data.expUplDisabled !== undefined) {
+		let uploadDisabled = UrlResolver.getUploadDisabled();
+		if (data.expUplDisabled) {
+			if (uploadDisabled == null) {
+				LogTest.error('Test ' + data.name + ': UploadDisabled (=' + renderValue(uploadDisabled) + ') has not expected value (=set)');
+				++result.errors;
+			}
+		} else {
+			if (uploadDisabled != null) {
+				LogTest.error('Test ' + data.name + ': UploadDisabled (=' + renderValue(uploadDisabled) + ') has not expected value (=not set)');
+				++result.errors;
+			}
+		}
+	} else {
+		LogTest.log('Test ' + data.name + ': expUplDisabled undefined -> Skip check');
+	}
+	if (data.expRemoteFile !== undefined) {
+		if (data.expRemoteFile != null) {
+			let content = remoteFile.content();
+			if (content != data.expRemoteFile) {
+				LogTest.error('Test ' + data.name + ': RemoteFile (=' + renderValue(content) + ') has not expected value (=' + renderValue(data.expRemoteFile) + ')');
+				++result.errors;
+			}
+		}
+	} else {
+		LogTest.log('Test ' + data.name + ': expRemoteFile undefined -> Skip check');
+	}
+	if (data.expStatus !== undefined) {
+		if (data.expStatus != null) {
+			let status = document.getElementById('StatusLine').textContent;
+			let curStatus = status.replace(/[^a-zA-Z0-9]/g, '');
+			let fullStatus = (prevStatus != '') ? prevStatus + ' + ' + data.expStatus : data.expStatus;
+			let expStatus = fullStatus.replace(/[^a-zA-Z0-9]/g, '');
+			if (curStatus != expStatus) {
+				LogTest.error('Test ' + data.name + ': Status (=' + renderValue(status) + ') has not expected value (=' + renderValue(fullStatus) + ')');
+				LogTest.debug('Full Status: \'' + status + '\'');
+				LogTest.debug('Actual string: \'' + curStatus +'\'');
+				LogTest.debug('Expected string: \'' + expStatus +'\'');
+				++result.errors;
+			}
+			prevStatus = fullStatus;  //for next testcase
+		}
+	} else {
+		LogTest.log('Test ' + data.name + ': expStatus undefined -> Skip check');
 	}
 
 	if (result.errors == 0) {
