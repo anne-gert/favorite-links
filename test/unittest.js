@@ -420,7 +420,7 @@ function renderValue(value) {
 	if (value == null) {
 		return '<null>';
 	} else if (typeof value == 'string') {
-		return '\'' + value.substring(0, 20) + '\' (' + value.length + ' chars)';
+		return '\'' + value.substring(0, 500) + '\' (' + value.length + ' chars)';
 	} else {
 		return value;
 	}
