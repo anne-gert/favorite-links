@@ -426,6 +426,23 @@ function renderValue(value) {
 	}
 }
 
+// Compare a and b if they were links. This is basically a string-compare, but
+// with the following changes:
+// - Harmonize line breaks (replace \r\n by single \n)
+// - Remove trailing line breaks
+// Returns true if equal
+function linksEqual(a, b) {
+	if (a === undefined && b === undefined) return true;  //both are undefined
+	if (a === null && b === null) return true;  //both are null
+	if (a == null || b == null) return false;  //only 1 is null or undefined
+	// Now both are set, clean them up
+	a = a.replaceAll(/\r?\n\r?|\r/g, '\n');
+	b = b.replaceAll(/\r?\n\r?|\r/g, '\n');
+	a = a.replace(/[\r\n]+$/, '');
+	b = b.replace(/[\r\n]+$/, '');
+	return a === b;
+}
+
 async function sleep(timeout) {
 	let promise = new PendingPromise();
 	window.setTimeout(() => promise.resolve(true), timeout);
@@ -620,7 +637,7 @@ async function executeTest(data) {
 	LogTest.important('Test ' + data.name + ': Verify results');
 	if (data.expLinks !== undefined) {
 		let links = Data.readLocalLinks();
-		if (links != data.expLinks) {
+		if (!linksEqual(links, data.expLinks)) {
 			LogTest.error('Test ' + data.name + ': Links (=' + renderValue(links) + ') has not expected value (=' + renderValue(data.expLinks) + ')');
 			++result.errors;
 		}
@@ -629,7 +646,7 @@ async function executeTest(data) {
 	}
 	if (data.expCleanLinks !== undefined) {
 		let cleanLinks = Data.readCleanLinks();
-		if (cleanLinks != data.expCleanLinks) {
+		if (!linksEqual(cleanLinks, data.expCleanLinks)) {
 			LogTest.error('Test ' + data.name + ': CleanLinks (=' + renderValue(cleanLinks) + ') has not expected value (=' + renderValue(data.expCleanLinks) + ')');
 			++result.errors;
 		}
@@ -638,7 +655,7 @@ async function executeTest(data) {
 	}
 	if (data.expDispLinks !== undefined) {
 		let dispLinks = Data.getDisplayedLinks();
-		if (dispLinks != data.expDispLinks) {
+		if (!linksEqual(dispLinks, data.expDispLinks)) {
 			LogTest.error('Test ' + data.name + ': DisplayedLinks (=' + renderValue(dispLinks) + ') has not expected value (=' + renderValue(data.expDispLinks) + ')');
 			++result.errors;
 		}
@@ -673,7 +690,7 @@ async function executeTest(data) {
 	if (data.expRemoteFile !== undefined) {
 		if (data.expRemoteFile != null) {
 			let content = remoteFile.content();
-			if (content != data.expRemoteFile) {
+			if (!linksEqual(content, data.expRemoteFile)) {
 				LogTest.error('Test ' + data.name + ': RemoteFile (=' + renderValue(content) + ') has not expected value (=' + renderValue(data.expRemoteFile) + ')');
 				++result.errors;
 			}
@@ -736,6 +753,7 @@ async function doTests() {
 	let test_sets = [
 		'test/testcases-settings.tsv',
 		'test/testcases-updatelinks.tsv',
+		'test/testcases-dragdrop.tsv',
 	];
 	let results = [];
 	for (let i = 0; i < test_sets.length; ++i) {
