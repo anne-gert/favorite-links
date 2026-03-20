@@ -6036,7 +6036,7 @@ function applyBlocks(blocks, applyFunc) {
 	if (blocks == null) return;
 
 	let contents, lineNums;
-	if ('length' in blocks) {
+	if (Array.isArray(blocks)) {
 		// This is an array, assume of Block objects.
 		// Concatenate and translate line numbers.
 		if (blocks.length <= 0) return;
