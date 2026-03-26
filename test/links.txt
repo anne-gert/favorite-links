@@ -46,15 +46,31 @@ Section
 
     Derive name from URL
         https://www.domain.net/descriptive-title-in-p%61th/index.html?query?dummy-query#fragment
+            & -> *Descriptive Title In Path*
         https://descriptive-domain.net/index.aspx#fragment
+            & -> *descriptive-domain.net* (skip standard name in path)
+        https://www.bol.com
+            & -> *bol.com* (skip standard domain prefix)
         = https://domain.net/use-literal-url
+            & -> *https://domain.net/use-literal-url* ('=' override)
         =https://domain.net/use-literal-url
-        Name is set https://domain.net/path.html
-        Name is set, absolute URL https://domain.net/path.html
-        Name is set, absolute url=URL url=https://domain.net/path.html
-        Name is set, relative url=URL url=/path.html
-        Name is set, only query url=URL url=?query
+            & -> *https://domain.net/use-literal-url* ('=' override)
         url=?only-url-query
+            & -> *?only-url-query*
+        http://domain.net/path/name-of-file.php?search=search+for+something
+            & -> *Search For Something* (use query string)
+
+    Separate Name/URL
+        Name is set https://domain.net/path.html
+            & -> *Name is set*
+        Name is set, absolute URL https://domain.net/path.html
+            & -> *Name is set, absolute URL*
+        Name is set, absolute url=URL url=https://domain.net/path.html
+            & -> *Name is set, absolute url = URL*
+        Name is set, relative url=URL url=/path.html
+            & -> *Name is set, relative url = URL*
+        Name is set, only query url=URL url=?query
+            & -> *Name is set, only query url = URL*
 
 Section
 

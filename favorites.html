@@ -3633,22 +3633,11 @@ function render(parsed, container, cancel) {
 		// Fill in defaults for missing elements
 		if (name == null) {
 			if (url != null) {
-				// Derive name from url
-				let m;
-				// - Remove schema
-				name = url.replace(/^[\w-]+:\/+/, '');
-				// - Remove querystring and fragment
-				name = name.replace(/(\?.*)?(#.*)?$/, '');
-				// - Remove trailing '/' and extension
-				name = name.replace(/(?:\/+|\.[a-zA-Z0-9]+)$/, '');
-				// - Remove known suffixes
-				name = name.replace(/\/+(index)$/i, '');
-				// - Take last component (file/directory name)
-				m = name.match(/(.*)\/([^\/]+)$/);
-				if (m) {
-					// There is a last component
+				let beautifyPart = part => {
+					// - Remove extension
+					let s = part.replace(/\.[a-zA-Z0-9]+$/, '');
 					// - Replace %xx
-					name = m[2].replaceAll(/%([0-9a-fA-F]{2})/g, m2 => {
+					s = s.replaceAll(/%([0-9a-fA-F]{2})/g, m2 => {
 						try {
 							let c = parseInt(m2.slice(1), 16);
 							return String.fromCharCode(c);
@@ -3657,25 +3646,81 @@ function render(parsed, container, cancel) {
 						}
 					});
 					// - If multiple '-', '_', '.', '+', replace by spaces
-					m = name.match(/([-_.+]).*\1/);
-					if (m) name = name.replaceAll(m[1], ' ');
+					let m = s.match(/([-_.+]).*\1/);
+					if (m) s = s.replaceAll(m[1], ' ');
 					// - Replace each starting letter to upper case
-					name = name.replaceAll(/(?<=^|\s)[a-z]/g, m2 => {
+					s = s.replaceAll(/(?<=^|\s)[a-z]/g, m2 => {
 						try {
 							return m2.toUpperCase();
 						} catch (e) {
 							return m2;
 						}
 					});
-				} else {
-					// There is no last component, take domain
+					return s;
+				};
+				let beautifyDomain = domain => {
 					// - Remove path
-					name = name.replace(/\/.*$/, '');
+					let s = domain.replace(/\/.*$/, '');
 					// - Remove known prefixes
-					name = name.replace(/^(www)\./i, '');
+					s = s.replace(/^(www)\./i, '');
+					return s;
+				};
+
+				// Derive name from url
+				let m, domain, rest;
+				// - Get domain and rest
+				m = url.match(/^[\w-]+:\/+([^\/]+)(.*)/);
+				if (m) {
+					domain = m[1];
+					rest = m[2];
+				} else {
+					domain = null;
+					rest = url;
 				}
+				// - Get path, querystring and fragment
+				let path, query, frag;
+				m = rest.match(/([^?#]*)(?:\?([^#]*))?(?:#(.*))?$/);
+				if (m) {
+					path = m[1];
+					query = m[2];
+					frag = m[3];
+				} else {
+					path = rest;
+					query = frag = null;
+				}
+				// - Collect the parts
+				let parts = [];
+				if (path) parts.push(...path.split(/\//));
+				if (query) parts.push(...query.split(/[?&]/).map(s => s.replace(/^[\w-]+=/, '')));
+				if (frag) parts.push(frag);
+				// - Check the parts for anything suitable
+				for (let p = parts.length-1; p >= 0; --p) {
+					let pt = parts[p];
+					// - Remove known names and empty strings
+					if (!pt || pt.match(/^(index)(\.\w+)?$/i)) continue;
+					// - Count characters
+					let ltrs = 0, nums = 0, seps = 0;
+					let ms = pt.matchAll(/([a-zA-Z])|(\d)|([-_+.])/g);
+					for (m of ms) {
+						if (m[1] != null) ++ltrs;
+						if (m[2] != null) ++nums;
+						if (m[3] != null) ++seps;
+					}
+					LogRender.debug(`Part '${pt}': ltrs=${ltrs}, nums=${nums}, seps=${seps}`);
+					// - Check if we want it
+					if (ltrs >= 8 &&  //not too small
+						seps >= 2 &&  //at least 3 words
+						(nums == 0 || ltrs/nums >= 0.8)  //mostly letters
+					){
+						name = beautifyPart(pt);
+						//LogRender.devlog(`Take '${name}'`);
+						break;
+					}
+				}
+				// No name found, take domain
+				if (!name && domain) name = beautifyDomain(domain);
 				// If nothing left, take the URL
-				if (name == null || name == '') name = url;
+				if (!name) name = url;
 			} else {
 				name = '_';  //indicates the name may be hidden
 			}
