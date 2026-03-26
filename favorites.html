@@ -3637,9 +3637,9 @@ function render(parsed, container, cancel) {
 					// - Remove extension
 					let s = part.replace(/\.[a-zA-Z0-9]+$/, '');
 					// - Replace %xx
-					s = s.replaceAll(/%([0-9a-fA-F]{2})/g, m2 => {
+					s = s.replaceAll(/%([0-9a-fA-F]{2})/g, (m2, c) => {
 						try {
-							let c = parseInt(m2.slice(1), 16);
+							c = parseInt(c, 16);
 							return String.fromCharCode(c);
 						} catch (e) {
 							return m2;
