@@ -3588,11 +3588,10 @@ function render(parsed, container, cancel) {
 				};
 			}
 			if (cancel()) return;
-			if (subrendered) {
-				if (subrendered.length)
-					rendered.push(...subrendered);
-				else
-					rendered.push(subrendered);
+			if (Array.isArray(subrendered)) {
+				rendered.push(...subrendered);
+			} else {
+				rendered.push(subrendered);
 			}
 		}
 		return rendered;
