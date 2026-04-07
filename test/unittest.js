@@ -513,6 +513,17 @@ function initTests() {
 
 // Read Tests {{{
 
+let KnownColumns = [
+	'name',
+	'keepStorage',
+	'iniOverrideArg', 'iniLoadArg', 'iniSaveArg',
+	'iniLinks', 'iniRemoteFile', 'iniCleanLinks',
+	'expLinks', 'expRemoteFile', 'expCleanLinks',
+	'expDispLinks', 'expUplDisabled', 'expConflict', 'expStatus',
+	'cnfAction', 'cnfLinks', 'cnfLoadOpt1', 'cnfLoadOpt2', 'cnfSaveOpt',
+	'dropSource', 'dropWhere', 'dropTarget',
+];
+
 async function readTests(url) {
 	LogTest.important('Read test cases from ' + url);
 	let test_cases = [];
@@ -546,6 +557,7 @@ async function readTests(url) {
 		if (names == null) {
 			// Take first line as headings
 			names = [];
+			let checkNames = [];
 			for (let n = 0; n < fields.length; ++n) {
 				let tags = getMultiTags(fields[n]);
 				if (tags) {
@@ -555,15 +567,25 @@ async function readTests(url) {
 						let tag = tags[t];
 						let name = getMultiValue(fields[n], tag);
 						multiName.push({ tag: tag, name: name });
+						checkNames.push(name);
 					}
 					names.push(multiName);
 				} else {
 					// Is single valued
-					names.push(fields[n]);
+					let name = fields[n];
+					names.push(name);
+					checkNames.push(name);
 				}
 			}
 			LogTest.log('Number of columns: ' + names.length);
 			//LogTest.devlog('Column names: ', names);
+			for (let n = 0; n < checkNames.length; ++n) {
+				let name = checkNames[n];
+				if (!KnownColumns.includes(name)) {
+					LogTest.error(`Unknown column name: '${name}'`);
+					return test_cases;
+				}
+			}
 		} else {
 			// Check length of data
 			if (fields.length != names.length) {
@@ -781,8 +803,6 @@ async function executeTest(data) {
 			LogTest.error('Test ' + data.name + ': Links (=' + renderValue(links) + ') has not expected value (=' + renderValue(data.expLinks) + ')');
 			++result.errors;
 		}
-	} else {
-		LogTest.log('Test ' + data.name + ': expLinks undefined -> Skip check');
 	}
 	if (data.expCleanLinks !== undefined) {
 		let cleanLinks = Data.readCleanLinks();
@@ -790,8 +810,6 @@ async function executeTest(data) {
 			LogTest.error('Test ' + data.name + ': CleanLinks (=' + renderValue(cleanLinks) + ') has not expected value (=' + renderValue(data.expCleanLinks) + ')');
 			++result.errors;
 		}
-	} else {
-		LogTest.log('Test ' + data.name + ': expCleanLinks undefined -> Skip check');
 	}
 	if (data.expDispLinks !== undefined) {
 		let dispLinks = Data.getDisplayedLinks();
@@ -799,8 +817,6 @@ async function executeTest(data) {
 			LogTest.error('Test ' + data.name + ': DisplayedLinks (=' + renderValue(dispLinks) + ') has not expected value (=' + renderValue(data.expDispLinks) + ')');
 			++result.errors;
 		}
-	} else {
-		LogTest.log('Test ' + data.name + ': expDispLinks undefined -> Skip check');
 	}
 	if (data.expConflict !== undefined) {
 		let conflictState = Data.getConflictState();
@@ -808,8 +824,6 @@ async function executeTest(data) {
 			LogTest.error('Test ' + data.name + ': ConflictState (=' + renderValue(conflictState) + ') has not expected value (=' + renderValue(data.expConflict) + ')');
 			++result.errors;
 		}
-	} else {
-		LogTest.log('Test ' + data.name + ': expConflict undefined -> Skip check');
 	}
 	if (data.expUplDisabled !== undefined) {
 		let uploadDisabled = UrlResolver.getUploadDisabled();
@@ -824,8 +838,6 @@ async function executeTest(data) {
 				++result.errors;
 			}
 		}
-	} else {
-		LogTest.log('Test ' + data.name + ': expUplDisabled undefined -> Skip check');
 	}
 	if (data.expRemoteFile !== undefined) {
 		if (data.expRemoteFile != null) {
@@ -835,8 +847,6 @@ async function executeTest(data) {
 				++result.errors;
 			}
 		}
-	} else {
-		LogTest.log('Test ' + data.name + ': expRemoteFile undefined -> Skip check');
 	}
 	if (data.expStatus !== undefined) {
 		if (data.expStatus != null) {
@@ -853,8 +863,6 @@ async function executeTest(data) {
 			}
 			prevStatus = fullStatus;  //for next testcase
 		}
-	} else {
-		LogTest.log('Test ' + data.name + ': expStatus undefined -> Skip check');
 	}
 
 	if (result.errors == 0) {
