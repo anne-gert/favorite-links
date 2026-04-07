@@ -263,6 +263,7 @@ body {
 	width: calc(100% - 4px); height: calc(100% - 4px);
 	justify-content: center; align-items: center;
 	span {
+		text-align: center;
 		transform: rotate(-20deg);
 	}
 }
@@ -5175,8 +5176,6 @@ function addSearchButtons(parsed, searchBox, container) {
 let showSettingsPanel = null;
 // Function to update the displayed Conflict state
 let updateSettingsConflict = null;
-// Function to make Settings TextArea readonly
-let setSettingsReadOnly = null;
 
 // Set up the events for the settings panel.
 function initSettingsPanel() {
@@ -5190,7 +5189,6 @@ function initSettingsPanel() {
 
 	// Status
 	let visible = false;
-	let textRO = false;
 
 	// Other global variables for Settings (will be assigned in createSettings())
 	let settingsText;
@@ -5200,7 +5198,6 @@ function initSettingsPanel() {
 	// Create the minimal hooks (expose functions) and defer rest at first showing
 	showSettingsPanel = showSettings;
 	updateSettingsConflict = updateConflict;
-	setSettingsReadOnly = setReadOnly;
 	// Create iconOpen
 	iconOpen = document.createElement('span');
 	setUnicodeText(iconOpen, UNICODE_GEARS, '[Settings]');
@@ -5295,7 +5292,7 @@ function initSettingsPanel() {
 		// Configure settingsPanel
 		settingsPanel.onkeydown = function(e) {
 			if (isKey(e, 'c', 's')) {  //Ctrl-S
-				if (textRO) return false;  //silently discard
+				if (getLinksReadOnly()) return false;  //silently discard
 				if (visible) hideSettings(true);
 				return false;  //stop default button action
 			}
@@ -5337,7 +5334,7 @@ function initSettingsPanel() {
 		settingsText.spellcheck = false;
 		settingsText.placeholder = 'Settings';
 		settingsText.className = 'textbox';
-		settingsText.readOnly = textRO;
+		settingsText.readOnly = getLinksReadOnly();
 		// BUG: Firefox on Windows 11 seems to have an issue when using
 		// the Home key behavior of 'first Home goes to start of text,
 		// second Home goes to start of line'.
@@ -5416,7 +5413,7 @@ function initSettingsPanel() {
 			if (isKey(e, '', 'Home')) {
 				// Go to first non-whitespace character or first column
 				return !gotoHome(this);
-			} else if (textRO) {
+			} else if (getLinksReadOnly()) {
 				// Keys for ReadOnly mode
 				if (isKey(e, '?s', 'Tab')) {  //Tab, Shift-Tab
 					return false;  //silently discard
@@ -5584,13 +5581,6 @@ function initSettingsPanel() {
 		addClass(warningDirty, 'hidden', !conflicted);
 	}
 
-	function setReadOnly(textReadOnly) {
-		textRO = textReadOnly;
-		if (settingsText) {
-			settingsText.readOnly = textRO;
-		}
-	}
-
 	// Note on onanimationend:
 	// This class initiates multiple animations and thus multiple
 	// onanimationend calls, one for each animation. Therefore, remove the
@@ -5686,7 +5676,7 @@ function initSettingsPanel() {
 			saveOptionEntries[i].showData();
 		}
 		// Update buttons
-		if (textRO) {
+		if (getLinksReadOnly()) {
 			iconSave.style.display = 'none';
 		} else {
 			iconSave.style.display = '';
@@ -6226,6 +6216,7 @@ function initDragDrop() {
 	// dragleave, it is undisplayed.
 	let dropTarget = null;  //dropTarget control
 	let dropTargetBg = null;  //background
+	let dropTargetBgText = null;  //text displayed on background
 	let displaying = false;  //whether the dropTarget is currently showing
 	let internalDrag = false;  //whether the current drag action is not from external
 	let newDrag = false;  //true if new drag detected
@@ -6236,9 +6227,8 @@ function initDragDrop() {
 		dropTarget.id = 'drop-target';
 		dropTargetBg = document.createElement('div');
 		dropTargetBg.id = 'drop-target-bg';
-		let text = document.createElement('span');
-		text.appendChild(document.createTextNode('Add Item'));
-		dropTargetBg.appendChild(text);
+		dropTargetBgText = document.createElement('span');
+		dropTargetBg.appendChild(dropTargetBgText);
 		dropTarget.ondrop = e => {
 			//LogSettings.devlog('Dropped in drop target');
 			// Note: for an <input> textbox, the default is to put the value in the
@@ -6251,7 +6241,11 @@ function initDragDrop() {
 				let lines = dropTarget.value;
 				dropTarget.value = '';
 				undisplay();
-				dropLinesXY(dropX, dropY, lines);
+				if (getLinksReadOnly()) {
+					LogSettings.log('LinksReadOnly, ignore drop');
+				} else {
+					dropLinesXY(dropX, dropY, lines);
+				}
 			}, 0);
 		};
 		dropTarget.ondragleave = e => {
@@ -6623,12 +6617,13 @@ function initDragDrop() {
 		return lineNum;
 	}
 
-	function display() {
+	function display(text) {
 		if (!dropTarget) createDropTarget();
 		dropTarget.style.top = 0;
 		dropTarget.style.left = 0;
 		dropTarget.style.height = (document.documentElement.scrollHeight - 8) + 'px';
 		dropTarget.style.width = (document.documentElement.scrollWidth - 8) + 'px';
+		dropTargetBgText.innerText = text;
 		document.body.appendChild(dropTargetBg);
 		document.body.appendChild(dropTarget);
 		displaying = true;
@@ -6653,25 +6648,32 @@ function initDragDrop() {
 	window.ondragover = e => {
 		if (!displaying && newDrag) {
 			newDrag = false;
+			if (internalDrag) {
+				LogSettings.debug('Ignore internal drag', e);
+				return;
+			}
+			if (getLinksReadOnly()) {
+				display('Cannot\nModify');
+				return;
+			}
 			let allowed = false;
 			if (e.dataTransfer.types) {
 				for (let i = 0; i < e.dataTransfer.types.length; ++i) {
 					let t = e.dataTransfer.types[i];
 					if (t.match(/^text\//)) {
 						allowed = true;
+						break;
 					}
 				}
 			}
-			if (internalDrag) {
-				LogSettings.debug('Ignore internal drag', e);
-			} else if (!allowed) {
+			if (!allowed) {
 				LogSettings.debug('Data type not allowed for drag', e.dataTransfer);
-			} else {
-				// An external object is being dragged onto the window,
-				// display the dropTarget to catch it.
-				LogSettings.log('Window drag enter', e);
-				display();
+				return;
 			}
+			// An external object is being dragged onto the window,
+			// display the dropTarget to catch it.
+			LogSettings.log('Window drag enter', e);
+			display('Add Item');
 		}
 	};
 }
@@ -6795,6 +6797,12 @@ function setFontSize(size) {
 	document.documentElement.style.setProperty('--font-size', size);
 }
 
+// Function to return the status of the Links.
+let LinksReadOnly = false;
+function getLinksReadOnly() {
+	return LinksReadOnly;
+}
+
 // From the Links configuration, parse its content and display it.
 // This function may throw a UserInputError exceptions when something is wrong
 // with the contents of the Links variable.
@@ -6805,14 +6813,14 @@ function processLinks(links, cancel = null) {
 	let parsed = parseLinks(links);  //throws exception if invalid
 
 	// Set readonly if:
+	LinksReadOnly =
 	// - !no-edit is in the config.
-	let readonly = parsed.noEdit;
+	parsed.noEdit ||
 	// - LoadOverrideOptons without SaveOptions are used. In this case,
 	//   edits cannot be saved and a refresh would overwrite them with the
 	//   LoadOverride. This would be confusing. Therefore, make it so the
 	//   config can not be changed to start with.
-	readonly ||= UrlResolver.getLoadOverrideOptions() && !UrlResolver.getSaveOptions();
-	setSettingsReadOnly(readonly);
+	(UrlResolver.getLoadOverrideOptions() && !UrlResolver.getSaveOptions());
 
 	if (cancel()) return;
 
