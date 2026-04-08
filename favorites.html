@@ -922,6 +922,8 @@ const CheckboxRefLoop = 'char:!RL!';
 const CheckboxError = 'char:!FF!';
 
 // Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
+// Unicode Block: General Punctuation
+const UNICODE_ELLIPSIS = '\u{2026}';
 // Unicode Block: Arrows
 const UNICODE_LEFTWARDS_ARROW_WITH_HOOK = '\u{21A9}';  //a 'swoosh' arrow
 const UNICODE_RIGHTWARDS_ARROW_WITH_HOOK = '\u{21AA}';  //a 'swoosh' arrow
@@ -1443,6 +1445,101 @@ function restoreScrollPos(position, widget = document.documentElement, post = tr
 		widget.scrollLeft = position[1] * maxW;
 	};
 	if (post) window.setTimeout(doit, 0); else doit();
+}
+
+// Create a title from a url with heuristics.
+// Returns null if no title could be derived.
+function createTitle(url) {
+	function beautifyPart(part) {
+		// - Remove extension
+		let s = part.replace(/\.[a-zA-Z0-9]+$/, '');
+		// - Replace %xx
+		s = s.replaceAll(/%([0-9a-fA-F]{2})/g, (m2, c) => {
+			try {
+				c = parseInt(c, 16);
+				return String.fromCharCode(c);
+			} catch (e) {
+				return m2;
+			}
+		});
+		// - If multiple '-', '_', '.', '+', replace by spaces
+		let m = s.match(/([-_.+]).*\1/);
+		if (m) s = s.replaceAll(m[1], ' ');
+		// - Replace each starting letter to upper case
+		s = s.replaceAll(/(?<=^|\s)[a-z]/g, m2 => {
+			try {
+				return m2.toUpperCase();
+			} catch (e) {
+				return m2;
+			}
+		});
+		return s;
+	}
+
+	function beautifyDomain(domain) {
+		// - Remove path
+		let s = domain.replace(/\/.*$/, '');
+		// - Remove known prefixes
+		s = s.replace(/^(www)\./i, '');
+		return s;
+	}
+
+	// Derive name from url
+	let name = null;
+	let m, domain, rest;
+	// - Get domain and rest
+	m = url.match(/^[\w-]+:\/+([^\/]+)(.*)/);
+	if (m) {
+		domain = m[1];
+		rest = m[2];
+	} else {
+		domain = null;
+		rest = url;
+	}
+	// - Get path, querystring and fragment
+	let path, query, frag;
+	m = rest.match(/([^?#]*)(?:\?([^#]*))?(?:#(.*))?$/);
+	if (m) {
+		path = m[1];
+		query = m[2];
+		frag = m[3];
+	} else {
+		path = rest;
+		query = frag = null;
+	}
+	// - Collect the parts
+	let parts = [];
+	if (path) parts.push(...path.split(/\//));
+	if (query) parts.push(...query.split(/[?&]/).map(s => s.replace(/^[\w-]+=/, '')));
+	if (frag) parts.push(frag);
+	// - Check the parts for anything suitable
+	for (let p = parts.length-1; p >= 0; --p) {
+		let pt = parts[p];
+		// - Remove known names and empty strings
+		if (!pt || pt.match(/^(index)(\.\w+)?$/i)) continue;
+		// - Count characters
+		let ltrs = 0, nums = 0, seps = 0;
+		let ms = pt.matchAll(/([a-zA-Z])|(\d)|([-_+.])/g);
+		for (m of ms) {
+			if (m[1] != null) ++ltrs;
+			if (m[2] != null) ++nums;
+			if (m[3] != null) ++seps;
+		}
+		LogRender.debug(`Part '${pt}': ltrs=${ltrs}, nums=${nums}, seps=${seps}`);
+		// - Check if we want it
+		if (ltrs >= 8 &&  //not too small
+			seps >= 2 &&  //at least 3 words
+			(nums == 0 || ltrs/nums >= 0.8)  //mostly letters
+		){
+			name = beautifyPart(pt);
+			//LogRender.devlog(`Take '${name}'`);
+			break;
+		}
+	}
+	// No name found, take domain if it's more than 1/3 of the URL
+	if (!name && domain && domain.length > url.length/3) name = beautifyDomain(domain);
+
+	return name;
 }
 
 // }}}
@@ -3659,94 +3756,12 @@ function render(parsed, container, cancel) {
 		// Fill in defaults for missing elements
 		if (name == null) {
 			if (url != null) {
-				let beautifyPart = part => {
-					// - Remove extension
-					let s = part.replace(/\.[a-zA-Z0-9]+$/, '');
-					// - Replace %xx
-					s = s.replaceAll(/%([0-9a-fA-F]{2})/g, (m2, c) => {
-						try {
-							c = parseInt(c, 16);
-							return String.fromCharCode(c);
-						} catch (e) {
-							return m2;
-						}
-					});
-					// - If multiple '-', '_', '.', '+', replace by spaces
-					let m = s.match(/([-_.+]).*\1/);
-					if (m) s = s.replaceAll(m[1], ' ');
-					// - Replace each starting letter to upper case
-					s = s.replaceAll(/(?<=^|\s)[a-z]/g, m2 => {
-						try {
-							return m2.toUpperCase();
-						} catch (e) {
-							return m2;
-						}
-					});
-					return s;
-				};
-				let beautifyDomain = domain => {
-					// - Remove path
-					let s = domain.replace(/\/.*$/, '');
-					// - Remove known prefixes
-					s = s.replace(/^(www)\./i, '');
-					return s;
-				};
-
-				// Derive name from url
-				let m, domain, rest;
-				// - Get domain and rest
-				m = url.match(/^[\w-]+:\/+([^\/]+)(.*)/);
-				if (m) {
-					domain = m[1];
-					rest = m[2];
-				} else {
-					domain = null;
-					rest = url;
-				}
-				// - Get path, querystring and fragment
-				let path, query, frag;
-				m = rest.match(/([^?#]*)(?:\?([^#]*))?(?:#(.*))?$/);
-				if (m) {
-					path = m[1];
-					query = m[2];
-					frag = m[3];
-				} else {
-					path = rest;
-					query = frag = null;
-				}
-				// - Collect the parts
-				let parts = [];
-				if (path) parts.push(...path.split(/\//));
-				if (query) parts.push(...query.split(/[?&]/).map(s => s.replace(/^[\w-]+=/, '')));
-				if (frag) parts.push(frag);
-				// - Check the parts for anything suitable
-				for (let p = parts.length-1; p >= 0; --p) {
-					let pt = parts[p];
-					// - Remove known names and empty strings
-					if (!pt || pt.match(/^(index)(\.\w+)?$/i)) continue;
-					// - Count characters
-					let ltrs = 0, nums = 0, seps = 0;
-					let ms = pt.matchAll(/([a-zA-Z])|(\d)|([-_+.])/g);
-					for (m of ms) {
-						if (m[1] != null) ++ltrs;
-						if (m[2] != null) ++nums;
-						if (m[3] != null) ++seps;
-					}
-					LogRender.debug(`Part '${pt}': ltrs=${ltrs}, nums=${nums}, seps=${seps}`);
-					// - Check if we want it
-					if (ltrs >= 8 &&  //not too small
-						seps >= 2 &&  //at least 3 words
-						(nums == 0 || ltrs/nums >= 0.8)  //mostly letters
-					){
-						name = beautifyPart(pt);
-						//LogRender.devlog(`Take '${name}'`);
-						break;
-					}
-				}
-				// No name found, take domain
-				if (!name && domain) name = beautifyDomain(domain);
+				name = createTitle(url);
 				// If nothing left, take the URL
-				if (!name) name = url;
+				if (!name) {
+					name = url.replace(/^\w+:\/\//, '');  //url without schema
+					if (name.length > 70) name = name.substring(0, 60) + UNICODE_ELLIPSIS;
+				}
 			} else {
 				name = '_';  //indicates the name may be hidden
 			}

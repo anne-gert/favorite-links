@@ -51,6 +51,8 @@ Section
             & -> *descriptive-domain.net* (skip standard name in path)
         https://www.bol.com
             & -> *bol.com* (skip standard domain prefix)
+        https://www.bol.com/rest/of/url/is/longer/than/domain-name?make/this/quite/a/bit/longer/than/70/characters/to/show/truncation
+            & -> *www.bol.com/rest/of/url/is/longer/than/domain-name?make/this…* (truncate url)
         = https://domain.net/use-literal-url
             & -> *https://domain.net/use-literal-url* ('=' override)
         =https://domain.net/use-literal-url
