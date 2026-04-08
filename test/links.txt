@@ -149,6 +149,26 @@ loop-lengths for refloop cases are shown.
         Test with incorrect default icons icon=char:T url=?links-override=test/icon-define-error.txt
         Test with looped refloop icons icon=char:T url=?links-override=test/icon-define-refloop-loop.txt
 
+    Match Domain
+        !icon sub.domain.tld char:A
+        !icon .domain.tld char:B
+        !icon domain.tld char:C
+        !icon .tld2 char:D
+        Match sub.domain.tld
+            http://host.sub.domain.tld host.sub.domain.tld (should display *A*)
+            http://host2.sub.domain.tld host2.sub.domain.tld (should display *A*)
+            http://sub.domain.tld sub.domain.tld (should display *A*)
+        Match .domain.tld
+            http://sub2.domain.tld sub2.domain.tld (should display *B*)
+        Match domain.tld
+            http://domain.tld domain.tld (should display *C*)
+        Match nothing
+            http://tld2.tld tld2.tld (should not display icon)
+            http://d.tld d.tld (should not display icon)
+        Match .tld2
+            http://domain.tld2 domain.tld2 (should display *D*)
+            http://tld2.tld2 tld2.tld2 (should display *D*)
+
 Test Cases for Checkboxes
 
 !text

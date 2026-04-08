@@ -4446,8 +4446,16 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 		let m = target_url.match(/^\w+:\/\/([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+)/);
 		if (m) {
 			let domain = m[1];
-			let replacement = parsed.resolveIconDefs(domain);
-			if (replacement != domain) found = replacement;
+			while (domain !== '') {
+				let replacement = parsed.resolveIconDefs(domain);
+				if (replacement != domain) {
+					found = replacement;
+					break;
+				}
+				// Remove either starting '.' or word in domain
+				// This way, '.com' is distinct from 'com'.
+				domain = domain.replace(/^(\.|[^.]+)/, '');  //will always match
+			}
 		}
 		// If not found, use the default URL
 		if (found == null) {

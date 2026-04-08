@@ -469,48 +469,49 @@ Below is an example of lines specifying a Link.
 Different combinations of links and names.
 <pre>
   Example                              : Just a string 'Example' without link
-  http://example.com                   : Link with name http://example.com and icon http://example.com/favicon.ico
-  Example http://example.com           : Same link with name 'Example'
-  Example icon=none http://example.com : Same link, but no Icon
+  http://example.net                   : Link with name http://example.net and icon http://example.net/favicon.ico
+  Example http://example.net           : Same link with name 'Example'
+  Example icon=none http://example.net : Same link, but no Icon
   Example:3                            : Show 'Example:3', linking to the URL Example:3, because it also matches schema:location
   Example:3 url=                       : Show 'Example:3' without link
   Rare word search:Google              : Show 'Rare word' with link that searches 'Rare word' on Google
 </pre>
 Submenus and indentation levels.
 <pre>
-  Submenu http://example.com           : Item 'Submenu' that is a link and has sub-Items.
+  Submenu http://example.net           : Item 'Submenu' that is a link and has sub-Items.
     ...
   Submenu                              : Submenu without link
     ...
-  http://example.com                   : Submenu with link that is used as name too
+  http://example.net                   : Submenu with link that is used as name too
     ...
 </pre>
 Hidden names.
 <pre>
   _                                    : Will not be displayed
-  _ http://example.com                 : Will display a clickable icon
-  _ icon=none http://example.com       : Will display 'Heading' that is clickable
-    _ icon=empty http://example.com    : Will display 'Block' that is clickable
-      _ icon=empty http://example.com  : Will display 'Item' that is clickable
+  _ http://example.net                 : Will display a clickable icon
+  _ icon=none http://example.net       : Will display 'Heading' that is clickable
+    _ icon=empty http://example.net    : Will display 'Block' that is clickable
+      _ icon=empty http://example.net  : Will display 'Item' that is clickable
 </pre>
 Checkboxes.
 <pre>
   [ ]                                  : Displays a checkbox without label
   [] _                                 : Same thing
-  [x] http://example.com               : Display checkbox with link
+  [x] http://example.net               : Display checkbox with link
 </pre>
 Specifying icons.
 <pre>
-  !icon www.example.com https://static.example.com/assets/icon1.png
-  !icon icon2 https://static.example.com/assets/icon2.png
+  !icon example.net https://static.example.net/assets/icon1.png
+  !icon icon2 https://static.example.net/assets/icon2.png
   !icon iconToo icon2
-  http://example.com                   : Uses icon http://example.com/favicon.ico (default)
-  http://www.example.com               : Uses icon icon1.png from !icon above (implicit)
-  icon=icon2 http://www.example.com    : Uses icon icon2.png from !icon above (explicit)
-  icon=iconToo http://www.example.com  : Uses icon icon2.png from !icon above (expliciti, recursive)
-  icon=alt http://example.com          : Use alternate
-  icon=alt:google http://example.com   : Use alternate from Google
-  icon=html:&lt;span&amp;space;style="color:green"&gt;&amp;#x2714;&lt;/span&gt; http://example.com
+  http://www.example.com               : Uses icon http://www.example.com/favicon.ico (default)
+  http://example.net                   : Uses icon icon1.png from !icon above (implicit)
+  http://www.example.net               : Uses icon icon1.png from !icon above (sub-domain, implicit)
+  icon=icon2 http://www.example.net    : Uses icon icon2.png from !icon above (explicit)
+  icon=iconToo http://www.example.net  : Uses icon icon2.png from !icon above (explicit, recursive)
+  icon=alt http://example.net          : Use alternate
+  icon=alt:google http://example.net   : Use alternate from Google
+  icon=html:&lt;span&amp;space;style="color:green"&gt;&amp;#x2714;&lt;/span&gt; http://example.net
 </pre>
 </p>
 
@@ -629,8 +630,9 @@ values:
 <ul>
 <li>URL: This URL is used as the image URL of the icon.
 <li><code>default</code>: If value is default or no icon is given, the URL
-    domain + <code>favicon.ico</code> is used. If the URL domain is the name of
-    an !icon definition, that value is used.
+    domain + <code>favicon.ico</code> is used.<br>
+    If the URL domain is the name of an !icon definition (or a sub-domain of
+    the !icon definition's name), that value is used.
 <li><code>none</code>: No image is rendered.
 <li><code>empty</code>: An empty image is rendered.
 <li><code>alt:&lt;method&gt;?&lt;url&gt;</code>: Instead of the website's icon
@@ -788,7 +790,7 @@ For convenience some pre-defined options are available:
 </ul>
 The representation of these pre-defined icons can be changed. E.g. to use a
 different icon for the checkmark, use <code>!icon check
-http://example.com/icon.png</code>.
+http://example.net/icon.png</code>.
 </p>
 
 <p>
@@ -908,8 +910,8 @@ overriden with a checkmark (&#x2714;):
 !checkbox icons empty check [1]icon1 [2]icon2 [3]icon3 [4]icon4 [5]icon2
 [1]:icons Option 1
 [2]:icons Option 2
-!icon icon1 http://example.com/icon1.png
-!icon icon2 http://example.com/icon2.png
+!icon icon1 http://example.net/icon1.png
+!icon icon2 http://example.net/icon2.png
 !icon icon3 icon1
 !icon icon4 char:X
 !icon check char:U+2714
@@ -921,9 +923,9 @@ Example 8: Links to read with the URL icon in front and a checkbox after the
 text. The checkbox can be empty, '+' or '-':
 <pre>
 !checkbox good _ + - !after
-[ ]:good Item 1 http://example.com/item1
-[+]:good Item 2 http://example.com/item2
-[-]:good Item 3 http://example.com/item3
+[ ]:good Item 1 http://example.net/item1
+[+]:good Item 2 http://example.net/item2
+[-]:good Item 3 http://example.net/item3
 </pre>
 </p>
 
