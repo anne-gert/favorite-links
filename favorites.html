@@ -5229,18 +5229,6 @@ function initSettingsPanel() {
 	iconOpen.onclick = () => showSettings();
 	iconBarClosed.appendChild(iconOpen);
 
-	// Set event handler to quick-open Settings
-	window.ondblclick = e => {
-		// Go through the RenderedItems and open the Settings on the
-		// line that is closest to the mouse pointer in the event.
-		let closest = findClosestItem(e.clientX, e.clientY);
-		if (closest) {
-			showSettings(closest.link.lineNum);
-		} else {
-			showSettings();
-		}
-	};
-
 	// Create rest of the Settings panel. This is called at first showing.
 	function createSettings() {
 		// First get the panels from the DOM and ensure they're found
@@ -6048,6 +6036,20 @@ function gotoHome(ctl) {
 	// Change position
 	ctl.setSelectionRange(newpos, newpos);
 	return true;
+}
+
+// Install a double-click handler on the control to open the Settings.
+function installShowSettings(ctl) {
+	ctl.ondblclick = e => {
+		// Go through the RenderedItems and open the Settings on the
+		// line that is closest to the mouse pointer in the event.
+		let closest = findClosestItem(e.clientX, e.clientY);
+		if (closest) {
+			showSettingsPanel(closest.link.lineNum);
+		} else {
+			showSettingsPanel();
+		}
+	};
 }
 
 // }}}
@@ -7364,7 +7366,8 @@ function initLinks() {
 		}
 	}
 
-	// Initialize event to start drag-and-drop.
+	// Initialize events related to links
+	installShowSettings(document.getElementById('LinksBox'));
 	initDragDrop();
 
 	// Start download (if defined)
