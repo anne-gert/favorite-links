@@ -828,6 +828,42 @@ svg {
 	}
 }
 
+/* Dropped item animation */
+
+.dropped-item {
+	box-shadow: initial;
+	background-color: initial;
+	margin: initial;
+	animation: 5s ease-in animate-dropped-item-color, 5s animate-dropped-item-margin;
+}
+@keyframes animate-dropped-item-color {
+	0% {
+		box-shadow: 0 0 0.4em 0.1em var(--accent-color);
+		background-color: color-mix(in hsl, var(--accent-color) 80%, var(--background) 20%);
+	}
+	30% {
+		background-color: initial;
+	}
+	50% {
+		box-shadow: 0 0 0.4em 0.1em var(--accent-color);
+	}
+	100% {
+		box-shadow: initial;
+		background-color: initial;
+	}
+}
+@keyframes animate-dropped-item-margin {
+	0% {
+		margin: 0.4em;
+	}
+	75% {
+		margin: 0.4em;
+	}
+	100% {
+		margin: initial;
+	}
+}
+
 /* }}} */
 </style>
 
@@ -4830,6 +4866,20 @@ function getRenderedItemsRecursive(item) {
 	return items;
 }
 
+// Iterate RenderedItems and call func for all that overlap lineStart..lineEnd
+// inclusive.
+function visitRenderedLines(lineStart, lineEnd, func) {
+	for (let i = 0; i < RenderedItems.length; ++i) {
+		let item = RenderedItems[i];
+		let start = item.link.lineNum;
+		let end = item.link.lineEnd;
+		if (end == null) end = start;
+		if (!(end < lineStart || start > lineEnd)) {
+			func(item);
+		}
+	}
+}
+
 // Go through the items (RenderedItems by default) and find the one that is
 // closest to the (x,y) coordinate.
 // If getControl is defined, it should be function that returns the control to
@@ -6566,10 +6616,22 @@ function initDragDrop() {
 		let lb = links.match(/(?<!\r)\n/) ? '\n' : '\r\n';  //used linebreak
 		if (lineNum == -1) {
 			// Do the insert at the end
+			lineNum = 0;
+			let more = false;
+			for (let pos = 0; pos < links.length; ++pos) {
+				if (links[pos] == '\n') {
+					++lineNum;
+					more = false;
+				} else {
+					more = true;
+				}
+			}
+			if (more) ++lineNum;  //last line without linebreak
 		} else if (lineNum == 0) {
 			// Do the insert at the beginning
 			tail = links;
 			links = '';
+			lineNum = 1;  //insert starts here
 		} else {
 			// Split at this line number
 			let pos = 0;
@@ -6580,6 +6642,7 @@ function initDragDrop() {
 			}
 			tail = links.slice(pos);
 			links = links.slice(0, pos);
+			++lineNum;  //insert starts here
 		}
 		// Insert missing levels (if any)
 		if (links.match(/[^\r\n]$/)) links += lb;  //linebreak if not already there
@@ -6631,6 +6694,12 @@ function initDragDrop() {
 		let saveScroll = saveScrollPos();
 		updateLinks(links, null, true, null)
 		restoreScrollPos(saveScroll);
+		// Mark line numbers that were inserted
+		let lineEnd = lineNum + lines.length -1;
+		LogSettings.log(`Highlight lines ${lineNum} .. ${lineEnd}`);
+		visitRenderedLines(lineNum, lineEnd, item => {
+			item.ctl.classList.add('dropped-item');
+		});
 	}
 
 	// Find the last line occupied by this link optionally including its children.
