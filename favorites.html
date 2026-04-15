@@ -6700,6 +6700,11 @@ function initDragDrop() {
 		LogSettings.log(`Highlight lines ${lineNum} .. ${lineEnd}`);
 		visitRenderedLines(lineNum, lineEnd, item => {
 			item.ctl.classList.add('dropped-item');
+			if (item.visible()) {
+				// Scroll it into view if needed
+				// With setTimeout(), post this event after the restoreScrollPos()
+				window.setTimeout(() => item.ctl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
+			}
 		});
 	}
 
