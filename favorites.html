@@ -61,12 +61,13 @@ For syntax description of Links, see help.html
 }
 
 .dark-theme, .light-theme {
+	/* For opacity scaling, use multiply and rely on that calc() will clip the value inside the 0-100% interval. */
 	--background-f: color(from var(--background) srgb r g b / var(--background-opacity));
 	--block-background-f: color(from var(--block-background) srgb r g b / calc(var(--background-opacity) * 1.2));
 	--selection-background-f: color(from var(--selection-background) srgb r g b / var(--background-opacity));
 	--code-background-f: color(from var(--code-background) srgb r g b / var(--background-opacity));
 	--error-background-f: color(from var(--error-background) srgb r g b / var(--background-opacity));
-	--disabled-color-f: color-mix(in srgb, var(--disabled-color) var(--background-opacity), var(--block-foreground) calc(100% - var(--background-opacity)));
+	--disabled-color-f: color-mix(in srgb, var(--disabled-color) calc(var(--background-opacity) * 1.4), var(--block-foreground) calc(100% - (var(--background-opacity) * 1.4)));
 }
 
 :root {
