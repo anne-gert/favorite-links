@@ -832,36 +832,46 @@ svg {
 /* Dropped item animation */
 
 .dropped-item {
-	box-shadow: initial;
-	background-color: initial;
-	margin: initial;
-	animation: 5s ease-in animate-dropped-item-color, 5s animate-dropped-item-margin;
+	display: table;
+	position: absolute;
+	padding: 0.15em 1em;
+	--background-color: var(--accent-color);
+	--shadow-color: color-mix(in hsl, var(--background-color) 70%, var(--background) 30%);
+	--shimmer-color: color-mix(in hsl, var(--background-color) 80%, white 20%);
+	animation:
+		7s linear forwards animate-dropped-item,
+		300ms linear 1s 2 animate-dropped-item-shimmer,
+		300ms linear 3s 2 animate-dropped-item-shimmer,
+		300ms linear 5s 2 animate-dropped-item-shimmer;
+	& + * {
+		position: relative;  /* makes it on top of element before (=background) */
+	}
 }
-@keyframes animate-dropped-item-color {
-	0% {
-		box-shadow: 0 0 0.4em 0.1em var(--accent-color);
-		background-color: color-mix(in hsl, var(--accent-color) 80%, var(--background) 20%);
-	}
-	30% {
-		background-color: initial;
-	}
-	50% {
-		box-shadow: 0 0 0.4em 0.1em var(--accent-color);
-	}
-	100% {
+@keyframes animate-dropped-item {
+	0%, 100% {
+		border-radius: initial;
 		box-shadow: initial;
 		background-color: initial;
 	}
-}
-@keyframes animate-dropped-item-margin {
-	0% {
-		margin: 0.4em;
+	1% {
+		border-radius: 1em;
+		box-shadow: 0 0 0.4em 0.1em var(--shadow-color);
+		background-color: var(--background-color);
 	}
-	75% {
-		margin: 0.4em;
+	50% { border-radius: 1em }
+	60% { background-color: var(--background-color) }
+	85% { border-radius: initial }
+	95% { background-color: initial }
+	90% { box-shadow: 0 0 0.4em 0.1em var(--shadow-color) }
+}
+@keyframes animate-dropped-item-shimmer {
+	0%, 100% {
+		background-image: linear-gradient(-45deg, transparent 40%, var(--shimmer-color) 50%, transparent 60%);
+		background-size: 300%;
+		background-position-x: 100%;
 	}
 	100% {
-		margin: initial;
+		background-position-x: 0%;
 	}
 }
 
@@ -1467,12 +1477,19 @@ function saveScrollPos(widget = document.documentElement) {
 	return pos;
 }
 
+// Run func() after DOM has been layed out. This is done by calling it with
+// window.setTimeout(). I suspect this mechanism posts this call to the event
+// loop.
+function afterLayout(func) {
+	window.setTimeout(func, 0);
+}
+
 // Restore scroll position of widget.
-// If post=true, restore is posted to the eventloop with a setTimeout(..., 0).
-// This is needed if the screen is still rendering and the SearchBox will get
-// focus, in which case, the screen would scroll that into view.
 function restoreScrollPos(position, widget = document.documentElement, post = true) {
-	let doit = () => {
+	// Change the scroll position after the layout is completed, because
+	// if the screen is still rendering, the scroll position is changed
+	// before the SearchBox get focus and *it* is scrolled into view.
+	afterLayout(() => {
 		LogRender.log(`Restore scroll position (${position})`);
 		let maxH = widget.scrollHeight - widget.clientHeight;
 		if (maxH <= 0) maxH = 1;
@@ -1480,8 +1497,7 @@ function restoreScrollPos(position, widget = document.documentElement, post = tr
 		if (maxW <= 0) maxW = 1;
 		widget.scrollTop = position[0] * maxH;
 		widget.scrollLeft = position[1] * maxW;
-	};
-	if (post) window.setTimeout(doit, 0); else doit();
+	});
 }
 
 // Create a title from a url with heuristics.
@@ -6309,11 +6325,9 @@ function initDragDrop() {
 			//LogSettings.devlog('Dropped in drop target');
 			// Note: for an <input> textbox, the default is to put the value in the
 			// box, so do not call preventDefault().
-			// The text will be updated after this event, so that's why I do it on
-			// a setTimeout() (the timeout can be 0, because it will be scheduled
-			// after this event).
+			// The text will be updated after the layout event.
 			let dropX = e.clientX, dropY = e.clientY;
-			window.setTimeout(() => {
+			afterLayout(() => {
 				let lines = dropTarget.value;
 				dropTarget.value = '';
 				undisplay();
@@ -6322,7 +6336,7 @@ function initDragDrop() {
 				} else {
 					dropLinesXY(dropX, dropY, lines);
 				}
-			}, 0);
+			});
 		};
 		dropTarget.ondragleave = e => {
 			if (displaying) {
@@ -6702,16 +6716,43 @@ function initDragDrop() {
 		let saveScroll = saveScrollPos();
 		updateLinks(links, null, true, null)
 		restoreScrollPos(saveScroll);
-		// Mark line numbers that were inserted
-		let lineEnd = lineNum + lines.length -1;
-		LogSettings.log(`Highlight lines ${lineNum} .. ${lineEnd}`);
-		visitRenderedLines(lineNum, lineEnd, item => {
-			item.ctl.classList.add('dropped-item');
-			if (item.visible()) {
-				// Scroll it into view if needed
-				// With setTimeout(), post this event after the restoreScrollPos()
-				window.setTimeout(() => item.ctl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
-			}
+		afterLayout(() => {
+			LogSettings.log(`Highlight lines ${lineNum} .. ${lineEnd}`);
+			visitRenderedLines(lineNum, lineEnd, item => {
+				if (item.link.level === 0) return;  //not for Headings
+				// Create a parent span with the original ctl
+				// and a floating clone to perform the animation
+				// on, so that the Block's size is not affected.
+				let ctl = item.ctl;
+				let w = ctl.offsetWidth, h = ctl.offsetHeight;
+				LogSettings.debug(`Control on line ${item.link.lineNum}: (${w} x ${h})`);
+				let parent = ctl.parentNode;
+				let bg = document.createElement('span');  //background
+				bg.style.width = w + 'px';
+				bg.style.height = h + 'px';
+				bg.className = 'dropped-item';
+				parent.insertBefore(bg, ctl);
+				afterLayout(() => {
+					let bw = bg.offsetWidth, bh = bg.offsetHeight;
+					LogSettings.debug(`Background for line ${item.link.lineNum}: (${bw} x ${bh})`);
+					// Calculate left/top, so that ctl's and bg's centers align.
+					let left = bg.offsetLeft - (bw - w)/2;
+					let top = bg.offsetTop - (bh - h)/2;
+					bg.style.left = left + 'px';
+					bg.style.top = top + 'px';
+				});
+				// Start the animation
+				ctl.onanimationend = ev => {
+					if (ev.animationName == 'animate-dropped-item') {
+						LogSettings.log('Highlight animation ended');
+						parent.removeChild(bg);
+					}
+				};
+				if (item.visible()) {
+					// Scroll it into view if needed
+					ctl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+				}
+			});
 		});
 	}
 
