@@ -6645,6 +6645,7 @@ function initDragDrop() {
 			links = links.slice(0, pos);
 			++lineNum;  //insert starts here
 		}
+		let lineEnd = lineNum-1;
 		// Insert missing levels (if any)
 		if (links.match(/[^\r\n]$/)) links += lb;  //linebreak if not already there
 		let indent = startIndent;
@@ -6666,6 +6667,7 @@ function initDragDrop() {
 					: isLink ? 'Links' : 'Item';
 				LogSettings.debug(`Add dummy '${name}' at level ${l}`);
 				links += indent + name + lb;
+				++lineEnd;
 				indent = nextIndent;
 				nextIndent += OneIndent;
 			}
@@ -6676,17 +6678,22 @@ function initDragDrop() {
 			links += indent + '!text' + lb;
 			links += lines.replaceAll(/\r*\n\r*/g, lb) + lb;
 			links += indent + '!endtext' + lb;
+			++lineEnd;  //not complete, but ensures overlap
 		} else {
 			if (isLink) {
 				for (let i = 0; i < lines.length; ++i) links += indent + lines[i] + lb;
+				lineEnd += lines.length;
 			} else {
 				links += indent + '!text' + lb;
+				++lineEnd;
 				for (let i = 0, m = lines.length-1; i <= m; ++i) {
 					links += lines[i];
 					if (i < m) links += '<br>';
 					links += lb;
+					++lineEnd;
 				}
 				links += indent + '!endtext' + lb;
+				++lineEnd;
 			}
 		}
 		links += tail;
