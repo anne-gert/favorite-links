@@ -1505,7 +1505,7 @@ function restoreScrollPos(position, widget = document.documentElement, post = tr
 function createTitle(url) {
 	function beautifyPart(part) {
 		// - Remove extension
-		let s = part.replace(/\.[a-zA-Z0-9]+$/, '');
+		let s = part.replace(/\.[a-zA-Z0-9]{2,5}$/, '');
 		// - Replace %xx
 		s = s.replaceAll(/%([0-9a-fA-F]{2})/g, (m2, c) => {
 			try {
@@ -1565,7 +1565,7 @@ function createTitle(url) {
 	if (path) parts.push(...path.split(/\//));
 	if (query) parts.push(...query.split(/[?&]/).map(s => s.replace(/^[\w-]+=/, '')));
 	if (frag) parts.push(frag);
-	// - Check the parts for anything suitable
+	// - Check the parts from the back (=most detailed) for anything suitable
 	for (let p = parts.length-1; p >= 0; --p) {
 		let pt = parts[p];
 		// - Remove known names and empty strings
@@ -1582,7 +1582,7 @@ function createTitle(url) {
 		// - Check if we want it
 		if (ltrs >= 8 &&  //not too small
 			seps >= 2 &&  //at least 3 words
-			(nums == 0 || ltrs/nums >= 0.8)  //mostly letters
+			(nums == 0 || ltrs/nums >= 3)  //mostly letters
 		){
 			name = beautifyPart(pt);
 			//LogRender.devlog(`Take '${name}'`);
