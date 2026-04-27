@@ -70,6 +70,14 @@ For syntax description of Links, see help.html
 	--disabled-color-f: color-mix(in srgb, var(--disabled-color) calc(var(--background-opacity) * 1.4), var(--block-foreground) calc(100% - (var(--background-opacity) * 1.4)));
 }
 
+/* Shadow is always dark */
+.dark-theme {
+	--block-shadow: var(--background-f);
+}
+.light-theme {
+	--block-shadow: #44444433;
+}
+
 :root {
 	/* Define default variables values that will be used on visible elements */
 	--font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
@@ -138,7 +146,7 @@ For syntax description of Links, see help.html
 .image-background-loaded {
 	background-image: var(--background-image);
 	.block {
-		box-shadow: 0 0 1em 0.5em var(--background-f);
+		box-shadow: 0 0 1em 0.5em var(--block-shadow);
 		backdrop-filter: blur(0.3em);
 		transition-property: background, box-shadow;
 		transition-duration: 0.3s;
