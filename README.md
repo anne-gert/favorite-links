@@ -9,7 +9,7 @@ start page via an add-on like [New Tab
 Override](https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/).
 
 The favorites.html page uses a textual configuration to specify the URLs.
-See [help.html](help.html) for more details and a definition of the syntax for
+See [help.html](docs/help.html) for more details and a definition of the syntax for
 the configuration.
 
 The page favorites.html can be accessed and used directly (i.e. hosted by
@@ -22,7 +22,7 @@ It is also possible to supply one's own configuration with the links= URL
 argument.  The value may be an absolute or relative URL.  This can also be used
 with a direct link to GitHub:
 <https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links=example-links.txt>.
-See <a href="external-files.html">external-files.html</a> for more details.
+See <a href="docs/external-files.html">external-files.html</a> for more details.
 
 This contents can be edited from the page (via the Gears icon) and stored in
 the browser's LocalStorage.

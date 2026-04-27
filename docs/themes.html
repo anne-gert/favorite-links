@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+<script>window.onload = () => setColorsFromQs()</script>
+
+<title>Themes - Favorites and ToDo</title>
+
+</head>
+
+<body class="text-block">
+
+Go to <a href="toc.html">Table of Contents</a>.
+
+
+<h1>Favorites and ToDo - Themes</h1>
+
+<p>
+Themes are implemented in a very basic way. The colors that are used are
+defined as CSS variables in a *-theme CSS class. Currently there is a
+<code>dark-theme</code> and and a <code>light-theme</code>.
+<br>
+The theme can be set by using <code>!theme name</code> where name is the
+CSS class name of the theme or <code>auto</code> (the default) in which case
+the browser's dark/light-mode preference setting is used.
+</p>
+
+<p>
+Examples:
+<pre>
+!theme dark-theme
+
+!theme light-theme
+
+!theme auto
+</pre>
+</p>
+
+
+<h2>Background</h2>
+
+<p>
+A background image (wallpaper) can be specified with a relative or absolute
+URL or with anything else that is acceptable by the CSS background-image
+property.
+</p>
+
+<p>
+Background image with relative URL:
+<pre>
+!wallpapar images/my-background.jpg
+</pre>
+Random background image (with absolute URL):
+<pre>
+!wallpaper https://lipsum.app/random/1920x1080
+</pre>
+Random background image with no translucency:
+<pre>
+!wallpaper https://lipsum.app/random/1920x1080 100%
+</pre>
+Rainbow:
+<pre>
+!wallpaper linear-gradient(120deg, red,orange,yellow,green,blue,indigo,violet,red,orange,yellow,green,blue,indigo,violet)
+</pre>
+</p>
+
+
+<h2>Colors</h2>
+
+<p>
+A theme is defined by the following variables:
+<ul>
+<li><em>--foreground</em>,
+    <em>--background</em>:
+    Default foreground and background colors.
+<li><em>--accent-color</em>:
+    Color for titles, labels and icons.
+<li><em>--block-foreground</em>,
+    <em>--block-background</em>,
+    <em>--block-border</em>:
+    Foreground, background and border colors for Block level items.
+<li><em>--selection-foreground</em>,
+    <em>--selection-background</em>:
+    Foreground and background color for selected text.
+<li><em>--code-foreground</em>,
+    <em>--code-background</em>:
+    Foreground and background color for <code>&lt;code&gt;</code> and
+    <code>&lt;pre&gt;</code> fragments.
+<li><em>--link-color</em>:
+    Foreground color of hyperlinks.
+<li><em>--disabled-color</em>:
+    Foreground color for disabled items.
+<li><em>--error-foreground</em>,
+    <em>--error-background</em>,
+    <em>--error-border</em>:
+    Foreground, background and border color for search box in case of
+    unrecognized input.
+</ul>
+These variables can be modified in a <code>!style</code> block to modify or
+create a new style.
+</p>
+
+<p>
+A theme can be modified like this:
+<pre>
+!style
+.dark-theme {
+    --accent-color: #CC6600;
+}
+!endstyle
+</pre>
+</p>
+
+<p>
+It is also possible to override any element:
+<pre>
+!style
+body {
+	filter: sepia(0.7);
+}
+!endstyle
+</pre>
+</p>
+
+<hr>
+Check out <a href="toc.html">other topics</a>.
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker ts=4 sw=4 et: -->
+

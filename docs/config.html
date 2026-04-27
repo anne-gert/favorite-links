@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+<script>window.onload = () => setColorsFromQs()</script>
+
+<title>Configuration - Favorites and ToDo</title>
+
+</head>
+
+<body class="text-block">
+
+Go to <a href="toc.html">Table of Contents</a>.
+
+
+<h1>Favorites and ToDo - Configuration</h1>
+
+<p>
+The configuration consists primarily of a list of <a
+href="link-syntax.html">Link Definitions</a>.  The Links form an
+hierarchical structure, indicated by the line's indentation:
+<ul>
+<li><em>Section</em>: The first indentation level is the Section. Sections are
+    separated by horizontal lines.
+<li><em>Block</em>: The second indentation level are the blocks within a
+    Section. Each Block is a visual area that can be collapsed and expanded.
+<li><em>Item</em>: The third indentation level are the Items that populate
+    the Blocks.
+<li><em>SubItem</em>: The fourth and higher indentation levels are SubItems
+    that are displayed under their respective parent Items
+</ul>
+Each link can be a hyperlink, have an icon and/or a checkbox.
+</p>
+
+<p>
+In addition to Links, the configuration also supports comments, different
+web-search functions and other directives, see <a
+href="#line-syntax">Line Syntax</a> for details.
+</p>
+
+
+<a name="line-syntax"></a>
+<h2>Line Syntax</h2>
+
+<p>
+Each line can contain a Link, a text, a comment or a special setting. Below
+is a list of all of them.
+</p>
+
+<p>
+<b>Content</b>
+<ul>
+  <li><em>Link Item</em>: Specify a Link or ToDo item. See <a
+      href="link-syntax.html">Link Syntax</a>.
+  <li><em>Separator</em>: This is a line containing a name of 3 or more dashes
+      (<code>---</code>).  It is rendered as an <code>&lt;hr
+      class="separator"&gt;</code>.
+  <li><em>Text Block</em>: A text block is the lines of text between
+      <code>!text</code> and <code>!endtext</code>, which each should appear
+      on a line of their own. The text block will be rendered at that
+      location. It can contain any HTML. If indentation is used, the contents
+      will be rendered at that (Block, Item, SubItem) level, otherwise an
+      automatic level is used.
+  <li><em>Search Buttons</em>: The line <code>!search identifier | label |
+      tooltip | icon | url-template</code> defines a search button to be
+      displayed next to the search box.  See <a
+      href="search.html">Search Functions</a> for more details.
+  <li><em>Icon Definitions</em>: The line <code>!icon name replacement</code>
+      defines an icon. If a link uses <code>icon=name</code>, its icon will be
+      the replacement for that name.  This also works with the special words
+      <code>none</code>, <code>empty</code>, <code>html:x</code>, etc.  It is
+      also allowed to write this with an <code>=</code> between name and
+      replacement. See <a href="icons.html">Icons</a> for more on icons.
+  <li><em>Checkbox Definition</em>: The line <code>!checkbox name options
+      ...</code> defines a custom checkbox. See <a
+      href="checkboxes.html">Checkboxes</a> for more details.
+</ul>
+</p>
+
+<p>
+<b>Appearance</b>
+<ul>
+  <li><em>Page Title</em>: The line <code>!title name</code> specifies the page
+      title to be displayed.
+  <li><em>Theme</em>: The line <code>!theme name</code> specifies the CSS class
+      name to use for the theme. Currently 'auto' (default), 'dark-theme' and
+      'light-theme' are defined, but custom themes can be defined with a Style
+      Block.
+      See <a href="themes.html">Themes</a> for examples.
+  <li><em>Wallpaper</em>: The line <code>!wallpaper background</code> specifies
+      the background image to use. This can be specified as an absolute or
+      relative URL or as anything that is acceptable by the CSS
+      background-image property. As a second parameter a percentage can be
+      given (<code>!wallpaper background percentage</code>) to control the
+      opacity of the elements on top of the background.
+      See <a href="themes.html">Themes</a> for examples.
+  <li><em>Font Size</em>: The line <code>!size font-size</code> specifies the
+      base font-size to use. All CSS length quantities can be used, e.g.
+      '10pt' or '120%'. This feature is experimental.
+  <li><em>Style Block</em>: A style block is the lines of text between
+      <code>!style</code> and <code>!endstyle</code>, which should contain CSS
+      definitions. See <a href="themes.html">Themes</a> for an example.
+</ul>
+</p>
+
+<p>
+<b>Settings and miscellaneous</b>
+<ul>
+  <li><em>Disable Edits</em>: The line <code>!no-edit</code> makes the
+      configuration text in Settings unmodifiable.
+  <li><em>Blocks Collapsed</em>: The line <code>!collapsed state</code>
+      specifies how blocks are displayed when loaded:
+      <ul>
+      <li><em>no</em> (default): Blocks are expanded if not previously closed.
+      <li><em>yes</em>: Blocks are closed if not previously expanded.
+      <li><em>always</em>: Blocks are always closed (previous state is
+          ignored).
+      <li><em>never</em>: Blocks are always expanded (previous state is
+          ignored).
+      </ul>
+  <li><em>Automatic Upload Delay</em>: Some events (like changing a checkbox
+      value) triggers an upload if <a
+      href="external-files.html#save-options">Online Save</a> has been set.
+      To avoid many updates in quick succession, an upload delay can be set
+      with <code>!auto-upload-delay value</code>, where value is a delay in
+      seconds. Default is 3 seconds.
+  <li><em>Script Block</em>: A script block is the lines of text between
+      <code>!script</code> and <code>!endscript</code>, which should contain
+      JavaScript code that is executed at the beginning of the page. See <a
+      href="search.html">Search Functions</a> for an example.
+  <li><em>Empty lines</em>: These are skipped.
+  <li><em>Comments</em>: Lines that start with <code>//</code>, <code>;</code>
+      or <code>#</code> are comments and skipped too.
+  <li><em>Folding</em>: If a line ends with <code>{{{</code> or
+      <code>}}}</code>, remove that.  These tags are used to facilitate folding
+      in vim.
+</ul>
+</p>
+
+<p>
+<span class="important">Known Issue</span>: Once a !script block is added, it
+can only be reset by completely reloading the page. Just commenting out the
+script in the settings and saving will not unload the previous script, which is
+still present in memory.
+</p>
+
+<p>
+As an example, add the following to the settings:
+<pre>
+!script
+let hue = 0;
+const step = 5;
+const interval = 50;
+window.setInterval(() =&gt; document.body.style.backgroundColor = 'hsl(' + (hue += step) + 'deg, 100%, 20%)', interval);
+!endscript
+</pre>
+This will set a timer handler that continuously changes the background color.
+<br>
+Now open the settings and make the following change:
+<pre>
+const interval = 60;
+</pre>
+When this is saved, the background starts to blink erraticly. After reloading
+the page, it starts changing the color normally again.
+<br>
+The reason is that after saving the change, a <b>second</b> timer handler was
+set and both timers interferred. The reload discards both timers and set a new
+one in a clean page.
+</p>
+
+<hr>
+Check out <a href="toc.html">other topics</a>.
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker ts=4 sw=4 et: -->
+

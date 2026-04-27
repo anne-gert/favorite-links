@@ -330,8 +330,8 @@ Also a page with different ways of Custom Checkbox definitions is linked.
 Checkbox Examples from help.html
 
 !text
-These examples are from <a href="help.html#checkboxes">help.html</a> and included to
-verify if they work.
+These examples are from <a href="docs/checkboxes.html">checkboxes.html</a> and
+included to verify if they work.
 !endtext
 
     Example 1
@@ -460,8 +460,8 @@ verify if they work.
 Other Links
 
     Help
-        Syntax url=help.html
-        Load/Save url=external-files.html
+        Syntax url=docs//help.html
+        Load/Save url=docs/external-files.html
 
     Default Pages
         Example Links url=?links-override=example-links.txt

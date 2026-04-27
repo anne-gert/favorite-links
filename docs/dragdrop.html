@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+<script>window.onload = () => setColorsFromQs()</script>
+
+<title>Drag-and-Drop - Favorites and ToDo</title>
+
+</head>
+
+<body class="text-block">
+
+Go to <a href="toc.html">Table of Contents</a>.
+
+
+<h1>Favorites and ToDo - Drag-and-Drop</h1>
+
+<p>
+Drag-and-Drop from other applications is supported for the following types:
+<ul>
+<li>Links, e.g. from a browser's address bar.
+<li>Text that includes a link on every non-empty line. Such lines may also
+    contain a description. A text may contain multiple links.
+<li>Text without links is included as a <code>!text...!endtext</code> block.
+    Such text may include HTML.
+</ul>
+The dragged item is inserted with respect to the item that is closest to the
+drop location (the target). How it is inserted, depends on the type (link or
+text) of item that is being added as well as on the type of the target item.
+</p>
+
+<style>
+.drag-drop {
+	.image-container {
+		display: inline-block;
+		vertical-align: top;
+		margin: 1em;
+		max-width: 40em;
+		.container { display: grid }
+		.container-131 { grid-template-columns: auto auto auto }
+		.cell, .outer-cell {
+			margin: 0.1em;
+			border: 1px solid var(--foreground);
+			text-align: center;
+		}
+		.cell, .inner-cell { padding: 1em }
+		.row { grid-column: span 3 }
+		.center { border-color: var(--accent-color) }
+		.line {
+			border-bottom: 1px dashed var(--accent-color);
+			padding: 0; margin: 0;
+		}
+		.before { background-image: radial-gradient(at 0 0, #f004 60%, var(--background)) }
+		.before:hover { background: #f008 }
+		.onto { background-image: radial-gradient(at 0 0, #fff4 60%, var(--background)) }
+		.onto:hover { background: #fff6 }
+		.after { background-image: radial-gradient(at 0 0, #00f4 60%, var(--background)) }
+		.after:hover { background: #00f8 }
+	}
+}
+</style>
+
+<p>
+If the target is a link and if the item is dropped above or to the left, it is
+inserted on the same level, before the target. If it is dropped below or to the
+right, it is inserted on the same level, after the target. If it is dropped on
+top of the target link, it is added as a sub-item of that link.<br>
+See the images below for clarification.
+</p>
+
+<p>
+If the target is a text block and if the item is dropped above or to the left,
+it is inserted on the same level, before the target. If it is dropped below or
+to the right, it is inserted on the same level, after the target. If it is
+dropped on top of the target, it is also added before or after the target
+(because a text block cannot have sub-items), depending on whether is was
+dropped on the top half or the bottom half of the target text block.<br>
+See the images below for clarification.
+</p>
+
+<div class="drag-drop">
+
+  <div class="image-container">
+    <div class="container container-131">
+      <div class="cell row before" title="Drop above the target link">Before target, same level</div>
+      <div class="cell before" title="Drop left of the target link">Before target, same level</div>
+      <div class="cell center onto" title="Drop onto the target link">Append sub-item</div>
+      <div class="cell after" title="Drop right of the target link">After target, same level</div>
+      <div class="cell row after" title="Drop below the target link">After target, same level</div>
+    </div>
+    <p>
+    Drop an <em>item</em> above/below, to the left/right, or onto a
+    <em>link</em> target: Insert the link or text block before or after the
+    target link at the same level or as a sub-item.
+    </p>
+  </div>
+
+  <div class="image-container">
+    <div class="container container-131">
+      <div class="cell row before" title="Drop above the target text block">Before target, same level</div>
+      <div class="cell before" title="Drop left of the target text block">Before target, same level</div>
+      <div class="outer-cell center">
+        <div class="inner-cell before" title="Drop onto the top half of the target text block">Before target, same level</div>
+        <div class="line"></div>
+        <div class="inner-cell after" title="Drop onto the bottom half of the target text block">After target, same level</div>
+      </div>
+      <div class="cell after" title="Drop right of text block">After target, same level</div>
+      <div class="cell row after" title="Drop below text block">After target, same level</div>
+    </div>
+    <p>
+    Drop an <em>item</em> above/below, to the left/right, or onto a <em>text
+    block</em>: Insert a link or text block before or after the target text
+    block at the same level.
+    </p>
+  </div>
+
+</div>
+
+<hr>
+Check out <a href="toc.html">other topics</a>.
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker ts=4 sw=4 et: -->
+

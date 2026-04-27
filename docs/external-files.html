@@ -6,131 +6,17 @@
 <!-- This page may contain UTF-8 encoded text. -->
 <meta charset="utf-8">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="docs.css">
+<script href="docs.js"></script>
+<script>window.onload = () => setColorsFromQs()</script>
 
-<title>Favorites and ToDo - External Files</title>
-
-<style>
-/* CSS styles {{{ */
-
-/****************************************************************************
- * Global definitions
- ****************************************************************************/
-
-@media (prefers-color-scheme: dark) {
-/* Color palette - dark theme */
-.normal-theme, .dark-theme {
-	--foreground: #DDDDDD;
-	--background: #181818;
-	--accent-color: #50A0EE;
-	--block-foreground: #000000;
-	--block-background: #C9CDD0;
-	--block-border: #EEEEEE;
-	--selection-foreground: #000000;
-	--selection-background: #DDDDFF;
-	--code-foreground: #FFFFFF;
-	--code-background: #292D36;
-	--link-color: #6666FF;
-	--disabled-color: #888888;
-	--error-foreground: #FF6600;
-	--error-background: #FFD8C0;
-	--error-border: var(--error-foreground);
-}
-}
-
-@media (prefers-color-scheme: light) {
-/* Color palette - light theme */
-.normal-theme, .light-theme {
-	--foreground: #444444;
-	--background: #E8F0F8;
-	--accent-color: #4444EE;
-	--block-foreground: #222222;
-	--block-background: #D9DDE0;
-	--block-border: #999999;
-	--selection-foreground: #FFFFFF;
-	--selection-background: #000099;
-	--code-foreground: #000000;
-	--code-background: #E3EBF3;
-	--link-color: #2222AA;
-	--disabled-color: #888888;
-	--error-foreground: #FF8844;
-	--error-background: #FFEEDD;
-	--error-border: #FFBB88;
-}
-}
-
-:root {
-	/* Define variables that will be used on visible elements */
-	--font-family: 'Segoe UI', 'Lucida Grande', Helvetica, sans-serif;
-	--font-size: 100%;
-	/* Set default font and size */
-	font-family: var(--font-family);
-	font-size: 12pt;  /* absolute, so --font-size can be relative too */
-}
-
-body, input, textarea, button {
-	font-family: var(--font-family);
-	font-size: var(--font-size);
-}
-
-body {
-	color: var(--accent-color); background: var(--background);
-}
-::selection {
-	color: var(--selection-foreground); background: var(--selection-background);
-}
-
-
-/****************************************************************************
- * Shared styles for displaying text-blocks
- * These syles are shared between all pages
- ****************************************************************************/
-
-.text-block {
-	color: var(--foreground); background: var(--background);
-}
-.text-block h1, .text-block h2, .text-block h3, .text-block em {
-	color: var(--accent-color);
-}
-.text-block code, .text-block pre {
-	color: var(--code-foreground); background: var(--code-background);
-}
-.text-block code {
-	padding: 0.1em 0.4em;
-}
-.text-block pre {
-	padding: 0.6em 1em;
-	margin: 0.5em 4em;
-	overflow: scroll;
-}
-.text-block em {
-	font-style: normal;
-}
-.text-block a {
-	color: var(--link-color);
-	text-decoration: none;
-}
-.text-block a:hover {
-	text-decoration: underline;
-}
-.text-block .important {
-	color: var(--error-foreground);
-}
-
-.svg-icon {
-	vertical-align: middle;
-	display: inline;
-	margin: -0.5em 0em -0.5em 0em;
-	& path {
-		stroke: var(--foreground);  fill: var(--foreground);
-	}
-}
-
-/* }}} */
-</style>
+<title>External Files - Favorites and ToDo</title>
 
 </head>
 
-<body class="text-block dark-theme">
+<body class="text-block">
+
+Go to <a href="toc.html">Table of Contents</a>.
 
 
 <h1>Favorites and ToDo - Online Configuration</h1>
@@ -143,8 +29,8 @@ storage.
 </p>
 
 
-<a name="tldr"></a>
-<h2>TL;DR - The Standard Setup</h2>
+<a name="usgae"></a>
+<h2>The Standard Setup</h2>
 
 <p>
 The standard setup uses a webserver to host the pages (static HTML) and
@@ -666,9 +552,12 @@ upload.
     </ul>
 </ul>
 
+<hr>
+Check out <a href="toc.html">other topics</a>.
+
 </body>
 
 </html>
 
-<!-- vim: set fdm=marker: -->
+<!-- vim: set fdm=marker ts=4 sw=4 et: -->
 

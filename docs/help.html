@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+<script>window.onload = () => setColorsFromQs()</script>
+
+<title>Help - Favorites and ToDo</title>
+
+</head>
+
+<body class="text-block">
+
+Go to <a href="toc.html">Table of Contents</a>.
+
+
+<h1>Favorites and ToDo - Help</h1>
+
+
+<a name="description"></a>
+<h2>Description</h2>
+
+<p>
+<a href="../favorites.html">favorites.html</a> is a single page that can be
+configured to show <u>links</u> and <u>todo lists</u>, organized in
+<u>sections</u>, <u>blocks</u> and <u>items</u>. This configuration can be
+downloaded via a URL and/or edited in the browser's local storage (see below).
+<br>
+This page can be set as home page in the browser's settings and as the Tab
+start page via an add-on like <a
+href="https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/">New Tab
+Override</a>.
+</p>
+
+<p>
+Note that the home page can be a local file (with <code>file:///...</code>
+URL) or an internet address (with <code>http://...</code> or
+<code>https://...</code> URL) and that the tab start page can only be an
+internet address.
+</p>
+
+
+<a name="usage"></a>
+<h2>Standard Usage</h2>
+
+<p>
+The standard usage is to open the page favorites.html (or possibly set it as
+your home page). Upon first opening, it shows a default example page.  This
+page can be edited by any of the following ways:
+<ul>
+<li>Click <em>Settings</em> (gears icon, <em>&#x2699;</em>) at the top right of
+    the page. This opens the Settings where the textual configuration can be
+    edited and saved.
+<li><em>Double click</em> the page near the spot where you want to add or
+    change an item. This opens the Settings with the cursor on that line.
+<li><em>Drag-and-Drop</em> <i>URLs</i> or <i>text</i> onto the page. This
+    causes the items to be inserted on that spot (see <a
+    href="dragdrop.html">Drag-and-Drop</a> for more details).
+</ul>
+Optionally, this configuration can be maintained in a separate text file and
+copy-pasted into the Settings.
+<br>
+Since GitHub provides for a way to serve HTML pages directly, this can be used
+to open and use favorites.html directly from <a
+href="https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html">GitHub</a>.
+Save the target of this link as your home page and you're set.
+</p>
+
+<p>
+<em>Tip</em>: By using <code>favorites.html?links=&lt;config-name&gt;</code>,
+multiple independent configurations can be defined, each having their own URL.
+Each configuration has its own <i>load-options</i> and <i>save-options</i>
+under Settings, but if those are left blank, the configuration is only stored
+locally (see <a href="external-files.html">Read/write online configuration</a>
+for details).
+</p>
+
+
+<h2>Getting Started...</h2>
+
+<p>
+The easiest method to get started is to copy the contents of the
+example-links.txt file into the Settings text panel and start editing that.
+<br>
+The vast majority of the lines will simply consist of indentation, name and
+URL. Add a few <code>!search</code> options and that's it.
+</p>
+
+<p>
+Many more things are possible, but you DON'T NEED to and can stop reading here.
+If you want to, though, please continue reading any of the <a
+href="toc.html">other topics</a>.
+</p>
+
+<hr>
+Check out <a href="toc.html">other topics</a>.
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker ts=4 sw=4 et: -->
+

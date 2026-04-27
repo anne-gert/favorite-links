@@ -12,7 +12,7 @@ Examples
         GitHub favorite-links https://github.com/anne-gert/favorite-links
             Use favorites.html https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
             Example Links override https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links-override=url:example-links.txt
-            Help https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/help.html
+            Help https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/docs/help.html
         Firefox
             Home page settings icon=firefox target=manual about:preferences#home
             Plugins

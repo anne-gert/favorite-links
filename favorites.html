@@ -1051,7 +1051,7 @@ Section
 !text
 <p>
 The configuration consists primarily of a list of <a
-href="help.html#link-syntax">Link Definitions</a>.  The Links form an
+href="docs/link-syntax.html">Link Definitions</a>. The Links form an
 hierarchical structure, indicated by the line's indentation:
 <ul>
 <li><em>Section</em>: The first indentation level is the Section. Sections are
@@ -1102,14 +1102,14 @@ Save the target of this link to your home page and you're set.
 </p>
 
 <p>
-See <a href="help.html#usage">Help</a> for more information on how to use a
-separate URL to retrieve the configuration.
+See <a href="docs/help.html#usage">Help</a> for more information on how to use
+a separate URL to retrieve the configuration.
 </p>
 
 <p>
 In addition to Links, the configuration also supports comments, different
 web-search functions and other directives, see <a
-href="help.html#line-syntax">Line Syntax</a> for further details.
+href="docs/config.html#line-syntax">Line Syntax</a> for further details.
 </p>
     !endtext
 
@@ -1130,7 +1130,7 @@ These are some examples of the available features.
         GitHub favorite-links https://github.com/anne-gert/favorite-links
             Use favorites.html https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html
             Example Links override https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/favorites.html&links-override=example-links.txt
-            Help https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/help.html
+            Help https://html-preview.github.io/?url=https://github.com/anne-gert/favorite-links/master/docs/help.html
         Firefox
             Home page settings icon=firefox target=manual about:preferences#home
             Plugins
@@ -5320,7 +5320,55 @@ function initSettingsPanel() {
 		iconHelp = document.createElement('span');
 		iconHelp.title = 'Help';
 		iconHelp.className = 'settings-icon';
-		iconHelp.onclick = () => window.open('./help.html#syntax', '_blank');
+		iconHelp.onclick = () => {
+			let colors = [];
+			try {
+				let props = window.getComputedStyle(document.body);
+				for (let prop in props) {
+					if (prop.match(/^[0-9]+$/)) {
+						// This is an index, with the actual name as value
+						prop = props[prop];
+					}
+					let sname;
+					let m = prop.match(/^--(accent|link|disabled)-color$/);
+					if (m) {
+						sname = m[1][0];  //first letter
+					} else {
+						m = prop.match(/^--(?:(block|selection|code|error)-)?(foreground|background|border)$/);
+						if (m) {
+							if (m[1]) {
+								sname = m[1][0];  //first letter
+							} else {
+								sname = '';  //no first part
+							}
+							if (m[2] == 'border') {
+								sname += 'e';  //add 'e' for edge
+							} else {
+								sname += m[2][0];  //first letter of second part
+							}
+						}
+					}
+					if (sname) {
+						// We gave the correct short name
+						let color = props.getPropertyValue(prop);
+						if (color != null && color != '') {
+							color = color.replace(/^#/, '');  //will confuse the fragment part
+						}
+						let c = sname + '=' + color;
+						LogSettings.debug(`Found CSS variable ${prop}: ${c}`);
+						colors.push(c);
+					}
+				}
+			} catch (ex) {
+				LogSettings.error('Ignore exception while constructing colors: ' + ex);
+			}
+			// Construct URL
+			let url = 'docs/config.html';
+			if (colors.length > 0) {
+				url += '?' + colors.join('&');
+			}
+			window.open(url, '_blank');
+		};
 		iconBarOpen.appendChild(iconHelp);
 		// Add separator
 		let sep = document.createElement('span');

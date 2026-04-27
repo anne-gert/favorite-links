@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+<script>window.onload = () => setColorsFromQs()</script>
+
+<title>Search Functions - Favorites and ToDo</title>
+
+</head>
+
+<body class="text-block">
+
+Go to <a href="toc.html">Table of Contents</a>.
+
+
+<h1>Favorites and ToDo - Search Functions</h1>
+
+<p>
+The line <code>!search identifier | label | tooltip | icon |
+url-template</code> defines a search button to be displayed next to the search
+box. The fields are separated by <code>|</code> with whitespace allowed.  These
+are the fields to be specified:
+<ul>
+<li><em>Identifier</em> (mandatory): Unique name for this button definition.
+<li><em>Label</em> (default: <i>Identifier</i>): This is the text to be
+    displayed next to the icon on the button. If '_' is specified, no label
+    will be displayed.
+<li><em>Tooltip</em> (default: <i>Identifier</i>): This is the text to be
+    displayd if the mouse is hovered over the button. If '_' is specified, no
+    tooltip will be displayed.
+<li><em>Icon</em> (default: <code>default</code> if SearchFunction exists,
+    <code>char:U+1F50D</code> (magnifying glass, &#x1F50D;) if not):
+    This is the specification of the icon to display. See the <a
+    href="icons.html">Icons</a> for the syntax.
+<li><em>URL-Template</em>: If this is defined, this string is used as the
+    Search URL Function result. This template recogizes the following special
+    values:
+    <ul>
+    <li><em>%urlinput</em>: This will be filled with the URL-encoded search
+        string.
+    </ul>
+    If the URL-Template is not supplied, it is derived as described below.
+</ul>
+</p>
+
+<p>
+The following properties are derived:
+<ul>
+<li><em>Search URL Function</em>:
+    Function to call to retrieve the URL to go to for the results if
+    the search query does not look like a domain.
+    Input of this function is the contents of the SearchBox.
+    This function is found by looking up the Identifier in
+    SearchFunctions and then the 'text' sub-function.
+    If no SearchFunction can be found, use the one with
+    Identifier='default'.
+<li><em>Domain Search URL Function</em>:
+    Function to call to retrieve the URL to go to for the results if
+    the search query does look like a domain.
+    Input of this function is the contents of the SearchBox.
+    This function is found by looking up the Identifier in
+    SearchFunctions and then the 'domain' sub-function.
+    If no SearchFunction can be found, use the one with
+    Identifier='default'.
+</ul>
+</p>
+
+<p>
+Pre-defined Identifiers are:
+<ul>
+<li><code>Duck Duck Go</code>: Use Duck Duck Go for text
+<li><code>Google</code>: Use Google Search for text
+<li><code>Wikipedia</code>: Use Wikipedia for text
+<li><code>YouTube</code>: Use YouTube for text
+<li><code>Wayback Machine</code>: Use Wayback Machine Internet Arcive for both
+    text and domains.
+<li><code>Google Maps</code>: Use Google Maps for text
+<li><code>default</code>: Text search returns null to ignore the search.
+    Domain search returns the input as URL to bypass a results page.
+</ul>
+</p>
+
+<p>
+In JavaScript, <code>SearchFunction</code> is a data structure where the keys
+are derived from the Identifier with
+<code>getSearchFunction(&lt;Identifier&gt;)</code> and the values contain the
+search functions. This structure can be extended with additional functions that
+can be used for new buttons.  The function should have a single argument that
+is the string to search for. The function should return a URL to go to the
+search results.
+<br>
+The function <code>getTemplateUrl</code> can be used to generate such a
+function, based on a template of the URL.
+<br>
+Note that this function is also used to try and find a
+<code>favicon.ico</code>.
+</p>
+
+<p>
+The <code>SearchFunction</code> has the following sub-keys:
+<ul>
+<li><code>'domain'</code>: This function is called when the search text
+    resembles a domain name.
+<li><code>'text'</code>: This function is called to search other text.
+</ul>
+</p>
+
+<p>
+The JavaScript functions are available to create new SearchFunctions:
+<ul>
+<li><code>registerSearchTemplate(&lt;Identifier&gt;, &lt;URL-Template&gt;)</code>:
+    This function creates a Search URL Function, based on the specified
+    &lt;URL-Template&gt;. It then registers this function for the specified
+    Identifier.  This function is also used when the &lt;URL-Template&gt;
+    parameter of the <code>!search</code> command is used.
+<li><code>registerSearchFunction(&lt;Identifier&gt;, &lt;function&gt;)</code>:
+    This function registers a Search URL Function for the specified Identier.
+    This function receives the search text as input and should return a URL
+    as output.
+<li><code>getRegisteredSearchUrl(&lt;Identifier&gt;, &lt;search-text&gt;)</code>:
+    Returns the Text Search URL to search for search-text that is registered
+    for Identifier.
+</ul>
+The following support functions are available:
+<ul>
+<li><code>getSearchFunctionId(&lt;Identifier&gt;)</code>: Returns the canonical
+    id to be used as key in the <code>SearchFunction</code> data structure.
+<li><code>getTemplateUrl(&lt;URL-Template&gt;)</code>: Returns a SearchFunction
+    that uses the given URL-Template.
+</ul>
+</p>
+
+<p>
+Example on how to create a search button for Amazon:
+<pre>
+!search Amazon |||| https://www.amazon.com/s?k=%urlinput
+</pre>
+</p>
+
+<p>
+If you don't want a search button, but want Amazon to be available as the
+special <code>search:amazon</code> link in a shopping list, do this:
+<pre>
+!script
+// Register the Amazon search
+registerSearchTemplate('Amazon', 'https://www.amazon.com/s?k=%urlinput');
+!endscript
+
+Shopping List
+    Amazon
+        [x] Laptop search:amazon
+            [ ] How to configure a laptop search:youtube
+        [ ] Funny gifts search:amazon
+</pre>
+</p>
+
+<p>
+Search buttons can be quite flexible. For example, the current Sprint Board
+on Azure DevOps  can be searched with the URL
+<code>https://dev.azure.com/&lt;Organization&gt;/&lt;Project&gt;/_sprints/taskboard/&lt;Team&gt;/&lt;Project&gt;/?text=&lt;Search-Terms&gt;</code>.
+Now, create a search button to search the current sprint board of MyProject for
+MyTeam within MyOrganization in a few steps:
+<pre>
+!search MyTeam-Sprint | MyTeam | Current MyTeam Sprint | alt | https://dev.azure.com/MyOrganization/MyProject/_sprints/taskboard/MyTeam/MyProject/?text=%urlinput
+</pre>
+Note that https://dev.azure.com does not have a favicon that can be used.
+Therefore, specify to use the alternate icon. Now the button gets the correct
+icon.
+</p>
+
+<p>
+Silly example for a Random button:
+<pre>
+!search Random |_|| html:&amp;#x2753;
+!script
+registerSearchTemplate(getSearchFunctionId('xkcd'), 'https://c.xkcd.com/random/comic/');
+registerSearchFunction(getSearchFunctionId('Random'), input =&gt; {
+    let options = [ 'Google', 'Duck Duck Go', 'Wikipedia', 'Amazon', 'xkcd' ];
+    let r = Math.trunc(Math.random() * options.length);
+    let id = getSearchFunctionId(options[r]);
+    return getRegisteredSearchUrl(id, input);
+});
+!endscript
+</pre>
+</p>
+
+<hr>
+Check out <a href="toc.html">other topics</a>.
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker ts=4 sw=4 et: -->
+

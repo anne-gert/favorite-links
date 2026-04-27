@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+<script>window.onload = () => setColorsFromQs()</script>
+
+<title>Link Syntax - Favorites and ToDo</title>
+
+</head>
+
+<body class="text-block">
+
+Go to <a href="toc.html">Table of Contents</a>.
+
+
+<h1>Favorites and ToDo - Link Syntax</h1>
+
+<p>
+Each Link is specified on a single line as follows:
+<ul>
+  <li><em>Indentation</em>: The amount of indentation determines the nesting
+      depth:
+      <ul>
+        <li>Tabs are replace by 8 spaces.
+	<li>If the number of spaces is bigger than that of the previous line,
+	    increase nesting depth by 1.
+	<li>If the number of spaces is less than that of the previous line,
+	    decrease the nesting depth to that of the most recent line that has
+	    an indentation that is strictly less than this line.
+      </ul>
+  <li><em>&amp;</em> continuation: If the item starts with <code>&amp;</code>,
+      this item is regarded as a continuation of a group of items that are
+      displayed on a single line.
+  <li><em>Name</em>: Arbitrary string of characters.
+      <ul>
+        <li>If no name is given, the name is derived from the URL.
+	<li>If the name is <code>_</code> and any of the following conditions
+	    is met, no name is displayed. The conditions are:
+	    <ul>
+	      <li>An icon is present.
+	      <li>It is not clickable, i.e. there is no URL.
+	    </ul>
+	    If none of these conditions are met, the <code>_</code> is
+	    replaced by 'Heading', 'Block' or 'Item', depending on the
+	    indentation level.
+	<li>Regions in <code>*...*</code> are displayed in bold. Multiple '*'
+	    characters are allowed, but the begin and end should match.
+      </ul>
+  <li><em>URL</em>: A string of non-whitespace characters, beginning with
+      <code>scheme:</code>.
+      <ul>
+        <li>If no URL is given, no hyperlink is created.
+	<li>If the URL is <code>search:identifier</code>, a search link is used
+	    that uses the text search function with that identifier (as
+	    described in <a href="search.html">Search Functions</a>) to search
+	    for this Link's Name. Note that the identifier is case-insensitive
+	    and spaces should be replaced by '_'.
+      </ul>
+  <li><em>icon=value</em>: Defines the icon to use. See <a
+      href="icons.html">Icons</a> for how to define the value.
+  <li><em>Checkbox</em>: If <code>[ ]</code> or <code>[x]</code> is at the
+      start of a line, render a standard checkbox for this item, so it can be
+      used as a todo list item. Custom checkboxes with icons can also be used
+      by specifying <code>[]:name</code> where <i>name</i> is the name of a
+      <code>!checkbox</code> definition, see <a
+      href="checkboxes.html">Checkboxes</a> for more details.
+  <li><em>url=URL</em>: Target of this link. If this exists, no URL is
+      attempted to be recognized in the rest of the line. So this is also a way
+      to override the URL (possibly to empty) if a URL occurs in the Name too.
+  <li><em>target=target</em>: Open the URL in the defined target. Typical values are:
+      <ul>
+        <li><code>absent</code>: Use same window (default)
+        <li><code>_blank</code>: Use a new window or tab.
+	<li><code>manual</code>: Display text to instruct the user to paste the
+	    user to manually paste the URL in the address bar.
+      </ul>
+  <li><em>css=class-name</em>: Add the specified CSS class to this item. This
+      class can be used to select this item and its children.
+</ul>
+The elements may be specified in any order on the line.
+</p>
+
+
+<a name="examples"></a>
+<h2>Example Links</h2>
+
+<p>
+Below is an example of lines specifying a Link.
+</p>
+
+<p>
+Different combinations of links and names.
+<pre>
+  Example                              : Just a string 'Example' without link
+  http://example.net                   : Link with name http://example.net and icon http://example.net/favicon.ico
+  Example http://example.net           : Same link with name 'Example'
+  Example icon=none http://example.net : Same link, but no Icon
+  Example:3                            : Show 'Example:3', linking to the URL Example:3, because it also matches schema:location
+  Example:3 url=                       : Show 'Example:3' without link
+  Rare word search:Google              : Show 'Rare word' with link that searches 'Rare word' on Google
+</pre>
+Submenus and indentation levels.
+<pre>
+  Submenu http://example.net           : Item 'Submenu' that is a link and has sub-Items.
+    ...
+  Submenu                              : Submenu without link
+    ...
+  http://example.net                   : Submenu with link that is used as name too
+    ...
+</pre>
+Hidden names.
+<pre>
+  _                                    : Will not be displayed
+  _ http://example.net                 : Will display a clickable icon
+  _ icon=none http://example.net       : Will display 'Heading' that is clickable
+    _ icon=empty http://example.net    : Will display 'Block' that is clickable
+      _ icon=empty http://example.net  : Will display 'Item' that is clickable
+</pre>
+Checkboxes.
+<pre>
+  [ ]                                  : Displays a checkbox without label
+  [] _                                 : Same thing
+  [x] http://example.net               : Display checkbox with link
+</pre>
+Specifying icons.
+<pre>
+  !icon example.net https://static.example.net/assets/icon1.png
+  !icon icon2 https://static.example.net/assets/icon2.png
+  !icon iconToo icon2
+  http://www.example.com               : Uses icon http://www.example.com/favicon.ico (default)
+  http://example.net                   : Uses icon icon1.png from !icon above (implicit)
+  http://www.example.net               : Uses icon icon1.png from !icon above (sub-domain, implicit)
+  icon=icon2 http://www.example.net    : Uses icon icon2.png from !icon above (explicit)
+  icon=iconToo http://www.example.net  : Uses icon icon2.png from !icon above (explicit, recursive)
+  icon=alt http://example.net          : Use alternate
+  icon=alt:google http://example.net   : Use alternate from Google
+  icon=html:&lt;span&amp;space;style="color:green"&gt;&amp;#x2714;&lt;/span&gt; http://example.net
+</pre>
+</p>
+
+<hr>
+Check out <a href="toc.html">other topics</a>.
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker ts=4 sw=4 et: -->
+

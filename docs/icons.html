@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="docs.css">
+<script src="docs.js"></script>
+<script>window.onload = () => setColorsFromQs()</script>
+
+<title>Icons - Favorites and ToDo</title>
+
+</head>
+
+<body class="text-block">
+
+Go to <a href="toc.html">Table of Contents</a>.
+
+
+<h1>Favorites and ToDo - Icons</h1>
+
+<p>
+At different places, icons can be used. An icon can be any of the following
+values:
+<ul>
+<li>URL: This URL is used as the image URL of the icon.
+<li><code>default</code>: If value is default or no icon is given, the URL
+    domain + <code>favicon.ico</code> is used.<br>
+    If the URL domain is the name of an !icon definition (or a sub-domain of
+    the !icon definition's name), that value is used.
+<li><code>none</code>: No image is rendered.
+<li><code>empty</code>: An empty image is rendered.
+<li><code>alt:&lt;method&gt;?&lt;url&gt;</code>: Instead of the website's icon
+    (which may be inaccessible due to referer restrictions), use the specified
+    alternative method. Current methods are:
+    <ul>
+      <li><code>google</code>: Use Google's database.
+      <li><code>*</code>, <code>any</code>: Use any of the known methods. This
+          is the default if <code>:&lt;method&gt;</code> is not specified.
+    </ul>
+    If <code>?&lt;url&gt;</code> is specified, that URL is used, otherwise the
+    target URL is used as a base for the alternative method.
+<li><code>char:&lt;x&gt;</code>: Use the (unicode) character or (short) text
+    after the colon to create an icon. To use, a Unicode character, it can be
+    entered in either UTF-8 encoding or as U+xxxxx for the codepoint with
+    hexadecimal number xxxxx, e.g.  <code>char:U+2661</code> (white heart,
+    &#x2661;).
+<li><code>html:&lt;fragment&gt;</code>: Use the specified HTML fragment after
+    the colon to create a &lt;div&gt;. The contents is scaled to a square. To
+    include a space in the fragment use &amp;space; (or the shorthand &amp;sp;
+    or &amp;spc;).
+<li><code>krul</code>: A 'Krul' is a Dutch symbol that is similar to a
+    checkmark and means "good" or "done". See also <a
+    href="https://nl.wikipedia.org/wiki/Goedkeuringskrul">Wikipedia</a>.
+</ul>
+</p>
+
+<p>
+It is allowed to redefine an icon, but only the last definition will be used.
+</p>
+
+<h3>Undefined Icons</h3>
+
+<p>
+If an icon definition is used that is not defined, the special
+<code>undefided</code> icon will be shown. This definition can be redefined.
+<pre>
+icon=unknown Not Defined     : shows <em>!ND!</em> ('not defined')
+</pre>
+<pre>
+icon=unknown Not Defined     : shows <em>?</em>
+
+!icon undefined char:?       : define undefined as '?'
+</pre>
+</p>
+
+<h3>Reference Loops</h3>
+
+<p>
+Since an icon definition can refer to another, it would be possible to create
+a reference loop. If such an icon is used, the special <code>refloop</code>
+icon will be shown. This definition can be redefined.
+<pre>
+!icon icon2 icon1
+!icon icon1 icon2            : icon1 and icon2 are now in a reference loop
+
+icon=icon1 Reference Loop    : shows <em>!ND!</em> ('not defined')
+</pre>
+<pre>
+icon=icon1 Reference Loop    : shows <em>&#x221E;</em>
+
+!icon refloop char:U+221E    : define refloop as &#x221E;
+</pre>
+</p>
+
+<hr>
+Check out <a href="toc.html">other topics</a>.
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker ts=4 sw=4 et: -->
+
