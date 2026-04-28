@@ -32,11 +32,21 @@ function setColor(name, color) {
 }
 
 // Go through query string arguments and apply all specified colors.
-function setColorsFromQs() {
-	let params = new URLSearchParams(location.search);
-	for (name in ColorVars) {
-		let color = params.get(name);
-		if (color != null) setColor(name, color);
+function setColors() {
+	function apply(colors) {
+		let params = new URLSearchParams(colors);
+		for (name in ColorVars) {
+			let color = params.get(name);
+			if (color != null) setColor(name, color);
+		}
 	}
+	// First check LocalStorage
+	if (localStorage) {
+		let key = 'favlist_colors';
+		let colors = localStorage.getItem(key);
+		if (colors) apply('?' + colors);
+	}
+	// Secondly, override with QueryString
+	apply(location.search);
 }
 

@@ -1617,12 +1617,14 @@ const Data = CreateData();
 function CreateData(getResolver = () => UrlResolver) {
 	const LSKey_Prefix = 'favlist_';
 
-	let storage;
+	let storage, hasStorage = false;
 	if (HOOK_LocalStorage != null) {
 		storage = HOOK_LocalStorage;
 		HOOK_LocalStorage.onreset(reset);
+		hasStorage = storage != null;
 	} else if (localStorage) {
 		storage = localStorage;
+		hasStorage = true;
 	} else {
 		// Dummy implementation of LocalStorage
 		let data = {};
@@ -1686,7 +1688,7 @@ function CreateData(getResolver = () => UrlResolver) {
 		return LSKey_Prefix + 'links_' + getResolver().getConfigLoadKey();
 	}
 	function getCleanLinksLSKey() {
-		return LSKey_Prefix + 'clean-links_' + UrlResolver.getConfigLoadKey();
+		return LSKey_Prefix + 'clean-links_' + getResolver().getConfigLoadKey();
 	}
 	function getItemExpandedLSKey(itemPath) {
 		return LSKey_Prefix + 'expanded_' + getResolver().getConfigLoadKey() + '_' + itemPath;
@@ -1832,6 +1834,16 @@ function CreateData(getResolver = () => UrlResolver) {
 		}
 	}
 
+	// Read/Write theme colors from Storage
+	function readColors() {
+		let key = LSKey_Prefix + 'colors';
+		return readStorage(key);
+	}
+	function writeColors(colors) {
+		let key = LSKey_Prefix + 'colors';
+		return writeStorage(key, colors);
+	}
+
 	return {
 		// Functions to read/write Links
 		readLocalLinks : readLocalLinks,
@@ -1855,6 +1867,11 @@ function CreateData(getResolver = () => UrlResolver) {
 		writeLoadOptions : writeLoadOptions,
 		readSaveOptions : readSaveOptions,
 		writeSaveOptions : writeSaveOptions,
+
+		// Functions to read/write misc data
+		hasLocalStorage : () => hasStorage,
+		readColors : readColors,
+		writeColors : writeColors,
 	};
 }
 
@@ -5364,8 +5381,13 @@ function initSettingsPanel() {
 			}
 			// Construct URL
 			let url = 'docs/config.html';
-			if (colors.length > 0) {
-				url += '?' + colors.join('&');
+			colors = (colors.length > 0) ? colors.join('&') : '';
+			if (Data.hasLocalStorage()) {
+				// Use LocalStorage to pass the colors
+				Data.writeColors(colors);
+			} else {
+				// Pass colors in URL
+				url += '?' + colors;
 			}
 			window.open(url, '_blank');
 		};
