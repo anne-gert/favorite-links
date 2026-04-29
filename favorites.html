@@ -1588,7 +1588,7 @@ function createTitle(url) {
 		}
 		LogRender.debug(`Part '${pt}': ltrs=${ltrs}, nums=${nums}, seps=${seps}`);
 		// - Check if we want it
-		if (ltrs >= 8 &&  //not too small
+		if (ltrs >= 4 &&  //not too small
 			seps >= 2 &&  //at least 3 words
 			(nums == 0 || ltrs/nums >= 3)  //mostly letters
 		){
