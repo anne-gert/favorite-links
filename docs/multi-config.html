@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<!-- This page may contain UTF-8 encoded text. -->
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="docs.css">
+<script href="docs.js"></script>
+<script>window.onload = () => setColorsFromQs()</script>
+
+<title>Multiple Configurations - Favorites and ToDo</title>
+
+</head>
+
+<body class="text-block">
+
+Go to <a href="toc.html">Table of Contents</a>.
+
+
+<h1>Favorites and ToDo - Multiple Configurations</h1>
+
+<p>
+Just plain <code>favorites.html</code> without URL arguments, creates a single,
+default configuration that is stored in the browser's local storage.  Using a
+configuration name with <code>?links=&lt;configuration-name&gt;</code> also
+allows the possibility to store multiple configurations in the browser's local
+storage, each under its own name. See <a
+href="external-files.html#url-args">URL arguments</a> for all the arguments.
+</p>
+
+<p>
+As an example, go to
+<code>http://example.net/favorites.html?items=this-is-a</code> and enter the
+following configuration under Settings (<em>&#x2699;</em>):
+
+<pre>
+!title This is the page for config A
+
+http://example.net/favorites.html?links=this-is-a
+http://example.net/favorites.html?links=this-is-b
+</pre>
+
+Click the second link and enter the following configuration:
+
+<pre>
+!title This is the page for config B
+
+http://example.net/favorites.html?links=this-is-a
+http://example.net/favorites.html?links=this-is-b
+</pre>
+
+</p>
+
+<p>
+Now, both configurations are independently available.
+</p>
+
+<hr>
+Check out <a href="toc.html">other topics</a>.
+
+</body>
+
+</html>
+
+<!-- vim: set fdm=marker ts=4 sw=4 et: -->
+

@@ -141,19 +141,24 @@ used for passing these options:
     <li><code>links=&lt;load-options&gt;</code>: Pass the <i>load-options</i>
         on the URL directly.
     <li><code>links=&lt;config-name&gt;</code>: Pass a self-chosen
-	configuration name that is used to store both the <i>load-options</i>
-	and <i>save-options</i> in the browser's local storage.
-	The configuration name should not contain any spaces, slash (/),
-	backslash (\) or period (.).
-	The <i>load-options</i> and <i>save-options</i> can be modified in the
-	Settings.
-	Using a config-name is preferred when there are credentials in the
-	<i>load-options</i> or when <i>save-options</i> are used.
+        configuration name that is used to store both the <i>load-options</i>
+        and <i>save-options</i> in the browser's local storage.  The
+        configuration name should not contain any spaces, slash (/), backslash
+        (\) or period (.).  The <i>load-options</i> and <i>save-options</i> can
+        be modified in the Settings.  Using a config-name is preferred when
+        there are credentials in the <i>load-options</i> or when
+        <i>save-options</i> are used.
     </ul>
 <li><em>links-override=</em>: This can also be used to specify
     <i>load-options</i> and <i>save-options</i> in the same way as with links=.
 </ul>
 See below for some complete <a href="#examples">examples</a>.
+</p>
+
+<p>
+Using a configuration name also allows the possibility to store multiple
+configurations in the browser's local storage, each under its own name. See <a
+href="multi-config.html">Multiple Configurations</a> for more details on this.
 </p>
 
 <p>
