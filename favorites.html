@@ -3293,12 +3293,14 @@ function parseLinks(links) {
 	if (maxLevel < 0) {
 		// There are no links at all.
 		// In this case, there is nothing to adjust
+		LogParse.log(`maxLevel==0: no Links`);
 	} else if (maxLevel < 2) {
 		// These are the special cases
 		// Add 1 or 2 levels in the front of allLinks.
 		// These levels don't exist in the file, so leave
 		// the indent empty.
 		// In either case, we need to add a Section
+		LogParse.log(`maxLevel==${maxLevel}: Add dummy Section`);
 		let section = {
 			lineNum    : 0,
 			type       : 'link',
@@ -3319,6 +3321,7 @@ function parseLinks(links) {
 		let block = null, renameBlock = false;
 		if (maxLevel == 0) {
 			// Only in this case, we need to add a Block level too
+			LogParse.log(`maxLevel==${maxLevel}: Add dummy Block`);
 			block = {
 				lineNum    : 0,
 				type       : 'link',
@@ -3344,7 +3347,7 @@ function parseLinks(links) {
 		for (let i = 0; i < allLinks.length; ++i) {
 			let item = allLinks[i];
 			if (item.level != null) item.level += extra;
-			if (item.type === 'link' && renameBlock) {
+			if (item.type === 'link' && renameBlock && item.name != null && item.name != '') {
 				block.name = item.name;  //give it the same name as the first link
 				renameBlock = false;
 			}
