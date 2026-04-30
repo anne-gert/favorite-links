@@ -125,7 +125,7 @@ function CreateStorage() {
 	}
 
 	function log() {
-		LogTest.log('Contents of LocalStorage', _data);
+		LogTest.debug('Contents of LocalStorage', _data);
 	}
 
 	let storage = {
@@ -183,6 +183,12 @@ function CreateRemoteFile(timeout = 100) {
 	let _entries = {};
 	let _prepareNextResponse = null;
 
+	function clear() {
+		LogTest.log('Clear all RemoteFile entries');
+		_entries = {};
+		_prepareNextResponse = null;
+	}
+
 	// Get the remote file name from the url/headers
 	function getName(url, headers) {
 		//LogTest.devlog('RemoteFile: URL=' + url + ', Headers=', headers);
@@ -234,7 +240,7 @@ function CreateRemoteFile(timeout = 100) {
 		// Prepare next response if configured
 		if (_prepareNextResponse) _prepareNextResponse('GET');
 		// Return response
-		LogTest.debug('GET content for \'' + name + '\': status ' + rsp.status);
+		LogTest.debug('GET content for \'' + name + '\': status ' + rsp.status + ' (' + (rsp.text?.length ?? 0) + ' chars)');
 		return rsp;
 	}
 
@@ -257,7 +263,7 @@ function CreateRemoteFile(timeout = 100) {
 		// Prepare next response if configured
 		if (_prepareNextResponse) _prepareNextResponse('POST');
 		// Return response
-		LogTest.debug('POST content for \'' + name + '\': status ' + rsp.status);
+		LogTest.debug('POST content for \'' + name + '\': status ' + rsp.status + ' (' + (body?.length ?? 0) + ' chars)');
 		return rsp;
 	}
 
@@ -273,11 +279,12 @@ function CreateRemoteFile(timeout = 100) {
 	// 'POST' as argument. It can then prepare a new response if needed.
 	// If name is set, use that filename, otherwise use UrlResolver.getLoadName().
 	function setContent(value, name = null, next = null) {
+		if (name == null) name = UrlResolver.getLoadName();
 		if (value == null) {
 			// Do not change content
+			LogTest.debug('No change in content for \'' + name + '\'');
 			return;
 		}
-		if (name == null) name = UrlResolver.getLoadName();
 		let entry = getEntry(name);
 		let m;
 		if (value == 'NOT_EXIST') {
@@ -316,7 +323,7 @@ function CreateRemoteFile(timeout = 100) {
 	function getContent(name = null) {
 		if (name == null) name = UrlResolver.getLoadName();
 		let entry = getEntry(name);
-		LogTest.debug('Get content for \'' + name + '\'');
+		LogTest.debug('Get content for \'' + name + '\': ' + (entry.content?.length ?? 0) + ' chars');
 		return entry.content;
 	}
 
@@ -329,6 +336,7 @@ function CreateRemoteFile(timeout = 100) {
 		},
 		set : setContent,
 		content : getContent,
+		clear : clear,
 	};
 	return obj;
 }
@@ -355,6 +363,7 @@ function CreateSettingsChanger() {
 				let v = _options[j];
 				if (v) {
 					loadOptionEntries[i].entry.value = v;
+					LogTest.debug(`ChangeSettings: Set loadOptionEntries[${i}] to '${v}'`);
 					++count;
 				}
 			}
@@ -365,6 +374,7 @@ function CreateSettingsChanger() {
 				let v = _options[j];
 				if (v) {
 					saveOptionEntries[i].entry.value = v;
+					LogTest.debug(`ChangeSettings: Set saveOptionEntries[${i}] to '${v}'`);
 					++count;
 				}
 			}
@@ -727,6 +737,7 @@ async function executeTest(data) {
 	// Initialize
 	if (!data.keepStorage) {
 		HOOK_LocalStorage.clear();
+		remoteFile.clear();
 	}
 	// Start with the correct QueryString to get the right ConfigName
 	let qs = [];

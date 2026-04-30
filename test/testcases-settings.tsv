@@ -11,14 +11,21 @@ name	keepStorage	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	
 
 # Create and Edit Configs
 "2.2(1) Create empty Config"	FALSE	NULL	NOT_EXIST	NULL	NULL	config-A	NULL	DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE							Local-NoDownload-Renderfallback
-"2.2(2) Set Options"	TRUE	NULL	NULL	NULL	NULL	config-A	NULL	DEFAULT_LINKS	DEFAULT_LINKS	DEFAULT_LINKS	FALSE	FALSE	DEFAULT_LINKS	save	NULL	links-A.txt		links-A.txt	Local-Links-NoDownload-Prerender * OptionsChanged-Saveable-Links-LoadOK-SaveOK
+"2.2(2) Set Options"	TRUE	NULL	NULL	NULL	NULL	config-A	NULL	DEFAULT_LINKS	DEFAULT_LINKS	DEFAULT_LINKS	FALSE	FALSE	DEFAULT_LINKS	save	NULL	links-A.txt		links-A.txt	Local-Links-NoDownload-Prerender * OptionsChanged-Saveable-Links-LoadOK-New-SaveOK
 "2.2(3) Change Links"	TRUE	NULL	NULL	NULL	NULL	config-A	NULL	A	A	A	FALSE	FALSE	A	save	A	NULL		NULL	Saveable-Links-Prerender-LoadOK-Same * Render-SaveOK
 
 # Create and Switch between Configs
-"2.3(1) Change Config Options"	FALSE	A	A	A	NULL	config-A	NULL	A	A	A	FALSE	FALSE	A	save	NULL	links-A.txt		links-A.txt	NULL
-"2.3(2) Change ConfigName"	TRUE	NULL	NULL	NULL	NULL	config-B	NULL	B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	NULL
+"2.3(1) Change Config Options"	FALSE	A	NULL	A	NULL	config-A	NULL	A	A	A	FALSE	FALSE	A	save	NULL	links-A.txt		links-A.txt	NULL
+"2.3(2) Change ConfigName"	TRUE	NULL	NOT_EXIST	NULL	NULL	config-B	NULL	B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	NULL
 "2.3(3) Switch to A"	TRUE	NULL	NULL	NULL	NULL	config-A	NULL	A	A	A	FALSE	FALSE	A						NULL
 "2.3(4) Switch to B"	TRUE	NULL	NULL	NULL	NULL	config-B	NULL	B	B	B	FALSE	FALSE	B						NULL
+
+# Create and Switch remote files
+"2.4(1) Load Config A"	FALSE	NULL	NULL	NULL	NULL	config	NULL	A	A	A	FALSE	FALSE	A	save	A	links-A.txt		links-A.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-Links-LoadOK-New-Render-SaveOK
+"2.4(2) Change to empty file"	TRUE	NULL	NULL	NULL	NULL	config	NULL	B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-New-Render-SaveOK
+"2.4(3) Change to existing file"	TRUE	NULL	NULL	NULL	NULL	config	NULL	C	C	NULL	FALSE	TRUE	A	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-Conflict-Render
+"2.4(4) Existing file (clear)"	TRUE	B	A		NULL	config	NULL	A	A	A	FALSE	FALSE	A	clear	C	links-A.txt		links-A.txt	Saveable-2x-Links-Prerender-LoadOK-Conflict + LoadOK-NoLocal-Render
+"2.4(5) Existing file (confirm)"	TRUE	B	A		NULL	config	NULL	C	C	C	FALSE	FALSE	C	save	C	links-A.txt		links-A.txt	Saveable-2x-Links-Prerender-LoadOK-Conflict + New-Render-SaveOK
 
 # Save/Clear/Cancel all combinations of L,O,S (Links, Override, Save)
 "3.1.1 [--] Settings: Save"	FALSE	A	X	NULL	NULL	NULL	NULL	B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender * New-Render

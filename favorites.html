@@ -5911,12 +5911,17 @@ function initSettingsPanel() {
 				if (saveOptionEntries[i].saveData()) saveOptionsChanged = true;
 			}
 			if (loadOptionsChanged || saveOptionsChanged) addStatus('Options Changed');
+			let forceSave = saveOptionsChanged;
 			// If LoadOptions have changed, save the LocalLinks under the new key
-			if (loadOptionsChanged) Data.writeLocalLinks(saveLinks);
+			if (loadOptionsChanged) {
+				Data.writeLocalLinks(saveLinks);  //new LocalLinks
+				Data.writeCleanLinks(null);  //we don't know, because source has changed
+				forceSave = false;  //do not overwrite source
+			}
 			// Update Links
 			if (save == 'clear' || settingsText.value == '') {
 				LogSettings.log('Clear settings');
-				downloadUpdateLinks('', saveOptionsChanged, null, null)  //download and render updated Links
+				downloadUpdateLinks('', forceSave, null, null)  //download and render updated Links
 				.then(hide)
 				.catch(error => {
 					// There was an error
@@ -5944,9 +5949,9 @@ function initSettingsPanel() {
 					parseLinks(editLinks);  //throws error if invalid
 					// If no exception, editLinks are correct
 					if (loadOptionsChanged) {
-						downloadUpdateLinks(editLinks, saveOptionsChanged, null, null);  //download and render updated Links
+						downloadUpdateLinks(editLinks, forceSave, null, null);  //download and render updated Links
 					} else {
-						updateLinks(editLinks, null, saveOptionsChanged, null);
+						updateLinks(editLinks, null, forceSave, null);
 					}
 					// Close the panel
 					hide();
@@ -7174,12 +7179,12 @@ function updateLinks(editLinks, downloadLinks, forceUpload, preRenderCancel) {
 	//        |          |            || Update |        |   Update   |
 	//  Local | Download | CleanLinks ||  Local | Upload | CleanLinks | StatusLine   | Remarks
 	// -------|----------|------------||--------|--------|------------|--------------|-------------
-	// (downloadLinks == null)
-	//   -/e  |     -    |      -     ||    no  |    no  |      no    | [Default]    | Use DefaultLinks
-	//    A   |     -    |      -     ||    no  |   yes  |     yes    | [New]        | New Local
-	//    -   |     -    |      A     ||   yes  |    no  |      no    | [Clean]      | Use Clean
-	//    A   |     -    |      A     ||    no  |    no  |      no    |              |
-	//    B   |     -    |      A     ||    no  |   yes  |     yes    |              |
+	// (download_none)
+	//   -/e  |    -/e   |      -     ||    no  |    no  |      no    | [Default]    | Use DefaultLinks
+	//    A   |    -/e   |      -     ||    no  |   yes  |     yes    | [New]        | New Local
+	//    -   |    -/e   |      A     ||   yes  |    no  |      no    | [Clean]      | Use Clean
+	//    A   |    -/e   |      A     ||    no  |    no  |      no    |              |
+	//    B   |    -/e   |      A     ||    no  |   yes  |     yes    |              |
 	// (links == null)
 	//    -   |     A    |      A     ||   yes  |    no  |      no    | [No Local]   |
 	//    -   |     B    |      A     ||   yes  |    no  |     yes    | [No Local]   |
@@ -7198,7 +7203,10 @@ function updateLinks(editLinks, downloadLinks, forceUpload, preRenderCancel) {
 	//    B   |     A    |      A     ||    no  |   yes  |      no    | [Save Dirty] |
 	//    B   |     C    |      A     ||    no  |    no  |      no    | [Conflict]   | Do not render Downloaded
 	//    A   |     B    |      -     ||    no  |    no  |      no    | [Conflict]   | Do not update Clean
+	//LogLinksUpdate.devlog('editLinks: \'' + editLinks + '\'');
+	//LogLinksUpdate.devlog('downloadLinks: \'' + downloadLinks + '\'');
 	let links = Data.readLocalLinks();  //will be updated to final content
+	//LogLinksUpdate.devlog('Local links: \'' + links + '\'');
 	let updateLocal = false, upload = forceUpload, updateClean = false, conflict = false, render = false;
 
 	// Determine how to integrate Edit into Local
@@ -7221,6 +7229,7 @@ function updateLinks(editLinks, downloadLinks, forceUpload, preRenderCancel) {
 		}
 	}
 	let links_empty = links != null && links.trim() == '';
+	let download_none = downloadLinks == null || downloadLinks.trim() == '';
 
 	// Derive if Local and Download have changed wrt to Clean
 	// xxx_changed is true when it is changed wrt to Clean and Clean is set.
@@ -7228,6 +7237,7 @@ function updateLinks(editLinks, downloadLinks, forceUpload, preRenderCancel) {
 	let local_changed = false, download_changed = false;  //when Clean!=null
 	let local_new = false, download_new = false;  //when Clean==null
 	let cleanLinks = Data.readCleanLinks();
+	//LogLinksUpdate.devlog('cleanLinks: \'' + cleanLinks + '\'');
 	if (cleanLinks != null) {
 		let clean_tr = cleanLinks.trim();
 		download_changed = downloadLinks != null && downloadLinks.trim() != clean_tr;
@@ -7247,7 +7257,7 @@ function updateLinks(editLinks, downloadLinks, forceUpload, preRenderCancel) {
 	}
 
 	// Determine how to integrate Download into Local and Clean
-	if (downloadLinks == null) {
+	if (download_none) {
 		// Case ---, e--, --A, A-A, B-A, A--: Not downloaded
 		if (cleanLinks == null) {
 			// Case ---, e--, A--
