@@ -718,6 +718,13 @@ async function executeTest(data) {
 		errors: 0,
 	};
 
+	// Suspend status messages to no pollute the status messages with
+	// test instrumentation
+	let saveAddStatus = addStatus;
+	let suspendStatus = () => addStatus = () => {};
+	let resumeStatus = () => addStatus = saveAddStatus;
+	suspendStatus();
+
 	if (data.name.match(/^\s*(?:#|;|\/\/)/)) {
 		// This name starts with a comment character
 		LogTest.important('Skip Test ' + data.name);
@@ -753,12 +760,19 @@ async function executeTest(data) {
 	if (data.iniCleanLinks != null) Data.writeCleanLinks(data.iniCleanLinks);
 	HOOK_QueryString.reset();  //triggers re-evaluation of preliminary/download/fallback
 	HOOK_LocalStorage.log();
+
+	// Set the Remote File contents
+	remoteFile.set(data.iniRemoteFile);
+
+	// Clear caches to not influence the test and resume status
+	HOOK_QueryString.reset();
+	HOOK_LocalStorage.reset();
+	resumeStatus();
+
 	if (!data.keepStorage) {
 		clearStatus();
 		prevStatus = '';
 	}
-
-	remoteFile.set(data.iniRemoteFile);
 
 	// Trigger page initialization
 	try {
@@ -805,6 +819,8 @@ async function executeTest(data) {
 		dropLinesTarget(dropTarget, data.dropWhere, data.dropSource);
 		await wait();
 	}
+
+	suspendStatus();
 
 	// Check expected result (only if the expected result is available)
 	LogTest.important('Test ' + data.name + ': Verify results');
@@ -879,6 +895,8 @@ async function executeTest(data) {
 	if (result.errors == 0) {
 		LogTest.important('Tested ' + data.name + ': Pass');
 	}
+
+	resumeStatus();
 
 	return result;
 }
