@@ -4988,13 +4988,16 @@ function findClosestItem(x, y, items = RenderedItems, getControl = null) {
 // SearchBox related functions {{{
 
 // The search functions will be accessed by name (lower case identifier with
-// spaces replaced by '_').
+// non-letters/numbers removed).
 // Every identifier has sub-keys for different functions.
 // A search function has the search query as input and should return a URL to
 // go to for the results.
 
 var SearchFunction = {
-	'duck_duck_go' : {
+	'duckduckgo' : {
+		'text'   : getTemplateUrl('https://duckduckgo.com?q=%urlinput'),
+	},
+	'ddg' : {
 		'text'   : getTemplateUrl('https://duckduckgo.com?q=%urlinput'),
 	},
 	'google' : {
@@ -5006,11 +5009,11 @@ var SearchFunction = {
 	'youtube' : {
 		'text'   : getTemplateUrl('https://www.youtube.com/results?search_query=%urlinput'),
 	},
-	'wayback_machine' : {
+	'waybackmachine' : {
 		'text'   : getWaybackSearchUrl,
 		'domain' : getWaybackDomainUrl,
 	},
-	'google_maps' : {
+	'googlemaps' : {
 		'text'   : getTemplateUrl('https://maps.google.com/?q=%urlinput'),
 	},
 	'default' : {
@@ -5023,7 +5026,7 @@ var SearchFunction = {
 // structure.
 // This function is available for use in the configuration.
 function getSearchFunctionId(identifier) {
-	return identifier.toLowerCase().replaceAll(' ', '_');
+	return identifier.toLowerCase().replaceAll(/[^a-zA-Z0-9]+/g, '');
 
 }
 
