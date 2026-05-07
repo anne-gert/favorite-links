@@ -78,11 +78,18 @@ Section
         Search exists search:Google
             & -> *Search exists*
         Search does search:not-exist not exist
-            & -> *Search does not exist*
+            & -> *Search does search:not-exist not exist*
+        Search does ?not-exist not exist
+            & -> *Search does ?not-exist not exist*
         Search shorthand ?ddg
             & -> *Search shorthand* (use "ddg")
         Search ?duck--Duck::go shorthand
             & -> *Search shorthand* (use odd casing/spelling)
+        Search ?new-search new-search
+            & -> *Search new-search* (new registration)
+        !script
+        registerSearchTemplate('New-Search', 'http://new.search.net/?q%urlinput');
+        !endscript
 
 Section
 

@@ -3219,7 +3219,7 @@ function parseLinks(links) {
 			line = m[1] + m[3];  //the rest
 		}
 		// Take out URL: /url=non-whitespace/
-		let url = null, nameq = false;
+		let url = null, nameq = false, name_ns = null;
 		m = line.match(/^(.*)(?:\s|^)(url=)(\S*)(.*)$/i);
 		// or last /schema:non-whitespace/
 		if (!m) m = line.match(/^(.*)(?:\s|^)(=?)([-+a-zA-Z]{2,}:\S+)(.*)$/);
@@ -3229,6 +3229,10 @@ function parseLinks(links) {
 			nameq = m[2] == '=';  //prefix can be 'url=', '=', '' or '?'
 			url = m[3];
 			if (m[2] == '?') url = 'search:' + url;  //shorthand for 'search:'
+			if (url.match(/^search:/)) {
+				// Save the original text if we need it.
+				name_ns = line.trim();
+			}
 			line = m[1] + m[4];  //the rest
 		}
 		// Take out Name: what remains without leading&trailing whitespae
@@ -3258,6 +3262,7 @@ function parseLinks(links) {
 			flevel     : level,  //level in file
 			level      : level,  //may be adjusted later
 			name       : name,
+			name_ns    : name_ns,  //name in case this is no-search
 			url        : url,
 			icon       : icon,
 			checkType  : checkType,
@@ -3312,6 +3317,7 @@ function parseLinks(links) {
 			flevel     : 0,
 			level      : 0,
 			name       : '_',  //this makes this section not render
+			name_ns    : null,
 			url        : null,
 			icon       : null,
 			checkType  : null,
@@ -3333,6 +3339,7 @@ function parseLinks(links) {
 				flevel     : 0,
 				level      : 1,
 				name       : 'Block',  //may be adjusted later
+				name_ns    : null,
 				url        : null,
 				icon       : null,
 				checkType  : null,
@@ -3867,6 +3874,13 @@ function render(parsed, container, cancel) {
 			if (m) {
 				let searcher = m[1];
 				url = getRegisteredSearchUrl(searcher, name);
+				if (url == null) {
+					// The search identifier does not exist,
+					// take the non-search name.
+					if (link.name_ns != null) {
+						name = link.name_ns;
+					}
+				}
 			}
 		}
 		// Render the item
