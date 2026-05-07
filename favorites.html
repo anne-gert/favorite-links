@@ -3218,13 +3218,17 @@ function parseLinks(links) {
 			cssName = m[2];
 			line = m[1] + m[3];  //the rest
 		}
-		// Take out URL: /url=non-whitespace/ or last /schema:non-whitespace/
+		// Take out URL: /url=non-whitespace/
 		let url = null, nameq = false;
-		m = line.match(/^(.*)(?:\s|^)url=()(\S*)(.*)$/i);
+		m = line.match(/^(.*)(?:\s|^)(url=)(\S*)(.*)$/i);
+		// or last /schema:non-whitespace/
 		if (!m) m = line.match(/^(.*)(?:\s|^)(=?)([-+a-zA-Z]{2,}:\S+)(.*)$/);
+		// or last /?non-whitespace/
+		if (!m) m = line.match(/^(.*)(?:\s|^)(\?)(\S+)(.*)$/);
 		if (m) {
-			nameq = m[2] == '=';
+			nameq = m[2] == '=';  //prefix can be 'url=', '=', '' or '?'
 			url = m[3];
+			if (m[2] == '?') url = 'search:' + url;  //shorthand for 'search:'
 			line = m[1] + m[4];  //the rest
 		}
 		// Take out Name: what remains without leading&trailing whitespae

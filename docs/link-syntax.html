@@ -63,7 +63,9 @@ Each Link is specified on a single line as follows:
             described in <a href="search.html">Search Functions</a>) to search
             for this Link's Name.<br>
             Note that for the identifier, only letters (case-insensitive) and
-            numbers are compared. Notably, it should not contain any spaces.
+            numbers are compared. Notably, it should not contain any spaces.<br>
+        <li><code>?identifier</code> is shorthand for
+            <code>search:identifier</code>.
       </ul>
   <li><em>icon=value</em>: Defines the icon to use. See <a
       href="icons.html">Icons</a> for how to define the value.
@@ -109,6 +111,7 @@ Different combinations of links and names.
   Example:3                            : Show 'Example:3', linking to the URL Example:3, because it also matches schema:location
   Example:3 url=                       : Show 'Example:3' without link
   Rare word search:Google              : Show 'Rare word' with link that searches 'Rare word' on Google
+  Rare word ?Google                    : Show 'Rare word' with link that searches 'Rare word' on Google
 </pre>
 Submenus and indentation levels.
 <pre>
