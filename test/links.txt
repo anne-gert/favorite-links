@@ -74,6 +74,12 @@ Section
         Name is set, only query url=URL url=?query
             & -> *Name is set, only query url = URL*
 
+    With search
+        Search exists search:Google
+            & -> *Search exists*
+        Search does search:not-exist not exist
+            & -> *Search does not exist*
+
 Section
 
 !text
