@@ -60,6 +60,9 @@ r
 # Write tokens
 w your-save-token-here
         </pre>
+        This token file should be owned by the webserver user (i.e. apache,
+        www-data, or similar) and is only readable by the owner (permissions
+        0400).
     </ol>
 <li>Make the contents readable by the webserver.
 </ol>
@@ -378,16 +381,15 @@ following checks are performed:
 <li>Verify the token
     <ul>
     <li>Get the value of the x-token header.
-    <li>If there is no token, use the an empty string.
+    <li>If there is no token, use the empty token.
     <li>Verify this token is allowed for reading in the <a
         href="#token-file">token file</a>.
     </ul>
 <li>Verify the name
     <ul>
     <li>Get the value of the x-name header.
-    <li>Verify if the name is specified and not empty.
-    <li>If the name contains directory separators (<code>/</code> or
-        <code>\</code>), only keep the last part (filename).
+    <li>Verify if the name is specified, not empty, and does not contain
+        directories.
     <li>From the name, remove all characters that are not letters, numbers or
         any of the symbols <code>+</code>, <code>-</code>, <code>_</code>,
         <code>,</code> or <code>.</code>.
@@ -415,9 +417,8 @@ following checks are performed:
 <li>Verify the name
     <ul>
     <li>Get the value of the x-name header.
-    <li>Verify if the name is specified and not empty.
-    <li>If the name contains directory separators (<code>/</code> or
-        <code>\</code>), only keep the last part (filename).
+    <li>Verify if the name is specified, not empty, and does not contain
+        directories.
     <li>From the name, remove all characters that are not letters, numbers or
         any of the symbols <code>+</code>, <code>-</code>, <code>_</code>,
         <code>,</code> or <code>.</code>.
@@ -465,6 +466,15 @@ w pete:password
 
 # Create+write token
 cw admin:complicated-password
+</pre>
+</p>
+
+<p>
+This token file should be owned by the webserver user and only be readable by
+the owner. For Apache on Debian, this could be set with:
+<pre>
+# chown www-data:www-data /etc/favlinks/tokens
+# chmod 400 /etc/favlinks/tokens
 </pre>
 </p>
 

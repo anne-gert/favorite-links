@@ -3,6 +3,9 @@
 $TokenFile = "/etc/favlinks/tokens";
 $MaxSize = 512 * 1024;
 
+$TokenFileAllowedPermissions = 0400;
+$LogActions = true;
+
 # Set the CORS headers
 header("Access-Control-Allow-Origin:  *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
@@ -24,6 +27,8 @@ function SetDebugHeader($msg)
 	}
 }
 
+# For logging, get the remote IP address
+$sender = $_SERVER['REMOTE_ADDR'];
 
 # Check the working directory
 $path = dirname($_SERVER['SCRIPT_FILENAME']);
@@ -108,6 +113,17 @@ if ($doWrite)
 	}
 }
 
+# Check file permissions (should be 0400)
+$perms = fileperms($TokenFile) & 0777;
+if ($perms & ~$TokenFileAllowedPermissions)
+{
+	# Token file has permissions outside the allowable, defensive permissions.
+	http_response_code(500);  # Internal Server Error
+	error_log("TokenFile ('$TokenFile') has insecure permissions: " . decoct($perms));
+	SetDebugHeader("TokenFile has insecure permissions");
+	return;
+}
+
 # Read granted access from configuration
 $lines = file($TokenFile);
 if ($lines === false)
@@ -122,12 +138,18 @@ $access = "";
 foreach ($lines as $line)
 {
 	if (preg_match('/^\s*(?:\/\/|#|;|$)/', $line)) continue;  # empty line or comment
+	# Format of a line: <rwc>+ [token]
+	# - Multiple access permissions are allowed per token.
+	# - A token may be empty or missing. In this case, the user's token
+	#   must also be empty.
 	if (preg_match('/^\s*([rwc]+)(?:\s+(.*?))?\s*$/i', $line, $m))
 	{
 		# 'access token' line
 		#error_log('DEBUG: token-line=' . var_export($m, true));
 		$tok = (count($m) >= 3) ? $m[2] : "";
-		if ($tok == $token)
+		# Use hash_equals($known_string, $user_string) for a constant-time
+		# secure string comparison.
+		if (hash_equals($tok, $token))
 		{
 			$access .= $m[1];  # add this access to overall access
 		}
@@ -142,11 +164,22 @@ foreach ($lines as $line)
 	}
 }
 
+# Log if token guessing is suspected
+if ($LogActions && $access === "")
+{
+	error_log("favlinks: Incorrect token received from '$sender'");
+}
+
 # Sanitize $filename
-# If there is a path in it, remove that.
-$filename = preg_replace('/.*[\\\\\\/]/', '', $filename); # remove directories
+# If there is a path in it, reject it.
+if (preg_match('/[\\\\\\/]/', $filename))
+{
+	http_response_code(404);  # Not Found
+	SetDebugHeader("Filename contains directory: '$filename'");
+	return;
+}
 $filename = preg_replace('/[^-+_,.a-zA-Z0-9]/', '', $filename); # remove characters we don't want
-if (!preg_match('/\.txt/i', $filename))
+if (!preg_match('/\.txt$/', strtolower($filename)))
 {
 	http_response_code(404);  # Not Found
 	SetDebugHeader("Filename is not .txt: '$filename'");
@@ -181,9 +214,20 @@ if ($doRead)
 	$result = readfile($filepath);
 	if ($result === false)
 	{
+		if ($LogActions)
+		{
+			error_log("favlinks: Reading file '$filepath' failed");
+		}
 		http_response_code(404);  # Not Found
 		SetDebugHeader("Could not read file: '$filename'");
 		return;
+	}
+	else
+	{
+		if ($LogActions)
+		{
+			error_log("favlinks: Reading file '$filepath' succeeded");
+		}
 	}
 }
 
@@ -225,13 +269,34 @@ if ($doWrite)
 
 	# Write the data
 	# NOTE: The file must allow the web-user write/create access.
-	$result = file_put_contents("$path/$filename", $body);
+	$result = file_put_contents($filepath, $body);
 	if ($result === false)
 	{
 		# Was not able to write
+		if ($LogActions)
+		{
+			error_log("favlinks: Writing file '$filepath' failed");
+		}
 		http_response_code(403);  # Forbidden
 		SetDebugHeader("Could not $operation file: '$filename'");
 		return;
+	}
+
+	# Verify the write
+	if (filesize($filepath) !== $size)
+	{
+		if ($LogActions)
+		{
+			error_log("favlinks: Writing file '$filepath' failed");
+		}
+		http_response_code(500);  # Internal Server Error
+		SetDebugHeader("Could not $operation file: Write verification failed: size mismatch");
+		return;
+	}
+
+	if ($LogActions)
+	{
+		error_log("favlinks: Writing file '$filepath' succeeded");
 	}
 }
 
