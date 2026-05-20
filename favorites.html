@@ -1603,6 +1603,22 @@ function createTitle(url) {
 	return name;
 }
 
+// When this function is called, call logfunc(messagei + ': ' + details) and save the timestamp.
+// Call end() on the returned object to log the end time.
+function logTimer(logfunc, message, details = null) {
+	let msg = message;
+	if (details != null && details != '') msg += ': ' + details;
+	let startTs = new Date();
+	let timer = {
+		end() {
+			let endTs = new Date();
+			logfunc(message + ' took ' + (endTs - startTs) + ' msec');
+		}
+	};
+	logfunc(msg);
+	return timer;
+}
+
 // }}}
 
 // Links Data {{{
@@ -2532,11 +2548,12 @@ function downloadLinks() {
 	if (url == null) return null;
 	let headers = UrlResolver.getDownloadHeaders();
 
-	LogUpDownload.important('Downloading URL \'' + url + '\'');
+	let timer = logTimer(LogUpDownload.important, `Downloading URL '${url}'`);
 	if (HOOK_Ready != null) HOOK_Ready.start();
 
 	function handleResponse(status, text, resolveFunc, rejectFunc) {
 		//LogUpDownload.devlog('downloadLinks: Response received');
+		timer.end();
 		if (status == 200) {
 			// Success
 			LogUpDownload.log('downloadLinks: Download successful');
@@ -2641,11 +2658,12 @@ function uploadLinks(value) {
 		value = '';
 	}
 
-	LogUpDownload.important('Uploading to URL ' + url + ': ' + method + ' ' + value.length + ' characters');
+	let timer = logTimer(LogUpDownload.important, `Uploading to URL 'url'`, method + ' ' + value.length + ' characters');
 	if (HOOK_Ready != null) HOOK_Ready.start();
 
 	function handleResponse(status, resolveFunc, rejectFunc) {
 		//LogUpDownload.devlog('downloadLinks: Response received');
+		timer.end();
 		if (status == 200) {
 			// Success
 			LogUpDownload.log('Uploaded links successfully');
@@ -2809,8 +2827,6 @@ function CreatePending(name, timeout, onlyLast) {
 // - resolveIconDefs(icon_url)
 // - resolveCheckboxDefs(name, lineNum)
 function parseLinks(links) {
-	LogParse.important('Parsing Links...');
-
 	// Parse the input lines and construct a list of objects
 	let allLinks = [];  //specified Link objects
 	let parsed = {
@@ -7065,7 +7081,16 @@ function processLinks(links, cancel = null) {
 	if (!cancel) cancel = () => false;
 
 	// Parse Links
+	let timer = logTimer(LogInit.important, 'Parsing Links');
 	let parsed = parseLinks(links);  //throws exception if invalid
+	timer.end();
+
+	// Note: This parsed result could be cached as JSON in LocalStorage.
+	// However, on a very modest computer parsing of a 62kB file takes
+	// 27 msec, while rendering takes 191 msec. Therefore the return of
+	// this extra complexity is too small.
+
+	timer = logTimer(LogInit.important, 'Rendering Page');
 
 	// Set readonly if:
 	LinksReadOnly =
@@ -7123,14 +7148,15 @@ function processLinks(links, cancel = null) {
 	}
 
 	// Render links
-	LogInit.important('Render Links...');
+	let timer2 = logTimer(LogInit.important, 'Render Links...');
 	let container = document.getElementById('LinksBox');
 	render(parsed, container, cancel);
+	timer2.end();
 
 	if (cancel()) return;
 
 	// Fill SearchForm
-	LogInit.important('Render SearchButtons...');
+	timer2 = logTimer(LogInit.important, 'Render SearchButtons...');
 	let searchForm = document.getElementById('SearchForm');
 	// Use a static input field, so that the browser retains its contents
 	// after going back to this page.
@@ -7157,6 +7183,9 @@ function processLinks(links, cancel = null) {
 			searchForm.classList.add('hidden');
 		}
 	}
+	timer2.end();
+
+	timer.end();
 }
 
 // Integrate newly downloaded and/or edited configuration into local- and
