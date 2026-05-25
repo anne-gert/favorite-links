@@ -1,15 +1,34 @@
 <?php
 
+# Expected permissions of the TokenFile.
+$TokenFileAllowedPermissions = 0400;
+
+# Path to the file with configuration settings overrides.
+$ConfigFile = "config.php";
+
+
+#############################################################################
+### Configuration values
+
+# Path to the file with access tokens.
 $TokenFile = "/etc/favlinks/tokens";
+
+# Directory where the data files should be stored.
+# If this is a relative path, it is appended to the script's directory.
+$DataRoot = "/var/favlinks";
+
+# Maximum size in bytes for the uploaded data files.
 $MaxSize = 512 * 1024;
 
-$TokenFileAllowedPermissions = 0400;
+# Log the requests to the server log if true.
 $LogActions = true;
 
-# Set the CORS headers
-header("Access-Control-Allow-Origin:  *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: x-name, x-token");
+# Set debug mode, which also adds an X-Debug header with detail information.
+$Debug = false;
+
+### End of configuration values
+#############################################################################
+
 
 # We need to do a number of checks. In order to give as little information as
 # possible, use only a few different return codes until the uses has the
@@ -17,7 +36,6 @@ header("Access-Control-Allow-Headers: x-name, x-token");
 
 # When debugging, the additional headers are used for diagnostics information.
 # This should not be enabled in production.
-$Debug = false;
 function SetDebugHeader($msg)
 {
 	global $Debug;
@@ -27,19 +45,57 @@ function SetDebugHeader($msg)
 	}
 }
 
+# If $path is relative, return it, prefixed with this script's directory.
+# If $path is already absolute, return it unchanged.
+function scriptRelAbs($path)
+{
+	if (substr($path, 0, 1) == "/")
+	{
+		# Is already absolute path
+		return $path;
+	}
+
+	$scriptPath = dirname($_SERVER['SCRIPT_FILENAME']);
+	if ($path == "" || $path == ".")
+	{
+		# Nothing to append
+		return $scriptPath;
+	}
+
+	return $scriptPath . "/" . $path;
+}
+
+# Check file permissions (should be 0400)
+$ConfigFile = scriptRelAbs($ConfigFile);
+if (is_file($ConfigFile))
+{
+	# Config file exists, read it
+	#error_log("Read ConfigFile ('$ConfigFile')");
+	include($ConfigFile);
+}
+else
+{
+	#error_log("ConfigFile ('$ConfigFile') does not exist");
+}
+
+# Set the CORS headers
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: x-name, x-token");
+
 # For logging, get the remote IP address
 $sender = $_SERVER['REMOTE_ADDR'];
 
-# Check the working directory
-$path = dirname($_SERVER['SCRIPT_FILENAME']);
-#error_log("DEBUG: \$path='$path'");
-if (!is_dir($path))
+# Check the data root
+$DataRoot = scriptRelAbs($DataRoot);
+if (!is_dir($DataRoot))
 {
 	# Not possible to derive path
 	http_response_code(500);  # Internal Server Error
-	SetDebugHeader("Cannot determine current path");
+	SetDebugHeader("DataRoot does not exist: $DataRoot");
 	return;
 }
+#error_log("DEBUG: \$DataRoot='$DataRoot'");
 
 # Check the requested method and set some variables
 $method = strtoupper($_SERVER['REQUEST_METHOD']);
@@ -187,7 +243,7 @@ if (!preg_match('/\.txt$/', strtolower($filename)))
 }
 
 # Check if file exists
-$filepath = "$path/$filename";
+$filepath = "$DataRoot/$filename";
 $file_exists = is_file($filepath);
 
 # Read the file and return the contents

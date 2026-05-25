@@ -41,18 +41,21 @@ webserver as well as on the browser.
 <p>
 <b>Webserver setup</b>
 <ol>
-<li>Create a directory on the webserver to serve the pages, e.g.
+<li>Create a web directory on the webserver to serve the pages, e.g.
     <code>/var/www/favorites</code>.
-<li>Copy (or symlink) all <code>*.html</code> pages from the repository into
-    that directory.
+<li>Copy (or symlink) all <code>*.html</code> pages and <code>docs</code>
+    directory from the repository into the web directory.
 <li>To host the links data:
     <ol>
-    <li>Copy (or symlink) <code>data.php</code> from the repository into that
-        directory.
-    <li>Copy the file example-links.txt to <code>links.txt</code>.
-    <li>Make that file writable by the webserver.
+    <li>Create a config directory, default <code>/etc/favlinks</code>.
+    <li>Create a data directory, default <code>/var/favlinks</code>.
+    <li>Copy (or symlink) <code>data.php</code> from the repository to the
+        web directory.
+    <li>Copy the file example-links.txt to the data directory. The name may
+        be any allowed name, like <code>links.txt</code>.
+    <li>Make this file writable by the webserver.
     <li>Create the token file, default location is
-        <code>/etc/favorites/tokens</code> with the following contents:
+        <code>/etc/favlinks/tokens</code> with the following contents:
         <pre>
 # No token needed for reading
 r
@@ -121,6 +124,7 @@ These are the topics on this page:
     </ul>
 <li><a href="#data-php">Configuration of data.php</a>
     <ul>
+    <li><a href="#config-file">Config file</a>
     <li><a href="#token-file">Token file</a>
     </ul>
 <li><a href="#examples">Examples</a>
@@ -396,8 +400,8 @@ following checks are performed:
     <li>Verify the name ends with <code>.txt</code>.
     </ul>
 </ul>
-If all checks returned valid, look for the specified file in the same directory
-as where data.php is and return its contents.
+If all checks returned valid, look for the specified file in the data directory
+and return its contents.
 </p>
 
 
@@ -428,7 +432,22 @@ following checks are performed:
     This maximum size is defined in data.php and can be changed.
 </ul>
 If all checks returned valid, write the contents into the specified file in the
-same directory as where data.php is.
+data directory.
+</p>
+
+
+<a name="config-file"></a>
+<h3>Config File</h3>
+
+<p>
+Some configured values can be changed in a configuration file,
+<code>config.php</code>.
+The name of this file is defined in data.php and can be changed.
+</p>
+
+<p>
+See <code>example-config.php</code> in the source code for an example config
+file.
 </p>
 
 
@@ -436,9 +455,9 @@ same directory as where data.php is.
 <h3>Token File</h3>
 
 <p>
-The authorized tokens are stored on the server in file
+The authorized tokens are stored on the server, by default in file
 <code>/etc/favlinks/tokens</code>.
-The name of this file is defined in data.php and can be changed.
+The name of this file can be changed in config.php.
 </p>
 
 <p>
