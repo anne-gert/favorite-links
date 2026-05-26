@@ -3531,6 +3531,16 @@ function parseLinks(links) {
 				id = mOpt[1];  //undefined if not specified
 				token = mOpt[2];  //undefined if not specified
 				val = mOpt[3];
+				if (id == null && token == null) {
+					// This can be old <token>=<value> syntax (id matching empty)
+					// Max token length of 4 is to allow 'char:=='.
+					mOpt = arg.match(/^()([^\s=]{1,4})=(\S.*)$/);
+					if (mOpt) {
+						// Yes it is
+						token = mOpt[2];
+						val = mOpt[3];
+					}
+				}
 				LogParse.log(`Checkbox '${def.name}' option '${arg}' matches '${id}=[${token}]${val}'`);
 			}
 			let orgId = id, orgToken = token, orgVal = val;
