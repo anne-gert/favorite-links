@@ -81,7 +81,7 @@ else
 # Set the CORS headers
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: x-name, x-token");
+header("Access-Control-Allow-Headers: x-name, x-token, if-match");
 
 # For logging, get the remote IP address
 $sender = $_SERVER['REMOTE_ADDR'];
@@ -122,7 +122,7 @@ else
 }
 
 # Find headers: x-name, x-token
-$token = null; $filename = null;
+$token = null; $filename = null; $prevETag = null;
 foreach (getallheaders() as $n => $v)
 {
 	$n = strtolower($n);
@@ -130,6 +130,8 @@ foreach (getallheaders() as $n => $v)
 		$token = $v;
 	elseif ($n == "x-name")
 		$filename = $v;
+	elseif ($n == "if-match")
+		$prevETag = $v;
 }
 
 # Check input for reading
@@ -140,13 +142,13 @@ if ($doRead)
 	{
 		# For clients that are just trying, give them a 'not home'.
 		http_response_code(404);  # Not Found
-		SetDebugHeader("Filename not set");
+		SetDebugHeader("Filename missing");
 		return;
 	}
 	if ($token == null)
 	{
 		$token = "";
-		SetDebugHeader("Token set to empty");
+		SetDebugHeader("Token not used");
 	}
 }
 
@@ -158,13 +160,13 @@ if ($doWrite)
 	if ($filename == null)
 	{
 		http_response_code(404);  # Not Found
-		SetDebugHeader("Filename not set");
+		SetDebugHeader("Filename missing");
 		return;
 	}
 	if ($token == null || $token == "")
 	{
 		http_response_code(404);  # Not Found
-		SetDebugHeader("Token not set");
+		SetDebugHeader("Token missing");
 		return;
 	}
 }
@@ -246,6 +248,41 @@ if (!preg_match('/\.txt$/', strtolower($filename)))
 $filepath = "$DataRoot/$filename";
 $file_exists = is_file($filepath);
 
+# Select a hash algorithm
+$algo = null;
+foreach (hash_algos() as $a)
+	if (preg_match('/^sha/i', $a))
+	{
+		$algo = $a;
+		break;
+	}
+
+# Calculate a unique tag for the data.
+function calcETag($data)
+{
+	global $algo;
+
+	# Normalize the data
+	$data = preg_replace('/\r?\n\r?/', '\n', $data);  # crlf -> lf
+	$data = preg_replace('/^\s+|\s+$/', '', $data);  # leading+trailing whitespace
+
+	if (isset($algo))
+	{
+		# Calculate the hash
+		$hash = hash($algo, $data, true);
+		return preg_replace('/=+$/', '', base64_encode($hash));
+	}
+	else
+	{
+		# There is no hash algorithm, calculate a simple sum
+		$len = strlen($data);
+		$sum = 0;
+		foreach (str_split($data) as $char)
+			$sum += ord($char);
+		return "$len-$sum";
+	}
+}
+
 # Read the file and return the contents
 if ($doRead)
 {
@@ -265,10 +302,9 @@ if ($doRead)
 		return;
 	}
 
-	# Read and return file
-	header("Content-Type: text/plain; charset=UTF-8");
-	$result = readfile($filepath);
-	if ($result === false)
+	# Read file
+	$data = file_get_contents($filepath);
+	if ($data === false)
 	{
 		if ($LogActions)
 		{
@@ -278,19 +314,25 @@ if ($doRead)
 		SetDebugHeader("Could not read file: '$filename'");
 		return;
 	}
-	else
+
+	# Calculate new ETag
+	$eTag = calcETag($data);
+	header("ETag: $eTag");
+
+	# Output data
+	header("Content-Type: text/plain; charset=UTF-8");
+	echo $data;
+
+	if ($LogActions)
 	{
-		if ($LogActions)
-		{
-			error_log("favlinks: Reading file '$filepath' succeeded");
-		}
+		error_log("favlinks: Reading file '$filepath' succeeded");
 	}
 }
 
 # Write the file
 if ($doWrite)
 {
-	# Check read access
+	# Check write access
 	if ($file_exists)
 	{
 		if (stripos($access, "w") === false)
@@ -310,6 +352,62 @@ if ($doWrite)
 			return;
 		}
 		$operation = "create";
+	}
+
+	# Get previous contents and check against $prevETag
+	if (!isset($prevETag))
+	{
+		# There is no If-Match, allow all
+	}
+	else if ($prevETag == "*")
+	{
+		# Special value that always matches
+		SetDebugHeader("Test If-Match: Always matches");
+	}
+	else
+	{
+		$prevData = file_get_contents($filepath);
+		$isEmpty = ($prevData !== false && preg_match('/\S/', $prevData));
+		if ($prevETag == "*Empty")
+		{
+			# Special value that matches if the file does not exist or is empty
+			if (!$isEmpty)
+			{
+				# File exists and is not empty
+				http_response_code(412);  # Precondition Failed
+				SetDebugHeader("Test If-Match: File not empty: '$filename'");
+				return;
+			}
+		}
+		else
+		{
+			# A normal value, check that it matches
+			if ($prevData === false)
+			{
+				# Could not read the file, so could not check if $prevTag was correct
+				http_response_code(412);  # Precondition Failed
+				SetDebugHeader("Test If-Match: Could not read file: '$filename'");
+				return;
+			}
+
+			# Calculate ETag and check if it matches the expected value
+			if ($isEmpty)
+			{
+				# If file is empty, there is no danger of overwriting
+			}
+			else
+			{
+				# File is not empty, check contents
+				$eTag = calcETag($prevData);
+				if ($eTag !== $prevETag)
+				{
+					http_response_code(412);  # Precondition Failed
+					SetDebugHeader("Test If-Match: $prevETag does not match current data ($eTag)");
+					header("ETag: $eTag");
+					return;
+				}
+			}
+		}
 	}
 
 	# Get body and verify its size
@@ -349,6 +447,10 @@ if ($doWrite)
 		SetDebugHeader("Could not $operation file: Write verification failed: size mismatch");
 		return;
 	}
+
+	# Calculate new ETag
+	$eTag = calcETag($body);
+	header("ETag: $eTag");
 
 	if ($LogActions)
 	{

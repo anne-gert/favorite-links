@@ -5,6 +5,13 @@ let StopOnFirstError = false;
 // If this is set, only tests which names satisfy this regex will be executed.
 let ExecutedTestsRegexp = null;
 //let ExecutedTestsRegexp = /^3\./;
+// The test specifications to run
+let TestSets = [
+	'test/testcases-settings.tsv',
+	'test/testcases-updatelinks.tsv',
+	'test/testcases-sync.tsv',
+	'test/testcases-dragdrop.tsv',
+];
 
 // Mock implementations {{{
 
@@ -181,12 +188,10 @@ function CreateQueryString(queryString) {
 // with GET and POST.
 function CreateRemoteFile(timeout = 100) {
 	let _entries = {};
-	let _prepareNextResponse = null;
 
 	function clear() {
 		LogTest.log('Clear all RemoteFile entries');
 		_entries = {};
-		_prepareNextResponse = null;
 	}
 
 	// Get the remote file name from the url/headers
@@ -220,7 +225,9 @@ function CreateRemoteFile(timeout = 100) {
 			_entries[name] = entry = {
 				getStatus: 200,
 				postStatus: 200,
+				name: name,
 				content: '',
+				nextResponses: [],
 			};
 		}
 		return entry;
@@ -236,34 +243,98 @@ function CreateRemoteFile(timeout = 100) {
 		let rsp = {
 			status : entry.getStatus,
 			text   : entry.content,
+			eTag   : calcETag(entry.content),
 		};
-		// Prepare next response if configured
-		if (_prepareNextResponse) _prepareNextResponse('GET');
+		// If we have a multi-response, move to the next
+		if (entry.nextResponses.length > 0) {
+			entry.content = entry.nextResponses.shift();
+			LogTest.debug(`Activate next response '${renderValue(entry.content)}'`);
+		}
 		// Return response
-		LogTest.debug('GET content for \'' + name + '\': status ' + rsp.status + ' (' + (rsp.text?.length ?? 0) + ' chars)');
+		LogTest.debug('GET RemoteFile for \'' + name + '\': status ' + rsp.status + ' (' + (rsp.text?.length ?? 0) + ' chars)');
 		return rsp;
 	}
 
 	// Returns Promise that simulates a POST.
 	async function getPostResponse(url, headers, body) {
+		//LogTest.devlog('POST headers', headers);
 		let name = getName(url, headers);
 		let entry = getEntry(name);
 		// Wait a bit
 		await sleep(timeout);
-		// Update emulated file
-		if (entry.postStatus == 200) {
-			if (entry.getStatus == 404) entry.getStatus = 200;
-			entry.content = body;
+		// Check ETag (compare code in data.php)
+		let prevETag = null;
+		if (headers) {
+			for (let i = 0; i < headers.length; ++i) {
+				if (headers[i][0].toLowerCase() == 'if-match') {
+					prevETag = headers[i][1];
+					break;
+				}
+			}
 		}
-		// Assemble response
-		let rsp = {
-			status : entry.postStatus,
-			text   : '',
-		};
-		// Prepare next response if configured
-		if (_prepareNextResponse) _prepareNextResponse('POST');
+		let eTagValid = true, result = `POST If-Match (${prevETag}) `;
+		if (prevETag === null) {
+			// No check, allow all
+			result += 'not in request';
+		} else if (prevETag === CleanTagInvalid) {
+			// Save from an 'invalid' situation, match all
+			result += 'matches always';
+		} else {
+			if (prevETag === CleanTagEmpty) {
+				// Check file is empty
+				if (entry.content === '') {
+					result += '& file is empty';
+				} else {
+					eTagValid = false;
+					result += '& file not empty';
+				}
+			} else {
+				if (entry.content === '') {
+					// No content, nothing to overwrite
+					result += '& file is empty';
+				} else {
+					// Calculate current ETag and compare
+					let eTag = calcETag(entry.content);
+					if (prevETag === eTag) {
+						result += `matches non-empty file ETag ${eTag}`;
+					} else {
+						eTagValid = false;
+						result += `does not match ETag ${eTag}`;
+					}
+				}
+			}
+		}
+		result += ` -> ${eTagValid ? 'valid' : 'invalid'}`;
+		LogTest.log(result);
+		// Prepare response
+		let rsp;
+		if (eTagValid) {
+			// Update emulated file
+			if (entry.postStatus == 200) {
+				if (entry.getStatus == 404) entry.getStatus = 200;
+				entry.content = body;
+			}
+			// Assemble response
+			let eTag = calcETag(entry.content);
+			rsp = {
+				status : entry.postStatus,
+				text   : '',
+				eTag   : eTag,
+			};
+		} else {
+			// Assemble 412 response
+			rsp = {
+				status : 412,
+				text   : '',
+			};
+		}
+		// If we have a multi-response, move to the next
+		if (entry.nextResponses.length > 0) {
+			entry.content = entry.nextResponses.shift();
+			LogTest.debug(`Activate next response '${renderValue(entry.content)}'`);
+		}
 		// Return response
-		LogTest.debug('POST content for \'' + name + '\': status ' + rsp.status + ' (' + (body?.length ?? 0) + ' chars)');
+		LogTest.debug(`POST RemoteFile for '${name}': Status ${rsp.status} (${body?.length ?? 0} chars)`);
 		return rsp;
 	}
 
@@ -272,34 +343,38 @@ function CreateRemoteFile(timeout = 100) {
 	// - 'NOT_EXIST': Emulate file that does not exist yet, but will after
 	//   upload
 	// - 'DEFAULT_LINKS': Value of DefaultLinks
-	// - numeric: Return this status, sets content to empty
-	// - numeric/numeric: Return separate status for GET/POST.
+	// - nnn: Return this numeric status, sets content to empty
+	// - nnn/nnn: Return separate numeric status for GET/POST.
+	// - +string/string...: Content that changes after every GET or POST.
+	//   This can be used to simulate 412 behavior. Strings may be empty.
 	// - any other string: Contents of the emulated file
-	// If next is set, it is called at the next request with 'GET' or
-	// 'POST' as argument. It can then prepare a new response if needed.
-	// If name is set, use that filename, otherwise use UrlResolver.getLoadName().
-	function setContent(value, name = null, next = null) {
-		if (name == null) name = UrlResolver.getLoadName();
+	// If name is set, use that filename, otherwise use UrlResolver.getLoadName() or 'links.txt';.
+	function setContent(value, name = null) {
+		if (name == null) name = UrlResolver.getLoadName() ?? 'links.txt';
 		if (value == null) {
 			// Do not change content
-			LogTest.debug('No change in content for \'' + name + '\'');
+			LogTest.debug(`No change in RemoteFile for '${name}'`);
 			return;
 		}
 		let entry = getEntry(name);
 		let m;
+		let result;
 		if (value == 'NOT_EXIST') {
 			entry.getStatus = 404;
 			entry.postStatus = 200;
 			entry.content = '';
+			result = entry.getStatus;
 		} else if (value == 'DEFAULT_LINKS') {
 			entry.getStatus = 200;
 			entry.postStatus = 200;
 			entry.content = DefaultLinks;
-		} else if (value.match(/^\d+$/)) {
+			result = 'DefaultLinks';
+		} else if (value.match(/^\d{3}$/)) {
 			entry.getStatus = value.valueOf();
 			entry.postStatus = value.valueOf();
 			entry.content = '';
-		} else if (m = value.match(/^\s*(\d+)(?:\s*\/\s*(\d+))?\s*$/)) {
+			result = entry.getStatus;
+		} else if (m = value.match(/^\s*(\d{3})(?:\s*\/\s*(\d{3}))?\s*$/)) {
 			entry.getStatus = m[1].valueOf();
 			entry.postStatus = ((m.length >= 2) ? m[2] : m[1]).valueOf();
 			let canRead = entry.getStatus == 200;
@@ -309,22 +384,33 @@ function CreateRemoteFile(timeout = 100) {
 			} else {
 				entry.content = '';
 			}
+			result = `${entry.getStatus}/${entry.postStatus} ` + renderValue(entry.content);
+		} else if (m = value.match(/^\s*\+(.*\/.*?)\s*$/)) {
+			let values = m[1];
+			entry.getStatus = 200;
+			entry.postStatus = 200;
+			let multi = values.split('/');
+			result = `${multi.length} values (${renderValue(values)})`;
+			if (multi.length > 0) entry.content = multi.shift();
+			entry.nextResponses = multi;
 		} else {
 			entry.getStatus = 200;
 			entry.postStatus = 200;
 			entry.content = value;
+			result = renderValue(entry.content);
 		}
-		LogTest.debug('Set content for \'' + name + '\'');
-		_prepareNextResponse = next;
+		LogTest.debug(`Set RemoteFile '${name}': ${result}`);
 	}
 
 	// Get the contents of the specified name.
 	// If name is not specified, use UrlResolver.getLoadName().
 	function getContent(name = null) {
-		if (name == null) name = UrlResolver.getLoadName();
+		if (name == null) name = UrlResolver.getLoadName() ?? 'links.txt';
 		let entry = getEntry(name);
-		LogTest.debug('Get content for \'' + name + '\': ' + (entry.content?.length ?? 0) + ' chars');
-		return entry.content;
+		let result = `${entry.getStatus}/${entry.postStatus} `;
+		result += renderValue((entry.content === DefaultLinks) ? 'DefaultLinks' : entry.contents);
+		LogTest.debug(`Get RemoteFile '${name}': ${result}`);
+		return (entry.getStatus == 200) ? entry.content : null;
 	}
 
 	let obj = {
@@ -482,6 +568,17 @@ function findItemWithTarget(str) {
 		}
 	}
 	return null;  //no Item found
+}
+
+// Calculate a simple ETag for this contents.
+// Keep it simple for test clarity and predictability.
+function calcETag(contents) {
+	let len = contents.length;
+	let sum = 0;
+	for (let i = 0; i < len; ++i) {
+		sum += contents.charCodeAt(i);
+	}
+	return len + '-' + sum;
 }
 
 // }}}
@@ -736,7 +833,7 @@ async function executeTest(data) {
 		result.skipped++;
 		return result;
 	} else {
-		LogTest.important('Test ' + data.name);
+		LogTest.important('Test ' + data.name + ': Prepare');
 		LogTest.debug('Test data', data);
 	}
 	if (CurrTestCtl) CurrTestCtl.textContent = data.name;
@@ -757,7 +854,15 @@ async function executeTest(data) {
 	HOOK_LocalStorage.reset();  //triggers re-evaluation of UsedLoadConfigName
 	//LogTest.devlog('ConfigLoadKey after 2nd reset: \'' + UrlResolver.getConfigLoadKey() + '\'');
 	if (data.iniLinks != null) Data.writeLocalLinks(data.iniLinks);
-	if (data.iniCleanLinks != null) Data.writeCleanLinks(data.iniCleanLinks);
+	if (data.iniCleanLinks != null) {
+		if (data.iniCleanLinks === '') {
+			Data.writeCleanLinks('', CleanTagEmpty);
+		} else if (data.iniCleanLinks === 'INVALID') {
+			Data.writeCleanLinks('*Invalid', CleanTagInvalid);
+		} else {
+			Data.writeCleanLinks(data.iniCleanLinks, calcETag(data.iniCleanLinks));
+		}
+	}
 	HOOK_QueryString.reset();  //triggers re-evaluation of preliminary/download/fallback
 	HOOK_LocalStorage.log();
 
@@ -775,6 +880,7 @@ async function executeTest(data) {
 	}
 
 	// Trigger page initialization
+	LogTest.important('Test ' + data.name + ': Start');
 	try {
 		initLinks();
 		await HOOK_Ready.wait();
@@ -832,10 +938,18 @@ async function executeTest(data) {
 		}
 	}
 	if (data.expCleanLinks !== undefined) {
-		let cleanLinks = Data.readCleanLinks();
-		if (!linksEqual(cleanLinks, data.expCleanLinks)) {
-			LogTest.error('Test ' + data.name + ': CleanLinks (=' + renderValue(cleanLinks) + ') has not expected value (=' + renderValue(data.expCleanLinks) + ')');
-			++result.errors;
+		if (data.expCleanLinks == 'INVALID') {
+			let cleanTag = Data.readCleanTag();
+			if (cleanTag !== CleanTagInvalid) {
+				LogTest.error('Test ' + data.name + ': CleanLinks (Tag=' + renderValue(cleanTag) + ') has not expected value (' + renderValue(data.expCleanLinks) + ')');
+				++result.errors;
+			}
+		} else {
+			let cleanLinks = Data.readCleanLinks();
+			if (!linksEqual(cleanLinks, data.expCleanLinks)) {
+				LogTest.error('Test ' + data.name + ': CleanLinks (=' + renderValue(cleanLinks) + ') has not expected value (=' + renderValue(data.expCleanLinks) + ')');
+				++result.errors;
+			}
 		}
 	}
 	if (data.expDispLinks !== undefined) {
@@ -927,14 +1041,9 @@ async function doTests() {
 	LogTest.important('Start running tests');
 
 	// Read and execute the tests
-	let test_sets = [
-		'test/testcases-settings.tsv',
-		'test/testcases-updatelinks.tsv',
-		'test/testcases-dragdrop.tsv',
-	];
 	let results = [];
-	for (let i = 0; i < test_sets.length; ++i) {
-		let test_set = test_sets[i];
+	for (let i = 0; i < TestSets.length; ++i) {
+		let test_set = TestSets[i];
 		let test_cases = await readTests(test_set);
 		let result = await executeTests(test_cases);
 		result.name = test_set;
