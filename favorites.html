@@ -2659,7 +2659,7 @@ function uploadLinks(value) {
 		value = '';
 	}
 
-	let timer = logTimer(LogUpDownload.important, `Uploading to URL 'url'`, method + ' ' + value.length + ' characters');
+	let timer = logTimer(LogUpDownload.important, `Uploading to URL '${url}'`, method + ' ' + value.length + ' characters');
 	if (HOOK_Ready != null) HOOK_Ready.start();
 
 	function handleResponse(status, resolveFunc, rejectFunc) {
