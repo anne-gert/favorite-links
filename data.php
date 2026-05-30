@@ -1,7 +1,7 @@
 <?php
 
 # Expected permissions of the TokenFile.
-$TokenFileAllowedPermissions = 0400;
+$TokenFileAllowedPermissions = 0640;
 
 # Path to the file with configuration settings overrides.
 $ConfigFile = "config.php";

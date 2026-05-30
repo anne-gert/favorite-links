@@ -33,46 +33,83 @@ storage.
 <h2>The Standard Setup</h2>
 
 <p>
-The standard setup uses a webserver to host the pages (static HTML) and
+The standard setup uses a web server to host the pages (static HTML) and
 configuration (requires PHP). This setup requires some one-time configuration on the
-webserver as well as on the browser.
+web server as well as on the browser.
 </p>
 
+
+<h3>Web server setup for hosting favorites.html</h3>
+
 <p>
-<b>Webserver setup</b>
 <ol>
-<li>Create a web directory on the webserver to serve the pages, e.g.
-    <code>/var/www/favorites</code>.
-<li>Copy (or symlink) all <code>*.html</code> pages and <code>docs</code>
-    directory from the repository into the web directory.
-<li>To host the links data:
-    <ol>
-    <li>Create a config directory, default <code>/etc/favlinks</code>.
-    <li>Create a data directory, default <code>/var/favlinks</code>.
-    <li>Copy (or symlink) <code>data.php</code> from the repository to the
-        web directory.
-    <li>Copy the file example-links.txt to the data directory. The name may
-        be any allowed name, like <code>links.txt</code>.
-    <li>Make this file writable by the webserver.
-    <li>Create the token file, default location is
-        <code>/etc/favlinks/tokens</code> with the following contents:
-        <pre>
+    <li><b>Web directory</b> (default <code>/var/www/favorites</code>)
+        <ol>
+        <li>If the web directory does not yet exist, create it on the web
+            server to serve the pages.
+        <li>Copy (or symlink) all <code>*.html</code> pages and
+            <code>docs</code> directory from the repository into the web
+            directory.
+        <li>Make this contents readable and not writable for the web server.
+        </ol>
+</ol>
+</p>
+
+
+<h3>Web server setup for loading/saving online configurations</h3>
+
+<p>
+<ol>
+    <li><b>Web directory</b> (default <code>/var/www/favorites</code>)
+        <ol>
+        <li>If the web directory does not yet exist, create it on the web
+            server to serve the pages.
+        <li>Copy (or symlink) <code>data.php</code> from the repository to the
+            web directory.
+        <li>If the default settings should be changed, copy
+            <code>example-config.php</code> as <code>config.php</code> to the
+            web directory.
+        <li>Modify <code>config.php</code> as appropriate.
+        <li>Make this contents readable and not writable for the web server.
+        </ol>
+    <li><b>Config directory</b> (default <code>/etc/favlinks</code>)
+        <ol>
+        <li>If needed, change this directory in <code>config.php</code>.
+        <li>If the config directory does not yet exist, create it.
+        <li>Create the token file, default name is <code>tokens</code> with the
+            following contents:
+            <pre>
 # No token needed for reading
 r
 
 # Write tokens
 w your-save-token-here
-        </pre>
-        This token file should be owned by the webserver user (i.e. apache,
-        www-data, or similar) and is only readable by the owner (permissions
-        0400).
-    </ol>
-<li>Make the contents readable by the webserver.
+            </pre>
+        <li>Make this token file read-only for the web server user (i.e.
+            apache, www-data, or similar) and have no more permissions than
+            0640, for example:
+            <pre>
+# chown root:www-data /etc/favlinks/tokens
+# chmod ug=r,o= /etc/favlinks/tokens
+            </pre>
+        </ol>
+    <li><b>Data directory</b> (default <code>/var/favlinks</code>)
+        <ol>
+        <li>If needed, change this directory in <code>config.php</code>.
+        <li>If the data directory does not yet exist, create it.
+        <li>Copy the file example-links.txt to the data directory. The name may
+            be any allowed name, like <code>links.txt</code>.
+        <li>Make this file writable by the web server.
+        <li>Note: If the tokens file does not define create tokens, no new
+            files can be created in the data directory.
+        </ol>
 </ol>
 </p>
 
+
+<h3>Browser setup</h3>
+
 <p>
-<b>Browser setup</b>
 <ol>
 <li>Set browser's homepage to
     <code>https://your-server.net/favorites/favorites.html?links=my-config</code>.
@@ -83,7 +120,7 @@ w your-save-token-here
     options:
     <ul>
     <li>Config 'my-config': data.php\links.txt<br>
-        This URL is relative to the location of favorites.html itself.
+        This URL can be relative to the location of favorites.html itself.
     </ul>
 <li>Save. The example items should now be displayed.
 <li>Open the Settings again and set the save options:
@@ -96,9 +133,23 @@ w your-save-token-here
 </ol>
 </p>
 
+
+<h3>Notes</h3>
+
 <p>
-<b>Notes</b>
 <ul>
+<li>If there are problems loading and/or saving links, the following can be
+    used to get more information:
+    <ul>
+    <li>At the very bottom of the page, there is a status line that is hidden,
+        but becomes visible when clicked with the mouse. It also becomes
+        visible when all text in the window is selected (Ctrl-A). This line
+        contains the load and save status codes.
+    <li>In config.php, set <code>$Debug=true</code>. This adds the X-Debug
+        HTTP header in the response of data.php with additional information
+        about the exact problem. It is important that this is set to false
+        again in normal production environments.
+    </ul>
 <li>The file with tokens should be saved outside of the webroot.
 <li>The name of the configuration (here 'my-config'), the name of the links
     file on the server (here 'links.txt') and the passwords (here
@@ -203,7 +254,7 @@ order is:
 <li>Browser's local storage
 <li>Use fixed default configuration with examples
 </ol>
-Note there is no distinction between using links= and links-override=.
+Note there is no real distinction between using links= and links-override=.
 </p>
 
 
@@ -325,7 +376,7 @@ distinguish from an empty setting, where saving is disabled altogether.
 </p>
 
 <p>
-Example:
+Examples:
 <ul>
 <li>data.php\my-token
 <li>\my-token
@@ -489,11 +540,11 @@ cw admin:complicated-password
 </p>
 
 <p>
-This token file should be owned by the webserver user and only be readable by
-the owner. For Apache on Debian, this could be set with:
+This token file should be read-only for the web server user and have no more
+permissions than 0640.  For Apache on Debian, this could be set with:
 <pre>
-# chown www-data:www-data /etc/favlinks/tokens
-# chmod 400 /etc/favlinks/tokens
+# chown root:www-data /etc/favlinks/tokens
+# chmod ug=r,o= /etc/favlinks/tokens
 </pre>
 </p>
 
