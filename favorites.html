@@ -1670,13 +1670,13 @@ function CreateData(getResolver = () => UrlResolver) {
 	// Returns if value changed:
 	// - 0: no change
 	// - 1: presence changed
-	// - 2: value changed and precence stayed the same
+	// - 2: value changed and presence remained the same
 	function writeStorage(key, value) {
 		let changed;
 		let old = storage.getItem(key);
 		if (value == null || value.toString().match(/^\s*$/)) {
 			if (old == null) {
-				LogStorage.debug('Storage key \'' + key + '\' already empty');
+				LogStorage.debug('Storage key \'' + key + '\' remains empty');
 				changed = 0;
 			} else {
 				LogStorage.debug('Remove storage key \'' + key + '\'');
@@ -1693,7 +1693,7 @@ function CreateData(getResolver = () => UrlResolver) {
 			}
 			storage.setItem(key, value);
 		} else {
-			LogStorage.debug('Storage key \'' + key + '\' already correct value');
+			LogStorage.debug('Storage key \'' + key + '\' remains same value');
 			changed = 0;
 		}
 		return changed;
@@ -2402,6 +2402,7 @@ function CreateUrlResolver(getData = () => Data) {
 			return;
 		}
 		let downloadUrl = getDownloadUrl();
+		_uploadUrlPrivate = false;
 
 		// Split into parts
 		let parts = saveOptions.split('\\');
@@ -2456,6 +2457,7 @@ function CreateUrlResolver(getData = () => Data) {
 			// For the special syntax, the next part is the token
 			if (parts.length > 0) {
 				_uploadHeaders.push([ 'x-token', parts.shift() ]);
+				_uploadUrlPrivate = true;
 			}
 			// Create the x-name header
 			let loadName = getLoadName();
@@ -2472,12 +2474,11 @@ function CreateUrlResolver(getData = () => Data) {
 			let name_value = parts[i].match(/([^:]+):(.+)/);
 			if (name_value) {
 				_uploadHeaders.push(name_value.slice(1,3));
+				_uploadUrlPrivate = true;  //may contain secret
 			} else {
 				LogUrlResolver.warn('Expected header: ' + parts[i]);
 			}
 		}
-
-		_uploadUrlPrivate = _uploadHeaders.length > 0;  //may contain secrets
 
 		//LogUrlResolver.log('Request headers: ', _uploadHeaders);
 	}
@@ -5663,7 +5664,7 @@ function initSettingsPanel() {
 
 	// Create Option Entries
 	function createOptionEntries(optionsPanel) {
-		function createOption(labelText, getData, saveData, private) {
+		function createOption(labelText, getData, saveData, getPrivate) {
 			let label = document.createElement('div');
 			label.className = 'label';
 			label.appendChild(document.createTextNode(labelText));
@@ -5672,32 +5673,53 @@ function initSettingsPanel() {
 			container.className = 'input';
 			let entry = document.createElement('input');
 			entry.type = 'text';
+			entry.autocomplete = 'off';  //prevents 'Manage Passwords' popup
+			// Create the hide sensitive contents
+			const hiddenBlank = '* * * * *';
+			let savedData = null;  //if not null, contains the unmodified data
+			let shouldHide = (lookIfChanged = true) => {
+				let private = getPrivate();
+				let changed, empty, retval;
+				if (lookIfChanged) {
+					let newData = (hiddenData != null) ? hiddenData : entry.value;
+					changed = savedData != null && savedData != newData
+					empty = /^\s*$/.test(newData);
+					retval = (private || changed) && !empty;
+				} else {
+					changed = '-';
+					empty = /^\s*$/.test(savedData);
+					retval = private && !empty;
+				}
+				LogSettings.debug(`${labelText}: (private=${private}, changed=${changed}, empty=${empty}) -> shouldHide=${retval}`);
+				return retval;
+			};
 			let hiddenData = null;  //not null if currently hidden
-			if (private) {
-				// May be private, hide value if not focus
-				entry.onfocus = () => {
+			entry.onfocus = () => {
+				if (hiddenData != null) {
+					// Currently hidden, display it
 					entry.value = hiddenData;
 					hiddenData = null;
-				};
-				entry.onblur = () => {
-					hiddenData = entry.value;
-					entry.value = '* * * * *';
 				}
-				hiddenData = '';  //set by showData()
-			}
-			entry.autocomplete = 'off';  //prevents 'Manage Passwords' popup
+			};
+			entry.onblur = () => {
+				if (shouldHide()) {
+					// Currently displaying, but should be hidden
+					hiddenData = entry.value;
+					entry.value = hiddenBlank;
+				}
+			};
+			entry.onblur();
 			container.appendChild(entry);
 			optionsPanel.appendChild(container);
-			let savedData;
 			let option = {
 				showData : () => {
 					savedData = getData();
-					if (hiddenData != null) {
-						// Currently hidden
+					if (shouldHide(false)) {
 						hiddenData = savedData;
-						entry.value = '* * * * *';
+						entry.value = hiddenBlank;
 					} else {
 						entry.value = savedData;
+						hiddenData = null;
 					}
 				},
 				saveData : () => {
@@ -5720,7 +5742,7 @@ function initSettingsPanel() {
 					Data.writeLoadOverrideOptions(value);
 					//writeLoadOptions() would write to same ConfigName
 				},
-				UrlResolver.isDownloadUrlPrivate());
+				() => UrlResolver.isDownloadUrlPrivate());
 			loadOptionEntries.push(option);
 		} else {
 			if (loadOverrideConfigName) {
@@ -5730,7 +5752,7 @@ function initSettingsPanel() {
 					(value) => {
 						Data.writeLoadOverrideOptions(value);
 					},
-					UrlResolver.isDownloadUrlPrivate());
+					() => UrlResolver.isDownloadUrlPrivate());
 				loadOptionEntries.push(option);
 			}
 			if (loadConfigName) {
@@ -5740,7 +5762,7 @@ function initSettingsPanel() {
 					(value) => {
 						Data.writeLoadOptions(value);
 					},
-					UrlResolver.isDownloadUrlPrivate());
+					() => UrlResolver.isDownloadUrlPrivate());
 				loadOptionEntries.push(option);
 			}
 		}
@@ -5764,7 +5786,7 @@ function initSettingsPanel() {
 						Data.writeSaveOptions(value);
 					}
 				},
-				UrlResolver.isUploadUrlPrivate());
+				() => UrlResolver.isUploadUrlPrivate());
 			saveOptionEntries.push(option);
 		}
 	}
