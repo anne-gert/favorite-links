@@ -5461,7 +5461,7 @@ function initSettingsPanel() {
 		iconBarOpen.appendChild(iconClear);
 		// Create iconCancel
 		iconCancel = document.createElement('span');
-		iconCancel.title = 'Cancel (Ctrl-Q)';
+		iconCancel.title = 'Cancel (Ctrl-E)';  //Note: The following are taken: C=Copy/Break, X=Cut, Q=Quit Browser
 		iconCancel.className = 'settings-icon';
 		iconCancel.onclick = () => hideSettings(false);
 		iconBarOpen.appendChild(iconCancel);
@@ -5507,7 +5507,7 @@ function initSettingsPanel() {
 		};
 		// Bind entire document
 		window.addEventListener('keydown', function(e) {
-			if (isKey(e, 'c', 'q')) {  //Ctrl-Q
+			if (isKey(e, 'c', 'e')) {  //Ctrl-E
 				if (visible) {  //only if Settings visible
 					hideSettings(false);
 					e.preventDefault();
