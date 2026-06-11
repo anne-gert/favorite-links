@@ -298,6 +298,12 @@ body {
 .alert-box .label {
 	color: var(--error-foreground);
 }
+.alert-box .bullet-icon {
+	display: inline-block;
+	text-align: center;
+	font-size: 150%;
+	width: 1em;
+}
 .debug-box {
 	color: #600;
 	background: #FFC;
@@ -989,7 +995,7 @@ const UNICODE_ANTICLOCKWISE_TOP_SEMICIRCLE_ARROW = '\u{21B6}';  //a 180 degree a
 const UNICODE_CLOCKWISE_TOP_SEMICIRCLE_ARROW = '\u{21B7}';  //a 180 degree arc
 const UNICODE_ANTICLOCKWISE_OPEN_CIRCLE_ARROW = '\u{21BA}';  //a 270 degree arc
 const UNICODE_CLOCKWISE_OPEN_CIRCLE_ARROW = '\u{21BB}';  //a 270 degree arc
-const UNICODE_APL_QUAD_QUESTION = '\u{2370}';  //questino mark in box
+const UNICODE_APL_QUAD_QUESTION = '\u{2370}';  //question mark in box
 const UNICODE_UNCERTAINTY_SIGN = '\u{2BD1}';  //question mark in rhombus
 const UNICODE_FULLWIDTH_QUESTION_MARK = '\u{FF1F}';
 // Unicode Block: Geometric Shapes
@@ -1656,6 +1662,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	// Clear all the cached values
 	function reset() {
 		displayedLinks = null;
+		cleanTag = undefined;
 		conflictState = false;
 	}
 
@@ -1755,6 +1762,7 @@ function CreateData(getResolver = () => UrlResolver) {
 		writeStorage(key, links);
 		writeCleanTag(eTag);
 	}
+	// Persistent CleanTag (ETag) that matches CleanLinks.
 	function readCleanTag() {
 		let key = getCleanTagLSKey();
 		let tag = readStorage(key);
@@ -1764,12 +1772,26 @@ function CreateData(getResolver = () => UrlResolver) {
 	function writeCleanTag(eTag) {
 		let key = getCleanTagLSKey();
 		writeStorage(key, eTag);
+		cleanTag = eTag;  //also update current value for this window
+	}
+	// The persistent CleanTag is shared between windows that use the same
+	// ConfigName. However, they may have LocalLinks with changes that are
+	// based on older versions of CleanLinks. Therefore, the exposed
+	// functions is based on a local variable to match the lifetime of
+	// LocalLinks.
+	let cleanTag = undefined;
+	function getCleanTag() {
+		if (cleanTag === undefined) cleanTag = readCleanTag();
+		return cleanTag;
+	}
+	function setCleanTag(eTag) {
+		cleanTag = eTag;
 	}
 
 	// Return true if LocalLinks is different from CleanLinks or if
 	// CleanTag is invalid.
 	function linksDirty() {
-		if (readCleanTag() == CleanTagInvalid) return true;
+		if (getCleanTag() == CleanTagInvalid) return true;
 
 		let localLinks = readLocalLinks();
 		let cleanLinks = readCleanLinks();
@@ -1782,7 +1804,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	}
 
 	// Get/Set ConflictState. This is not saved in Storage, but exists
-	// only in memory. ConflictState s true if the current Links are in a
+	// only in memory. ConflictState is true if the current Links are in a
 	// state where there is no automatic resolution of the 'current' value
 	// and the user should take action..
 	let conflictState = false;
@@ -1885,8 +1907,8 @@ function CreateData(getResolver = () => UrlResolver) {
 		writeLocalLinks : writeLocalLinks,
 		readCleanLinks : readCleanLinks,
 		writeCleanLinks : writeCleanLinks,
-		readCleanTag : readCleanTag,
-		writeCleanTag : writeCleanTag,
+		getCleanTag : getCleanTag,
+		setCleanTag : setCleanTag,
 		linksDirty : linksDirty,
 		getConflictState : getConflictState,
 		setConflictState : setConflictState,
@@ -2676,7 +2698,7 @@ function uploadLinks(value) {
 		return false;
 	}
 	let headers = Array.from(UrlResolver.getUploadHeaders());  //make a copy
-	let eTag = Data.readCleanTag();
+	let eTag = Data.getCleanTag();
 	if (eTag == null || eTag == '') eTag = CleanTagEmpty;
 	headers.push(['If-Match', eTag]);
 
@@ -2696,22 +2718,22 @@ function uploadLinks(value) {
 			LogUpDownload.log('Uploaded links successfully');
 			addStatus('Save OK');
 			LogUpDownload.log('Update CleanLinks');
-			Data.writeCleanLinks(value, eTag);  //assume upload & download are same content
+			Data.writeCleanLinks(value, eTag);  //assume upload & download are same content, which is now 'clean'
 			updateSettingsConflict(false);
 			resolveFunc(true);
 		} else if (status == 412) {
 			// Failed
 			LogUpDownload.error('Failed to upload Links, because remote file has changed');
 			addStatus('Save ' + status);
-			Data.writeCleanTag(CleanTagInvalid);
-			updateSettingsConflict(Data.linksDirty());
+			Data.setCleanTag(CleanTagInvalid);
+			updateSettingsConflict();
 			addStatus('Conflict');
 			resolveFunc(false);  //do not see this as a fail
 		} else {
 			// Failed
 			LogUpDownload.error('Failed to upload Links, better luck next time (' + status + ')');
 			addStatus('Save ' + status);
-			updateSettingsConflict(Data.linksDirty());
+			updateSettingsConflict();
 			resolveFunc(false);  //do not see this as a fail
 		}
 	};
@@ -5559,11 +5581,14 @@ function initSettingsPanel() {
 		// Create hidden warnings
 		warningDirty = document.createElement('div');
 		warningDirty.className = 'alert-box hidden';
+		let htmlSaveIcon = `<span class="bullet-icon">${iconSave.textContent}</span>`;
+		let htmlClearIcon = `<span class="bullet-icon">${iconClear.textContent}</span>`;
+		let htmlCancelIcon = `<span class="bullet-icon">${iconCancel.textContent}</span>`;
 		warningDirty.innerHTML = `
-<span class="label">WARNING</span>: Previous online save was unsuccessful. Choose one of the following:<br>
-&bull; <span class="accent">Save</span> will overwrite online changes with this configuration, discarding changes that have been made online.<br>
-&bull; <span class="accent">Clear</span> will discard local changes and download the online version.<br>
-&bull; <span class="accent">Cancel</span> will not make any changes.
+<span class="label">WARNING</span>: Could not synchronize with online server. Choose one of the following:<br>
+&bull; ${htmlSaveIcon} <span class="accent">Save</span>: Keep the <u>local configuration</u> and overwrite the online configuration, discarding changes that have been made online or from other browser windows.<br>
+&bull; ${htmlClearIcon} <span class="accent">Clear</span>: Download and use the <u>online configuration</u>, discarding local changes.<br>
+&bull; ${htmlCancelIcon} <span class="accent">Cancel</span>: Close this edit window and make <u>no changes</u>.
 `;
 		settingsArea.appendChild(warningDirty);
 
@@ -5833,7 +5858,9 @@ function initSettingsPanel() {
 			// - Local should be different (Dirty)
 			// - SaveOptions set (so the User can actually fix it)
 			let saveOpt = UrlResolver.getSaveOptions();
-			conflicted = saveOpt != null && saveOpt != '' && Data.linksDirty();
+			let dirty = Data.linksDirty();
+			LogSettings.debug(`updateConflict(): Derive default saveOpt=${saveOpt}, dirty=${dirty}`);
+			conflicted = saveOpt != null && saveOpt != '' && dirty;
 		}
 		Data.setConflictState(conflicted);
 		// Change visibility
@@ -5929,7 +5956,7 @@ function initSettingsPanel() {
 		// Scroll to the top to where the Settings will be showing
 		window.scrollTo({ top: 0, left: 100, behavior: 'smooth' });
 		// Display items for conflicted Settings
-		updateConflict();
+		updateConflict(Data.getConflictState() || null);
 		// Update the contents
 		settingsText.value = Data.readLocalLinks();
 		for (let i = 0; i < loadOptionEntries.length; ++i) {
@@ -6048,10 +6075,18 @@ function initSettingsPanel() {
 				});
 			} else {
 				LogSettings.log('Save settings');
+				let saveCleanTag = null;
 				try {
 					let editLinks = settingsText.value;
 					parseLinks(editLinks);  //throws error if invalid
 					// If no exception, editLinks are correct
+					if (Data.getConflictState()) {
+						// If save from a Conflict state, we
+						// intend to overwrite remote
+						saveCleanTag = Data.getCleanTag();
+						LogSettings.log(`Change CleanTag from '${saveCleanTag}' to '${CleanTagInvalid}' before saving Conflict state`);
+						Data.setCleanTag(CleanTagInvalid);
+					}
 					if (loadOptionsChanged) {
 						downloadUpdateLinks(editLinks, forceSave, null, null);  //download and render updated Links
 					} else {
@@ -6060,6 +6095,7 @@ function initSettingsPanel() {
 					// Close the panel
 					hide();
 				} catch (error) {
+					if (saveCleanTag != null) Data.setCleanTag(saveCleanTag);
 					// Always log for debugging
 					LogSettings.error(error);
 					if (error instanceof UserInputError) {
@@ -7319,9 +7355,12 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	// (local_new)
 	//    B   |     A    |      A     ||    no  |   yes  |     no(*)  | [Save Dirty] |
 	//    B   |     C    |      A     ||    no  |    no  | yes/no(**) | [Conflict]   | Do not render Downloaded
-	//    A   |     B    |      -     ||    no  |    no  | yes/no(**) | [Conflict]   | Do not update Clean
+	//    A   |     B    |      -     ||    no  |    no  | yes/no(**) | [Conflict]   | Do not update Clean(***)
 	// (*) CleanLinks will be updated in handleResult of upload.
 	// (**) Only update CleanLinks in a LinksOverride situation.
+	// (***) It might be logical to save Download links to CleanLinks in
+	// the AB- case. However, this would make it an ABB (=BAA), which would
+	// do a Save Dirty on the next load, overwriting the remote.
 	let downloadLinks = null, downloadTag = null;
 	if (download != null) {
 		downloadLinks = download[0];
@@ -7354,6 +7393,7 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	}
 	let links_empty = links != null && links.trim() == '';
 	let download_none = downloadLinks == null || downloadLinks.trim() == '';
+	LogLinksUpdate.debug(`links_empty=${links_empty}, download_none=${download_none}`);
 
 	// Derive if Local and Download have changed wrt to Clean
 	// xxx_changed is true when it is changed wrt to Clean and Clean is set.
@@ -7363,15 +7403,18 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	let cleanLinks = Data.readCleanLinks();
 	//LogLinksUpdate.devlog('cleanLinks: \'' + cleanLinks + '\'');
 	if (cleanLinks != null) {
+		LogLinksUpdate.debug('clean set');
 		let clean_tr = cleanLinks.trim();
 		download_changed = downloadLinks != null && downloadLinks.trim() != clean_tr;
 		local_changed = links != null && links.trim() != clean_tr;
 		download_new = download_changed;
 		local_new = local_changed;
 	} else {
+		LogLinksUpdate.debug('clean not set');
 		download_new = downloadLinks != null;
 		local_new = links != null;
 	}
+	LogLinksUpdate.debug(`local_changed=${local_changed}, download_changed=${download_changed}, local_new=${local_new}, download_new=${download_new}`);
 	// Derive if Local and Download are the same
 	let local_download_same = false;
 	if (links == null && downloadLinks == null) {
@@ -7379,6 +7422,7 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	} else if (links != null && downloadLinks != null) {
 		local_download_same = links.trim() == downloadLinks.trim();
 	}
+	LogLinksUpdate.debug(`local_download_same=${local_download_same}`);
 
 	// Determine how to integrate Download into Local and Clean
 	if (download_none) {
@@ -7473,10 +7517,10 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 					// Case BCA, AB-: All three are different
 					LogLinksUpdate.important('Local Links and downloaded Links have both changed, display local');
 					if (forceUpload) {
-						LogLinksUpdate.important('Force Update');
+						LogLinksUpdate.log('Force Update');
 						update = true;
 					} else {
-						LogLinksUpdate.important('Local Links and downloaded Links have both changed, display local');
+						LogLinksUpdate.log('Conflict');
 						addStatus('Conflict');
 						conflict = true;
 					}
@@ -7535,7 +7579,7 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	}
 	if (updateClean) {
 		LogLinksUpdate.log('Update CleanLinks');
-		// If we get here, it has been determined that links&downloasTag
+		// If we get here, it has been determined that links&downloadTag
 		// is a good representation of the common history.
 		Data.writeCleanLinks(links, downloadTag);
 		updateSettingsConflict(false);

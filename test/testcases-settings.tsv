@@ -1,53 +1,60 @@
-name	keepStorage	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	iniSaveArg	expLinks	expDispLinks	expCleanLinks	expUplDisabled	expConflict	expRemoteFile	cnfAction	cnfLinks	cnfLoadOpt1	cnfLoadOpt2	cnfSaveOpt	expStatus
+name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	iniSaveArg	expLinks	expDispLinks	expCleanLinks	expUplDisabled	expConflict	expRemoteFile	cnfAction	cnfLinks	cnfLoadOpt1	cnfLoadOpt2	cnfSaveOpt	expStatus
 
 # Edit Config in Settings -LoadOptions -SaveOptions
-"1.1 Set Config A, no Load/Save"	FALSE		X					A	A	NULL	FALSE	FALSE	X	save	A				Local-NoDownload-Renderfallback * New-Render
-"1.2 Set Config B, no Load/Save"	FALSE	A	X					B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender * New-Render
-"1.3 Set Config C, no Load/Save"	FALSE	B	X					B	B	NULL	FALSE	FALSE	X	cancel	C				Local-Links-NoDownload-Prerender
+"1.1 Set Config A, no Load/Save"			X					A	A	NULL	FALSE	FALSE	X	save	A				Local-NoDownload-Renderfallback * New-Render
+"1.2 Set Config B, no Load/Save"		A	X					B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender * New-Render
+"1.3 Set Config C, no Load/Save"		B	X					B	B	NULL	FALSE	FALSE	X	cancel	C				Local-Links-NoDownload-Prerender
 
 # Edit Links in Settings
-"2.1(1) Clean"	FALSE		NOT_EXIST			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL						Saveable-Load404-Default-Render
-"2.1(2) Save Config in A"	TRUE					links.txt	links.txt	A	A	A	FALSE	FALSE	A	save	A				Saveable-Load404-Default-Render + New-Render-SaveOK
+"2.1(1) Clean"			NOT_EXIST			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL						Saveable-Load404-Default-Render
+"2.1(2) Save Config in A"	KEEP					links.txt	links.txt	A	A	A	FALSE	FALSE	A	save	A				Saveable-Load404-Default-Render + New-Render-SaveOK
 
 # Create and Edit Configs
-"2.2(1) Create empty Config"	FALSE		NOT_EXIST			config		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL						Local-NoDownload-Renderfallback
-"2.2(2) Set Options"	TRUE					config		DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	save		links.txt		links.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-Load404-Default
-"2.2(3) Change Links"	TRUE					config		A	A	A	FALSE	FALSE	A	save	A				Saveable-Links-Prerender-Load404-New-SaveOK * Render-SaveOK
+"2.2(1) Create empty Config"			NOT_EXIST			config		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL						Local-NoDownload-Renderfallback
+"2.2(2) Set Options"	KEEP					config		DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	save		links.txt		links.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-Load404-Default
+"2.2(3) Change Links"	KEEP					config		A	A	A	FALSE	FALSE	A	save	A				Saveable-Links-Prerender-Load404-New-SaveOK * Render-SaveOK
 
 # Create and Switch between Configs
-"2.3(1) Change Config Options"	FALSE	A		A		config-A		A	A	A	FALSE	FALSE	A	save		links-A.txt		links-A.txt	NULL
-"2.3(2) Change ConfigName"	TRUE		NOT_EXIST			config-B		B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	NULL
-"2.3(3) Switch to A"	TRUE					config-A		A	A	A	FALSE	FALSE	A						NULL
-"2.3(4) Switch to B"	TRUE					config-B		B	B	B	FALSE	FALSE	B						NULL
+"2.3(1) Change Config Options"		A		A		config-A		A	A	A	FALSE	FALSE	A	save		links-A.txt		links-A.txt	NULL
+"2.3(2) Change ConfigName"	KEEP		NOT_EXIST			config-B		B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	NULL
+"2.3(3) Switch to A"	KEEP					config-A		A	A	A	FALSE	FALSE	A						NULL
+"2.3(4) Switch to B"	KEEP					config-B		B	B	B	FALSE	FALSE	B						NULL
 
 # Create and Switch remote files
-"2.4(1) Load Config A"	FALSE					config		A	A	A	FALSE	FALSE	A	save	A	links-A.txt		links-A.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-LoadOK-New-Render-SaveOK
-"2.4(2) Change to empty file"	TRUE					config		B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-New-Render-SaveOK
-"2.4(3) Change to existing file"	TRUE					config		C	C	NULL	FALSE	TRUE	A	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-Conflict-Render
-"2.4(4) Existing (clear)"	TRUE	B	A			config		A	A	A	FALSE	FALSE	A	clear	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Conflict + LoadOK-NoLocal-Render
-"2.4(5) Existing (confirm -> 412)"	TRUE	B	A	old		config		C	C	old	FALSE	TRUE	A	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Conflict + Render-Save412-Conflict
-"2.4(6) Existing (confirm -> OK)"	TRUE	B	A			config		C	C	C	FALSE	FALSE	C	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Conflict + Render-SaveOK
+"2.4(1) Load Config A"						config		A	A	A	FALSE	FALSE	A	save	A	links-A.txt		links-A.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-LoadOK-New-Render-SaveOK
+"2.4(2) Change to empty file"	KEEP					config		B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-New-Render-SaveOK
+"2.4(3) Change to existing file"	KEEP					config		C	C	NULL	FALSE	TRUE	A	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-Conflict-Render
+"2.4(4) Existing file (clear)"	KEEP	B	A			config		A	A	A	FALSE	FALSE	A	clear	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Conflict + LoadOK-NoLocal-Render
+"2.4(5) Existing file (save)"	KEEP	B	A	old		config		C	C	C	FALSE	FALSE	C	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Conflict + Render-SaveOK
 
 # Create new/default config for existing file
-"2.5(1) Create empty Config"	FALSE		A			config		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	A						Local-NoDownload-Renderfallback
-"2.5(2) Use remote file"	TRUE		A			config		A	A	A	FALSE	FALSE	A	save		links.txt		links.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-LoadOK-NoLocal-Render
+"2.5(1) Create empty Config"			A			config		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	A						Local-NoDownload-Renderfallback
+"2.5(2) Use remote file"	KEEP		A			config		A	A	A	FALSE	FALSE	A	save		links.txt		links.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-LoadOK-NoLocal-Render
 
 # Save/Clear/Cancel all combinations of L,O,S (Links, Override, Save)
-"3.1.1 [--] Settings: Save"	FALSE	A	X					B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender * New-Render
-"3.1.2 [--] Settings: Clear"	FALSE	A	X					DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE	X	clear	B				Local-Links-NoDownload-Prerender * NoDownload
-"3.1.3 [--] Settings: Cancel"	FALSE	A	X					A	A	NULL	FALSE	FALSE	X	cancel	B				Local-Links-NoDownload-Prerender * -
-"3.2.1 [L-] Settings: Save"	FALSE	A	A	A		links.txt		B	B	A	FALSE	FALSE	A	save	B				Local-NoDownload-Prerender * Render
-"3.2.2 [L-] Settings: Clear"	FALSE	A	A	A		links.txt		A	A	A	FALSE	FALSE	A	clear	B				Local-NoDownload-Prerender * LoadOK-Clear
-"3.2.3 [L-] Settings: Cancel"	FALSE	A	A	A		links.txt		A	A	A	FALSE	FALSE	A	cancel	B				Local-NoDownload-Prerender * -
-"3.3.1 [O-] Settings: Save"	FALSE	A	A	A	links.txt			B	B	A	FALSE	FALSE	A	save	B				Override-Links-LoadOK-Render * Render
-"3.3.2 [O-] Settings: Clear"	FALSE	A	A	A	links.txt			A	A	A	FALSE	FALSE	A	clear	B				Override-Links-LoadOK-Render * LoadOK-Clear
-"3.3.3 [O-] Settings: Cancel"	FALSE	A	A	A	links.txt			A	A	A	FALSE	FALSE	A	cancel	B				Override-Links-LoadOK-Render * -
-"3.4.1 [LS] Settings: Save"	FALSE	A	A	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	save	B				Saveable-Links-Prerender-LoadOK-Same * Render-SaveOK
-"3.4.2 [LS] Settings: Clear"	FALSE	A	A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	clear	B				Saveable-Links-Prerender-LoadOK-Same * LoadOK-Clear
-"3.4.3 [LS] Settings: Cancel"	FALSE	A	A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	cancel	B				Saveable-Links-Prerender-LoadOK-Same * -
-"3.5.1 [OS] Settings: Save"	FALSE	A	A	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	save	B				Saveable-Override-Links-LoadOK-Render * Render-SaveOK
-"3.5.2 [OS] Settings: Clear"	FALSE	A	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	clear	B				Saveable-Override-Links-LoadOK-Render * LoadOK-Clear
-"3.5.3 [OS] Settings: Cancel"	FALSE	A	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	cancel	B				Saveable-Override-Links-LoadOK-Render * -
+"3.1.1 [--] Settings: Save"		A	X					B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender * New-Render
+"3.1.2 [--] Settings: Clear"		A	X					DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE	X	clear	B				Local-Links-NoDownload-Prerender * NoDownload
+"3.1.3 [--] Settings: Cancel"		A	X					A	A	NULL	FALSE	FALSE	X	cancel	B				Local-Links-NoDownload-Prerender * -
+"3.2.1 [L-] Settings: Save"		A	A	A		links.txt		B	B	A	FALSE	FALSE	A	save	B				Local-NoDownload-Prerender * Render
+"3.2.2 [L-] Settings: Clear"		A	A	A		links.txt		A	A	A	FALSE	FALSE	A	clear	B				Local-NoDownload-Prerender * LoadOK-Clear
+"3.2.3 [L-] Settings: Cancel"		A	A	A		links.txt		A	A	A	FALSE	FALSE	A	cancel	B				Local-NoDownload-Prerender * -
+"3.3.1 [O-] Settings: Save"		A	A	A	links.txt			B	B	A	FALSE	FALSE	A	save	B				Override-Links-LoadOK-Render * Render
+"3.3.2 [O-] Settings: Clear"		A	A	A	links.txt			A	A	A	FALSE	FALSE	A	clear	B				Override-Links-LoadOK-Render * LoadOK-Clear
+"3.3.3 [O-] Settings: Cancel"		A	A	A	links.txt			A	A	A	FALSE	FALSE	A	cancel	B				Override-Links-LoadOK-Render * -
+"3.4.1 [LS] Settings: Save"		A	A	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	save	B				Saveable-Links-Prerender-LoadOK-Same * Render-SaveOK
+"3.4.2 [LS] Settings: Clear"		A	A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	clear	B				Saveable-Links-Prerender-LoadOK-Same * LoadOK-Clear
+"3.4.3 [LS] Settings: Cancel"		A	A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	cancel	B				Saveable-Links-Prerender-LoadOK-Same * -
+"3.5.1 [OS] Settings: Save"		A	A	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	save	B				Saveable-Override-Links-LoadOK-Render * Render-SaveOK
+"3.5.2 [OS] Settings: Clear"		A	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	clear	B				Saveable-Override-Links-LoadOK-Render * LoadOK-Clear
+"3.5.3 [OS] Settings: Cancel"		A	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	cancel	B				Saveable-Override-Links-LoadOK-Render * -
+
+# Fix Conflict state
+"4.1.1 Cancel after AB- Conflict"		A	B			links.txt	links.txt	A	A	NULL	FALSE	TRUE	B	cancel	C				NULL
+"4.1.2 Save after AB- Conflict"		A	B			links.txt	links.txt	C	C	C	FALSE	FALSE	C	save	C				NULL
+"4.1.3 Clear after AB- Conflict"		A	B			links.txt	links.txt	B	B	B	FALSE	FALSE	B	clear	C				NULL
+"4.2.1 Cancel after BCA Conflict"		B	C	A		links.txt	links.txt	B	B	A	FALSE	TRUE	C	cancel	D				NULL
+"4.2.2 Save after BCA Conflict"		B	C	A		links.txt	links.txt	D	D	D	FALSE	FALSE	D	save	D				NULL
+"4.2.3 Clear after BCA Conflict"		B	C	A		links.txt	links.txt	C	C	C	FALSE	FALSE	C	clear	D				NULL
 
 
 # vim: set filetype=tsv vartabstop=35,15 nowrap:

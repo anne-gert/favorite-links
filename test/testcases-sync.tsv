@@ -1,31 +1,27 @@
-name	keepStorage	iniLinks	iniRemoteFile	iniCleanLinks	iniLoadArg	iniSaveArg	expLinks	expDispLinks	expCleanLinks	expUplDisabled	expConflict	expRemoteFile	cnfAction	cnfLinks	expStatus
+name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniLoadArg	iniSaveArg	expLinks	expDispLinks	expCleanLinks	expUplDisabled	expConflict	expRemoteFile	cnfAction	cnfLinks	expStatus
 
 # Test server-side update conflicts (code 412)
 
 # Client has Empty ETag (Clean is Empty)
-    # - Initializes as A-- situation, which leads to saving A to Remote where both Clean and Remote are Empty.
-"4.1.1 Empty & Empty"	FALSE	A			links.txt	links.txt	A	A	A	FALSE	FALSE	A			Saveable-Links-Prerender-LoadOK-New-SaveOK
-    # - Initializes as AB- situation, which leads to Conflict, preventing Clean and Remote from being updated. The subsequent Save action saves with Empty Clean and RemoteFile has also changed to Empty now.
-"4.1.2 Empty & Empty 2"	FALSE	A	+B/		links.txt	links.txt	C	C	C	FALSE	FALSE	C	save	C	Saveable-Links-Prerender-LoadOK-Conflict * New-Render-SaveOK
-    # - Initializes as AB- situation, which leads to Conflict, preventing Clean and Remote from being updated. The subsequent Save action saves with Empty Clean and RemoteFile is still not-Empty.
-"4.1.3 Empty & !Empty"	FALSE	A	+B/B		links.txt	links.txt	C	C	NULL	FALSE	TRUE	B	save	C	Saveable-Links-Prerender-LoadOK-Conflict * New-Render-Save412-Conflict
+# Different combinations of CleanLinks=Empty and empty/non-empty RemoteFile
+"1.1 Empty & Empty (Load+Save)"		A			links.txt	links.txt	A	A	A	FALSE	FALSE	A			Saveable-Links-Prerender-LoadOK-New-SaveOK
+"1.2 Empty & Empty 2"	NO-INIT	A			links.txt	links.txt	C	C	C	FALSE	FALSE	C	save	C	Saveable * New-Render-SaveOK
+"1.3 Empty & !Empty"	NO-INIT	A	B		links.txt	links.txt	C	C	INVALID	FALSE	TRUE	B	save	C	Saveable * New-Render-Save412-Conflict
+"1.4 Empty & !Empty (same file)"	NO-INIT	A	A		links.txt	links.txt	C	C	INVALID	FALSE	TRUE	A	save	C	Saveable * New-Render-Save412-Conflict
 
-# Client sends ETag
-    # - Initializes as BAA situation, which leads to saving B to Remote. ETags match.
-"4.2.1 ETag matches"	FALSE	B	A	A	links.txt	links.txt	B	B	B	FALSE	FALSE	B			Saveable-Links-Prerender-LoadOK-SaveDirty-SaveOK
-    # - Initializes as BAA situation, which leads to saving B to Remote. But Remote just changed to C, leading to Conflict
-"4.2.2 ETag invalid"	FALSE	B	+A/C	A	links.txt	links.txt	B	B	A	FALSE	TRUE	C			Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
-    # - Initializes as BAA situation, which leads to saving B to Remote. But Remote just changed to Empty, which is different, but still allowed.
-"4.2.3 ETag vs Empty"	FALSE	B	+A/	A	links.txt	links.txt	B	B	B	FALSE	FALSE	B			Saveable-Links-Prerender-LoadOK-SaveDirty-SaveOK
+# Client sends ETag in SaveDirty
+"2.1 ETag matches"		B	A	A	links.txt	links.txt	B	B	B	FALSE	FALSE	B			Saveable-Links-Prerender-LoadOK-SaveDirty-SaveOK
+"2.2 ETag invalid"		B	+A/C	A	links.txt	links.txt	B	B	INVALID A	FALSE	TRUE	C			Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
+"2.3 ETag invalid, file Empty"		B	+A/	A	links.txt	links.txt	B	B	B	FALSE	FALSE	B			Saveable-Links-Prerender-LoadOK-SaveDirty-SaveOK
 
-# Client sends Invalid (occurs after 412 situation)
-    # - Create 412 Conflict state with test 4.2.2 above. Check that a reload does keeps the Conflict situation.
-"4.3.1(1) ETag invalid"	FALSE	B	+A/C	A	links.txt	links.txt	B	B	INVALID	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
-"4.3.1(2) Invalid (Reload)"	TRUE				links.txt	links.txt	B	B	INVALID	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-Conflict
-    # - Load the Invalid situation and try and rectify it.
-"4.3.2 Invalid (Cancel)"	FALSE	B	+A/C	INVALID	links.txt	links.txt	B	B	INVALID	FALSE	TRUE	C	cancel	D	Saveable-Links-Prerender-LoadOK-Conflict
-"4.3.3 Invalid (Save)"	FALSE	B	+A/C	INVALID	links.txt	links.txt	D	D	D	FALSE	FALSE	D	save	D	Saveable-Links-Prerender-LoadOK-Conflict * Render-SaveOK
-"4.3.4 Invalid (Clear)"	FALSE	B	+A/C	INVALID	links.txt	links.txt	C	C	C	FALSE	FALSE	C	clear	D	Saveable-Links-Prerender-LoadOK-Conflict * LoadOK-Clear-Render
+# Create Invalid (412) situation. Reload should create BCA Confict
+"3.1(1) ETag invalid (Init)"		B	+A/C	A	links.txt	links.txt	B	B	INVALID A	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
+"3.1(2) Invalid (1e Reload)"	KEEP				links.txt	links.txt	B	B	A	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-Conflict
+"3.1(3) Invalid (2e Reload)"	KEEP				links.txt	links.txt	B	B	A	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-Conflict
+# Load the Invalid situation and try and rectify it.
+"3.2 Invalid (Cancel)"		B	+A/C	INVALID A	links.txt	links.txt	B	B	INVALID A	FALSE	TRUE	C	cancel	D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
+"3.3 Invalid (Save)"		B	+A/C	INVALID A	links.txt	links.txt	D	D	D	FALSE	FALSE	D	save	D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict * Render-SaveOK
+"3.4 Invalid (Clear)"		B	+A/C	INVALID A	links.txt	links.txt	C	C	C	FALSE	FALSE	C	clear	D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict * LoadOK-Clear-Render
 
 
 # vim: set filetype=tsv vartabstop=35,15 nowrap:

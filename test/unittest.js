@@ -622,7 +622,7 @@ function initTests() {
 
 let KnownColumns = [
 	'name',
-	'keepStorage',
+	'skipInit',
 	'iniOverrideArg', 'iniLoadArg', 'iniSaveArg',
 	'iniLinks', 'iniRemoteFile', 'iniCleanLinks',
 	'expLinks', 'expRemoteFile', 'expCleanLinks',
@@ -844,19 +844,25 @@ async function executeTest(data) {
 	if (CurrTestCtl) CurrTestCtl.textContent = data.name;
 
 	// Determine 'todo' flags
-	let doClearStorage = !data.keepStorage;
+	let doClearStorage = !data.skipInit?.match(/Storage|LS|KEEP/);
+	let doClearRemote = !data.skipInit?.match(/RemoteFiles|RF|KEEP/);
+	let doLoad = !data.skipInit?.match(/NO-INIT|NI/);
 	let doSetArgs = true;
+	let doSetLocalLinks = data.iniLinks !== undefined;
+	let doSetCleanLinks = data.iniCleanLinks !== undefined;
 	let doSetRemoteFile = data.iniRemoteFile !== undefined;
-	let doLoad = data.iniLinks !== 'NO_INIT';
 	let doConfigAction = data.cnfAction != null;
 	let doDrop = data.dropSource != null || data.dropWhere != null || data.dropTarget != null;
 
-	let doResetStorage = false, doResetArgs = false;
+	let doResetStorage = doLoad, doResetArgs = doLoad;  //Always a reset when loading
 
 	// Clear storage
 	if (doClearStorage) {
-		LogTest.log('Test ' + data.name + ': Clear LocalStorage & RemoteFile');
+		LogTest.log('Test ' + data.name + ': Clear LocalStorage');
 		HOOK_LocalStorage.clear();
+	}
+	if (doClearRemote) {
+		LogTest.log('Test ' + data.name + ': Clear RemoteFile');
 		remoteFile.clear();
 	}
 
@@ -874,10 +880,15 @@ async function executeTest(data) {
 	}
 
 	// Set the initial LocalLinks and CleanLinks
-	if (doLoad) {
-		LogTest.log('Test ' + data.name + ': Set initial Links & CleanLinks');
+	if (doSetLocalLinks) {
+		LogTest.log('Test ' + data.name + ': Set initial Links');
 		doResetStorage = true;
 		if (data.iniLinks != null) Data.writeLocalLinks(data.iniLinks);
+		doResetArgs = true;  //triggers re-evaluation of preliminary/download/fallback
+	}
+	if (doSetCleanLinks) {
+		LogTest.log('Test ' + data.name + ': Set initial CleanLinks');
+		doResetStorage = true;
 		if (data.iniCleanLinks != null) {
 			let cleanLinks = data.iniCleanLinks, isInvalid = false;
 			let m = data.iniCleanLinks.match(/^INVALID(?:\s+(.*))?/);
@@ -891,9 +902,8 @@ async function executeTest(data) {
 			} else {
 				Data.writeCleanLinks(cleanLinks, calcETag(cleanLinks));
 			}
-			if (isInvalid) Data.invalidateCleanTag();
+			if (isInvalid) Data.setCleanTag(CleanTagInvalid);
 		}
-		doResetArgs = true;  //triggers re-evaluation of preliminary/download/fallback
 	}
 
 	// Set the Remote File contents

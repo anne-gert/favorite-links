@@ -1,46 +1,46 @@
-name	keepStorage	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	iniSaveArg	expLinks	expDispLinks	expCleanLinks	expUplDisabled	expConflict	expRemoteFile	expStatus
+name	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	iniSaveArg	expLinks	expDispLinks	expCleanLinks	expUplDisabled	expConflict	expRemoteFile	expStatus
 
 # Just LocalStorage -LoadOptions -SaveOption
 # - No Download, so no change in CleanLinks.
-"[--] Has config"	FALSE	A	X					A	A	NULL	FALSE	FALSE	X	Local-Links-NoDownload-Prerender
-"[--] No config"	FALSE		X					NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	X	Local-NoDownload-Renderfallback
+"[--] Has config"	A	X					A	A	NULL	FALSE	FALSE	X	Local-Links-NoDownload-Prerender
+"[--] No config"		X					NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	X	Local-NoDownload-Renderfallback
 
 # All cases in updateLinks() +LoadOptions +SaveOptions
 # - Always Download, then merge 3 inputs.
 # - If no Download, then Clean not changed.
 # - Update Remote if Local newer.
-"[LS] Case --- No contents"	FALSE		NOT_EXIST			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Load404-Default-Render
-"[LS] Case --- No contents (!W)"	FALSE		404/403			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Load404-Default-Render
-"[LS] Case --- No contents (!RW)"	FALSE		400			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Load400-Renderfallback
-"[LS] Case e-- Clear contents"	FALSE	EMPTY	NOT_EXIST			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Load404-Default-Render
-"[LS] Case e-- Clr contents (!W)"	FALSE	EMPTY	404/403			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Load404-Default-Render
-"[LS] Case e-- Clr contents (!RW)"	FALSE	EMPTY	400			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Load400-Renderfallback
-"[LS] Case A-- Never Download"	FALSE	A	NOT_EXIST			links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-Links-Prerender-Load404-New-SaveOK
-"[LS] Case A-- Nvr Download (!W)"	FALSE	A	404/403			links.txt	links.txt	A	A	NULL	FALSE	FALSE	NULL	Saveable-Links-Prerender-Load404-New-Save403
-"[LS] Case A-- Nvr Download (!RW)"	FALSE	A	400			links.txt	links.txt	A	A	NULL	TRUE	FALSE	NULL	Saveable-Links-Prerender-Load400
-"[LS] Case --A Only Clean"	FALSE		NOT_EXIST	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-Load404-Clean-Render-SaveOK
-"[LS] Case --A Only Clean (!W)"	FALSE		404/403	A		links.txt	links.txt	A	A	A	FALSE	FALSE	NULL	Saveable-Load404-Clean-Render-Save403
-"[LS] Case --A Only Clean (!RW)"	FALSE		400	A		links.txt	links.txt	NULL	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Saveable-Load400-Renderfallback
-"[LS] Case A-A No Download"	FALSE	A	NOT_EXIST	A		links.txt	links.txt	A	A	A	FALSE	FALSE	NULL	Saveable-Links-Prerender-Load404
-"[LS] Case A-A No Download (!W)"	FALSE	A	404/403	A		links.txt	links.txt	A	A	A	FALSE	FALSE	NULL	Saveable-Links-Prerender-Load404
-"[LS] Case A-A No Download (!RW)"	FALSE	A	400	A		links.txt	links.txt	A	A	A	TRUE	FALSE	NULL	Saveable-Links-Prerender-Load400
-"[LS] Case B-A Local changed"	FALSE	B	NOT_EXIST	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-Links-Prerender-Load404-SaveOK
-"[LS] Case B-A Local changd (!W)"	FALSE	B	404/403	A		links.txt	links.txt	B	B	A	FALSE	TRUE	NULL	Saveable-Links-Prerender-Load404-Save403
-"[LS] Case B-A Local changd (!RW)"	FALSE	B	400	A		links.txt	links.txt	B	B	A	TRUE	FALSE	NULL	Saveable-Links-Prerender-Load400
-"[LS] Case -AA Download same"	FALSE		A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-LoadOK-NoLocal-Render
-"[LS] Case -BA Download changed"	FALSE		B	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-LoadOK-NoLocal-Render
-"[LS] Case -A- Download fresh"	FALSE		A			links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-LoadOK-NoLocal-Render
-"[LS] Case eAA Clear"	FALSE	EMPTY	A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-LoadOK-NoLocal-Render
-"[LS] Case eBA Clear"	FALSE	EMPTY	B	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-LoadOK-NoLocal-Render
-"[LS] Case eA- New Download"	FALSE	EMPTY	A			links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-LoadOK-NoLocal-Render
-"[LS] Case AAA No change"	FALSE	A	A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-Links-Prerender-LoadOK-Same
-"[LS] Case BBA Clean outdated"	FALSE	B	B	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-Links-Prerender-LoadOK-Same
-"[LS] Case AA- Clean empty"	FALSE	A	A			links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-Links-Prerender-LoadOK-Same
-"[LS] Case ABA Download changed"	FALSE	A	B	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-Links-Prerender-LoadOK-Render
-"[LS] Case BAA Local changed"	FALSE	B	A	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-Links-Prerender-LoadOK-SaveDirty-SaveOK
-"[LS] Case BAA Local changed (RO)"	FALSE	B	200/403	RO_FILE		links.txt	links.txt	B	B	RO_FILE	FALSE	TRUE	RO_FILE	Saveable-Links-Prerender-LoadOK-SaveDirty-Save403
-"[LS] Case BCA Download conflict"	FALSE	B	C	A		links.txt	links.txt	B	B	A	FALSE	TRUE	C	Saveable-Links-Prerender-LoadOK-Conflict
-"[LS] Case AB- Missing Clean"	FALSE	A	B			links.txt	links.txt	A	A	NULL	FALSE	TRUE	B	Saveable-Links-Prerender-LoadOK-Conflict
+"[LS] Case --- No contents"		NOT_EXIST			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Load404-Default-Render
+"[LS] Case --- No contents (!W)"		404/403			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Load404-Default-Render
+"[LS] Case --- No contents (!RW)"		400			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Load400-Renderfallback
+"[LS] Case e-- Clear contents"	EMPTY	NOT_EXIST			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Load404-Default-Render
+"[LS] Case e-- Clr contents (!W)"	EMPTY	404/403			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Load404-Default-Render
+"[LS] Case e-- Clr contents (!RW)"	EMPTY	400			links.txt	links.txt	NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Load400-Renderfallback
+"[LS] Case A-- Never Download"	A	NOT_EXIST			links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-Links-Prerender-Load404-New-SaveOK
+"[LS] Case A-- Nvr Download (!W)"	A	404/403			links.txt	links.txt	A	A	NULL	FALSE	FALSE	NULL	Saveable-Links-Prerender-Load404-New-Save403
+"[LS] Case A-- Nvr Download (!RW)"	A	400			links.txt	links.txt	A	A	NULL	TRUE	FALSE	NULL	Saveable-Links-Prerender-Load400
+"[LS] Case --A Only Clean"		NOT_EXIST	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-Load404-Clean-Render-SaveOK
+"[LS] Case --A Only Clean (!W)"		404/403	A		links.txt	links.txt	A	A	A	FALSE	FALSE	NULL	Saveable-Load404-Clean-Render-Save403
+"[LS] Case --A Only Clean (!RW)"		400	A		links.txt	links.txt	NULL	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Saveable-Load400-Renderfallback
+"[LS] Case A-A No Download"	A	NOT_EXIST	A		links.txt	links.txt	A	A	A	FALSE	FALSE	NULL	Saveable-Links-Prerender-Load404
+"[LS] Case A-A No Download (!W)"	A	404/403	A		links.txt	links.txt	A	A	A	FALSE	FALSE	NULL	Saveable-Links-Prerender-Load404
+"[LS] Case A-A No Download (!RW)"	A	400	A		links.txt	links.txt	A	A	A	TRUE	FALSE	NULL	Saveable-Links-Prerender-Load400
+"[LS] Case B-A Local changed"	B	NOT_EXIST	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-Links-Prerender-Load404-SaveOK
+"[LS] Case B-A Local changd (!W)"	B	404/403	A		links.txt	links.txt	B	B	A	FALSE	TRUE	NULL	Saveable-Links-Prerender-Load404-Save403
+"[LS] Case B-A Local changd (!RW)"	B	400	A		links.txt	links.txt	B	B	A	TRUE	FALSE	NULL	Saveable-Links-Prerender-Load400
+"[LS] Case -AA Download same"		A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-LoadOK-NoLocal-Render
+"[LS] Case -BA Download changed"		B	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-LoadOK-NoLocal-Render
+"[LS] Case -A- Download fresh"		A			links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-LoadOK-NoLocal-Render
+"[LS] Case eAA Clear"	EMPTY	A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-LoadOK-NoLocal-Render
+"[LS] Case eBA Clear"	EMPTY	B	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-LoadOK-NoLocal-Render
+"[LS] Case eA- New Download"	EMPTY	A			links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-LoadOK-NoLocal-Render
+"[LS] Case AAA No change"	A	A	A		links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-Links-Prerender-LoadOK-Same
+"[LS] Case BBA Clean outdated"	B	B	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-Links-Prerender-LoadOK-Same
+"[LS] Case AA- Clean empty"	A	A			links.txt	links.txt	A	A	A	FALSE	FALSE	A	Saveable-Links-Prerender-LoadOK-Same
+"[LS] Case ABA Download changed"	A	B	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-Links-Prerender-LoadOK-Render
+"[LS] Case BAA Local changed"	B	A	A		links.txt	links.txt	B	B	B	FALSE	FALSE	B	Saveable-Links-Prerender-LoadOK-SaveDirty-SaveOK
+"[LS] Case BAA Local changed (RO)"	B	200/403	RO_FILE		links.txt	links.txt	B	B	RO_FILE	FALSE	TRUE	RO_FILE	Saveable-Links-Prerender-LoadOK-SaveDirty-Save403
+"[LS] Case BCA Download conflict"	B	C	A		links.txt	links.txt	B	B	A	FALSE	TRUE	C	Saveable-Links-Prerender-LoadOK-Conflict
+"[LS] Case AB- Missing Clean"	A	B			links.txt	links.txt	A	A	NULL	FALSE	TRUE	B	Saveable-Links-Prerender-LoadOK-Conflict
 
 # Only download if no local links +LoadOptions -SaveOptions
 # - Merge 3 inputs as described by updateLinks(), except
@@ -48,111 +48,111 @@ name	keepStorage	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	
 # - If no Download, then Clean not changed.
 # - No SaveOptions, so Conflict never displayed.
 # - No SaveOptions, never update Remote.
-"[L-] Case --- No contents"	FALSE		NOT_EXIST			links.txt		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Load404-Default-Render
-"[L-] Case --- No contents (!W)"	FALSE		404/403			links.txt		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Load404-Default-Render
-"[L-] Case --- No contents (!RW)"	FALSE		400			links.txt		NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Load400-Renderfallback
-"[L-] Case e-- Clear contents"	FALSE	EMPTY	NOT_EXIST			links.txt		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Load404-Default-Render
-"[L-] Case e-- Clr contents (!W)"	FALSE	EMPTY	404/403			links.txt		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Load404-Default-Render
-"[L-] Case e-- Clr contents (!RW)"	FALSE	EMPTY	400			links.txt		NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Load400-Renderfallback
-"[L-] Case A-- Never Download"	FALSE	A	NOT_EXIST			links.txt		A	A	NULL	FALSE	FALSE	NULL	Local-NoDownload-Prerender
-"[L-] Case A-- Nvr Download (!W)"	FALSE	A	404/403			links.txt		A	A	NULL	FALSE	FALSE	NULL	Local-NoDownload-Prerender
-"[L-] Case A-- Nvr Download (!RW)"	FALSE	A	400			links.txt		A	A	NULL	FALSE	FALSE	NULL	Local-NoDownload-Prerender
-"[L-] Case --A Only Clean"	FALSE		NOT_EXIST	A		links.txt		A	A	A	FALSE	FALSE	NULL	Load404-Clean-Render
-"[L-] Case --A Only Clean (!W)"	FALSE		404/403	A		links.txt		A	A	A	FALSE	FALSE	NULL	Load404-Clean-Render
-"[L-] Case --A Only Clean (!RW)"	FALSE		400	A		links.txt		NULL	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Load400-Renderfallback
-"[L-] Case A-A No Download"	FALSE	A	NOT_EXIST	A		links.txt		A	A	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
-"[L-] Case A-A No Download (!W)"	FALSE	A	404/403	A		links.txt		A	A	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
-"[L-] Case A-A No Download (!RW)"	FALSE	A	400	A		links.txt		A	A	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
-"[L-] Case B-A Local changed"	FALSE	B	NOT_EXIST	A		links.txt		B	B	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
-"[L-] Case B-A Local changd (!W)"	FALSE	B	404/403	A		links.txt		B	B	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
-"[L-] Case B-A Local changd (!RW)"	FALSE	B	400	A		links.txt		B	B	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
-"[L-] Case -AA Download same"	FALSE		A	A		links.txt		A	A	A	FALSE	FALSE	A	LoadOK-NoLocal-Render
-"[L-] Case -BA Download changed"	FALSE		B	A		links.txt		B	B	B	FALSE	FALSE	B	LoadOK-NoLocal-Render
-"[L-] Case -A- Download fresh"	FALSE		A			links.txt		A	A	A	FALSE	FALSE	A	LoadOK-NoLocal-Render
-"[L-] Case eAA Clear"	FALSE	EMPTY	A	A		links.txt		A	A	A	FALSE	FALSE	A	LoadOK-NoLocal-Render
-"[L-] Case eBA Clear"	FALSE	EMPTY	B	A		links.txt		B	B	B	FALSE	FALSE	B	LoadOK-NoLocal-Render
-"[L-] Case eA- New Download"	FALSE	EMPTY	A			links.txt		A	A	A	FALSE	FALSE	A	LoadOK-NoLocal-Render
-"[L-] Case AAA Not Download"	FALSE	A	A	A		links.txt		A	A	A	FALSE	FALSE	A	Local-NoDownload-Prerender
-"[L-] Case BBA Not Download"	FALSE	B	B	A		links.txt		B	B	A	FALSE	FALSE	B	Local-NoDownload-Prerender
-"[L-] Case AA- Not Download"	FALSE	A	A			links.txt		A	A	NULL	FALSE	FALSE	A	Local-NoDownload-Prerender
-"[L-] Case ABA Not Download"	FALSE	A	B	A		links.txt		A	A	A	FALSE	FALSE	B	Local-NoDownload-Prerender
-"[L-] Case BAA Not Download"	FALSE	B	A	A		links.txt		B	B	A	FALSE	FALSE	A	Local-NoDownload-Prerender
-"[L-] Case BAA Local changed (RO)"	FALSE	B	200/403	RO_FILE		links.txt		B	B	RO_FILE	FALSE	FALSE	RO_FILE	Local-NoDownload-Prerender
-"[L-] Case BCA Not Download"	FALSE	B	C	A		links.txt		B	B	A	FALSE	FALSE	C	Local-NoDownload-Prerender
-"[L-] Case AB- Not Download"	FALSE	A	B			links.txt		A	A	NULL	FALSE	FALSE	B	Local-NoDownload-Prerender
+"[L-] Case --- No contents"		NOT_EXIST			links.txt		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Load404-Default-Render
+"[L-] Case --- No contents (!W)"		404/403			links.txt		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Load404-Default-Render
+"[L-] Case --- No contents (!RW)"		400			links.txt		NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Load400-Renderfallback
+"[L-] Case e-- Clear contents"	EMPTY	NOT_EXIST			links.txt		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Load404-Default-Render
+"[L-] Case e-- Clr contents (!W)"	EMPTY	404/403			links.txt		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Load404-Default-Render
+"[L-] Case e-- Clr contents (!RW)"	EMPTY	400			links.txt		NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Load400-Renderfallback
+"[L-] Case A-- Never Download"	A	NOT_EXIST			links.txt		A	A	NULL	FALSE	FALSE	NULL	Local-NoDownload-Prerender
+"[L-] Case A-- Nvr Download (!W)"	A	404/403			links.txt		A	A	NULL	FALSE	FALSE	NULL	Local-NoDownload-Prerender
+"[L-] Case A-- Nvr Download (!RW)"	A	400			links.txt		A	A	NULL	FALSE	FALSE	NULL	Local-NoDownload-Prerender
+"[L-] Case --A Only Clean"		NOT_EXIST	A		links.txt		A	A	A	FALSE	FALSE	NULL	Load404-Clean-Render
+"[L-] Case --A Only Clean (!W)"		404/403	A		links.txt		A	A	A	FALSE	FALSE	NULL	Load404-Clean-Render
+"[L-] Case --A Only Clean (!RW)"		400	A		links.txt		NULL	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Load400-Renderfallback
+"[L-] Case A-A No Download"	A	NOT_EXIST	A		links.txt		A	A	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
+"[L-] Case A-A No Download (!W)"	A	404/403	A		links.txt		A	A	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
+"[L-] Case A-A No Download (!RW)"	A	400	A		links.txt		A	A	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
+"[L-] Case B-A Local changed"	B	NOT_EXIST	A		links.txt		B	B	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
+"[L-] Case B-A Local changd (!W)"	B	404/403	A		links.txt		B	B	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
+"[L-] Case B-A Local changd (!RW)"	B	400	A		links.txt		B	B	A	FALSE	FALSE	NULL	Local-NoDownload-Prerender
+"[L-] Case -AA Download same"		A	A		links.txt		A	A	A	FALSE	FALSE	A	LoadOK-NoLocal-Render
+"[L-] Case -BA Download changed"		B	A		links.txt		B	B	B	FALSE	FALSE	B	LoadOK-NoLocal-Render
+"[L-] Case -A- Download fresh"		A			links.txt		A	A	A	FALSE	FALSE	A	LoadOK-NoLocal-Render
+"[L-] Case eAA Clear"	EMPTY	A	A		links.txt		A	A	A	FALSE	FALSE	A	LoadOK-NoLocal-Render
+"[L-] Case eBA Clear"	EMPTY	B	A		links.txt		B	B	B	FALSE	FALSE	B	LoadOK-NoLocal-Render
+"[L-] Case eA- New Download"	EMPTY	A			links.txt		A	A	A	FALSE	FALSE	A	LoadOK-NoLocal-Render
+"[L-] Case AAA Not Download"	A	A	A		links.txt		A	A	A	FALSE	FALSE	A	Local-NoDownload-Prerender
+"[L-] Case BBA Not Download"	B	B	A		links.txt		B	B	A	FALSE	FALSE	B	Local-NoDownload-Prerender
+"[L-] Case AA- Not Download"	A	A			links.txt		A	A	NULL	FALSE	FALSE	A	Local-NoDownload-Prerender
+"[L-] Case ABA Not Download"	A	B	A		links.txt		A	A	A	FALSE	FALSE	B	Local-NoDownload-Prerender
+"[L-] Case BAA Not Download"	B	A	A		links.txt		B	B	A	FALSE	FALSE	A	Local-NoDownload-Prerender
+"[L-] Case BAA Local changed (RO)"	B	200/403	RO_FILE		links.txt		B	B	RO_FILE	FALSE	FALSE	RO_FILE	Local-NoDownload-Prerender
+"[L-] Case BCA Not Download"	B	C	A		links.txt		B	B	A	FALSE	FALSE	C	Local-NoDownload-Prerender
+"[L-] Case AB- Not Download"	A	B			links.txt		A	A	NULL	FALSE	FALSE	B	Local-NoDownload-Prerender
 
 # All cases in updateLinks() +OverrideOptions +SaveOptions
 # - Always Download, update Clean if success.
 # - Always update Local (like cache), unless DEFAULT_LINKS.
 # - Never use Local to render.
-"[OS] Case --- No contents"	FALSE		NOT_EXIST		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
-"[OS] Case --- No contents (!W)"	FALSE		404/403		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
-"[OS] Case --- No contents (!RW)"	FALSE		400		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Override-Load400-Renderfallback
-"[OS] Case e-- Clear contents"	FALSE	EMPTY	NOT_EXIST		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
-"[OS] Case e-- Clr contents (!W)"	FALSE	EMPTY	404/403		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
-"[OS] Case e-- Clr contents (!RW)"	FALSE	EMPTY	400		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Override-Load400-Renderfallback
-"[OS] Case A-- Never Download"	FALSE	A	NOT_EXIST		links.txt		links.txt	A	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
-"[OS] Case A-- Nvr Download (!W)"	FALSE	A	404/403		links.txt		links.txt	A	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
-"[OS] Case A-- Nvr Download (!RW)"	FALSE	A	400		links.txt		links.txt	A	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Override-Links-Load400-Renderfallback
-"[OS] Case --A Only Clean"	FALSE		NOT_EXIST	A	links.txt		links.txt	NULL	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
-"[OS] Case --A Only Clean (!W)"	FALSE		404/403	A	links.txt		links.txt	NULL	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
-"[OS] Case --A Only Clean (!RW)"	FALSE		400	A	links.txt		links.txt	NULL	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Saveable-Override-Load400-Renderfallback
-"[OS] Case A-A No Download"	FALSE	A	NOT_EXIST	A	links.txt		links.txt	A	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
-"[OS] Case A-A No Download (!W)"	FALSE	A	404/403	A	links.txt		links.txt	A	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
-"[OS] Case A-A No Download (!RW)"	FALSE	A	400	A	links.txt		links.txt	A	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Saveable-Override-Links-Load400-Renderfallback
-"[OS] Case B-A Local changed"	FALSE	B	NOT_EXIST	A	links.txt		links.txt	B	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
-"[OS] Case B-A Local changd (!W)"	FALSE	B	404/403	A	links.txt		links.txt	B	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
-"[OS] Case B-A Local changd (!RW)"	FALSE	B	400	A	links.txt		links.txt	B	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Saveable-Override-Links-Load400-Renderfallback
-"[OS] Case -AA Download same"	FALSE		A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-LoadOK-NoLocal-Render
-"[OS] Case -BA Download changed"	FALSE		B	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-LoadOK-NoLocal-Render
-"[OS] Case -A- Download fresh"	FALSE		A		links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-LoadOK-NoLocal-Render
-"[OS] Case eAA Clear"	FALSE	EMPTY	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-LoadOK-NoLocal-Render
-"[OS] Case eBA Clear"	FALSE	EMPTY	B	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-LoadOK-NoLocal-Render
-"[OS] Case eA- New Download"	FALSE	EMPTY	A		links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-LoadOK-NoLocal-Render
-"[OS] Case AAA No change"	FALSE	A	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-Links-LoadOK-Render
-"[OS] Case BBA Clean outdated"	FALSE	B	B	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-Links-LoadOK-Render
-"[OS] Case AA- Clean empty"	FALSE	A	A		links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-Links-LoadOK-Render
-"[OS] Case ABA Download changed"	FALSE	A	B	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-Links-LoadOK-Render
-"[OS] Case BAA Ignore Local"	FALSE	B	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-Links-LoadOK-DiscardLocalchanges-Render
-"[OS] Case BAA Local changed (RO)"	FALSE	B	200/403	RO_FILE	links.txt		links.txt	RO_FILE	RO_FILE	RO_FILE	FALSE	FALSE	RO_FILE	Saveable-Override-Links-LoadOK-DiscardLocalchanges-Render
-"[OS] Case BCA Ignore Local"	FALSE	B	C	A	links.txt		links.txt	C	C	C	FALSE	FALSE	C	Saveable-Override-Links-LoadOK-DiscardLocalchanges-Render
-"[OS] Case AB- Ignore Local"	FALSE	A	B		links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-Links-LoadOK-DiscardLocalchanges-Render
+"[OS] Case --- No contents"		NOT_EXIST		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
+"[OS] Case --- No contents (!W)"		404/403		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
+"[OS] Case --- No contents (!RW)"		400		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Override-Load400-Renderfallback
+"[OS] Case e-- Clear contents"	EMPTY	NOT_EXIST		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
+"[OS] Case e-- Clr contents (!W)"	EMPTY	404/403		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
+"[OS] Case e-- Clr contents (!RW)"	EMPTY	400		links.txt		links.txt	NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Override-Load400-Renderfallback
+"[OS] Case A-- Never Download"	A	NOT_EXIST		links.txt		links.txt	A	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
+"[OS] Case A-- Nvr Download (!W)"	A	404/403		links.txt		links.txt	A	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
+"[OS] Case A-- Nvr Download (!RW)"	A	400		links.txt		links.txt	A	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Saveable-Override-Links-Load400-Renderfallback
+"[OS] Case --A Only Clean"		NOT_EXIST	A	links.txt		links.txt	NULL	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
+"[OS] Case --A Only Clean (!W)"		404/403	A	links.txt		links.txt	NULL	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Load404-Renderfallback
+"[OS] Case --A Only Clean (!RW)"		400	A	links.txt		links.txt	NULL	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Saveable-Override-Load400-Renderfallback
+"[OS] Case A-A No Download"	A	NOT_EXIST	A	links.txt		links.txt	A	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
+"[OS] Case A-A No Download (!W)"	A	404/403	A	links.txt		links.txt	A	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
+"[OS] Case A-A No Download (!RW)"	A	400	A	links.txt		links.txt	A	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Saveable-Override-Links-Load400-Renderfallback
+"[OS] Case B-A Local changed"	B	NOT_EXIST	A	links.txt		links.txt	B	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
+"[OS] Case B-A Local changd (!W)"	B	404/403	A	links.txt		links.txt	B	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Saveable-Override-Links-Load404-Renderfallback
+"[OS] Case B-A Local changd (!RW)"	B	400	A	links.txt		links.txt	B	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Saveable-Override-Links-Load400-Renderfallback
+"[OS] Case -AA Download same"		A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-LoadOK-NoLocal-Render
+"[OS] Case -BA Download changed"		B	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-LoadOK-NoLocal-Render
+"[OS] Case -A- Download fresh"		A		links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-LoadOK-NoLocal-Render
+"[OS] Case eAA Clear"	EMPTY	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-LoadOK-NoLocal-Render
+"[OS] Case eBA Clear"	EMPTY	B	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-LoadOK-NoLocal-Render
+"[OS] Case eA- New Download"	EMPTY	A		links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-LoadOK-NoLocal-Render
+"[OS] Case AAA No change"	A	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-Links-LoadOK-Render
+"[OS] Case BBA Clean outdated"	B	B	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-Links-LoadOK-Render
+"[OS] Case AA- Clean empty"	A	A		links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-Links-LoadOK-Render
+"[OS] Case ABA Download changed"	A	B	A	links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-Links-LoadOK-Render
+"[OS] Case BAA Ignore Local"	B	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	Saveable-Override-Links-LoadOK-DiscardLocalchanges-Render
+"[OS] Case BAA Local changed (RO)"	B	200/403	RO_FILE	links.txt		links.txt	RO_FILE	RO_FILE	RO_FILE	FALSE	FALSE	RO_FILE	Saveable-Override-Links-LoadOK-DiscardLocalchanges-Render
+"[OS] Case BCA Ignore Local"	B	C	A	links.txt		links.txt	C	C	C	FALSE	FALSE	C	Saveable-Override-Links-LoadOK-DiscardLocalchanges-Render
+"[OS] Case AB- Ignore Local"	A	B		links.txt		links.txt	B	B	B	FALSE	FALSE	B	Saveable-Override-Links-LoadOK-DiscardLocalchanges-Render
 
 # Always download override +OverrideOptions -SaveOptions
 # - Same as with SaveOptions, because remote file is always taken, there is no need to change it.
 # - Config is now readonly in Settings.
-"[O-] Case --- No contents"	FALSE		NOT_EXIST		links.txt			NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Load404-Renderfallback
-"[O-] Case --- No contents (!W)"	FALSE		404/403		links.txt			NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Load404-Renderfallback
-"[O-] Case --- No contents (!RW)"	FALSE		400		links.txt			NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Override-Load400-Renderfallback
-"[O-] Case e-- Clear contents"	FALSE	EMPTY	NOT_EXIST		links.txt			NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Load404-Renderfallback
-"[O-] Case e-- Clr contents (!W)"	FALSE	EMPTY	404/403		links.txt			NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Load404-Renderfallback
-"[O-] Case e-- Clr contents (!RW)"	FALSE	EMPTY	400		links.txt			NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Override-Load400-Renderfallback
-"[O-] Case A-- Never Download"	FALSE	A	NOT_EXIST		links.txt			A	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
-"[O-] Case A-- Nvr Download (!W)"	FALSE	A	404/403		links.txt			A	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
-"[O-] Case A-- Nvr Download (!RW)"	FALSE	A	400		links.txt			A	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Override-Links-Load400-Renderfallback
-"[O-] Case --A Only Clean"	FALSE		NOT_EXIST	A	links.txt			NULL	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Load404-Renderfallback
-"[O-] Case --A Only Clean (!W)"	FALSE		404/403	A	links.txt			NULL	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Load404-Renderfallback
-"[O-] Case --A Only Clean (!RW)"	FALSE		400	A	links.txt			NULL	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Override-Load400-Renderfallback
-"[O-] Case A-A No Download"	FALSE	A	NOT_EXIST	A	links.txt			A	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
-"[O-] Case A-A No Download (!W)"	FALSE	A	404/403	A	links.txt			A	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
-"[O-] Case A-A No Download (!RW)"	FALSE	A	400	A	links.txt			A	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Override-Links-Load400-Renderfallback
-"[O-] Case B-A Local changed"	FALSE	B	NOT_EXIST	A	links.txt			B	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
-"[O-] Case B-A Local changd (!W)"	FALSE	B	404/403	A	links.txt			B	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
-"[O-] Case B-A Local changd (!RW)"	FALSE	B	400	A	links.txt			B	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Override-Links-Load400-Renderfallback
-"[O-] Case -AA Download same"	FALSE		A	A	links.txt			A	A	A	FALSE	FALSE	A	Override-LoadOK-NoLocal-Render
-"[O-] Case -BA Download changed"	FALSE		B	A	links.txt			B	B	B	FALSE	FALSE	B	Override-LoadOK-NoLocal-Render
-"[O-] Case -A- Download fresh"	FALSE		A		links.txt			A	A	A	FALSE	FALSE	A	Override-LoadOK-NoLocal-Render
-"[O-] Case eAA Clear"	FALSE	EMPTY	A	A	links.txt			A	A	A	FALSE	FALSE	A	Override-LoadOK-NoLocal-Render
-"[O-] Case eBA Clear"	FALSE	EMPTY	B	A	links.txt			B	B	B	FALSE	FALSE	B	Override-LoadOK-NoLocal-Render
-"[O-] Case eA- New Download"	FALSE	EMPTY	A		links.txt			A	A	A	FALSE	FALSE	A	Override-LoadOK-NoLocal-Render
-"[O-] Case AAA Not Download"	FALSE	A	A	A	links.txt			A	A	A	FALSE	FALSE	A	Override-Links-LoadOK-Render
-"[O-] Case BBA Not Download"	FALSE	B	B	A	links.txt			B	B	B	FALSE	FALSE	B	Override-Links-LoadOK-Render
-"[O-] Case AA- Not Download"	FALSE	A	A		links.txt			A	A	A	FALSE	FALSE	A	Override-Links-LoadOK-Render
-"[O-] Case ABA Not Download"	FALSE	A	B	A	links.txt			B	B	B	FALSE	FALSE	B	Override-Links-LoadOK-Render
-"[O-] Case BAA Not Download"	FALSE	B	A	A	links.txt			A	A	A	FALSE	FALSE	A	Override-Links-LoadOK-DiscardLocalchanges-Render
-"[O-] Case BAA Local changed (RO)"	FALSE	B	200/403	RO_FILE	links.txt			RO_FILE	RO_FILE	RO_FILE	FALSE	FALSE	RO_FILE	Override-Links-LoadOK-DiscardLocalchanges-Render
-"[O-] Case BCA Not Download"	FALSE	B	C	A	links.txt			C	C	C	FALSE	FALSE	C	Override-Links-LoadOK-DiscardLocalchanges-Render
-"[O-] Case AB- Not Download"	FALSE	A	B		links.txt			B	B	B	FALSE	FALSE	B	Override-Links-LoadOK-DiscardLocalchanges-Render
+"[O-] Case --- No contents"		NOT_EXIST		links.txt			NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Load404-Renderfallback
+"[O-] Case --- No contents (!W)"		404/403		links.txt			NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Load404-Renderfallback
+"[O-] Case --- No contents (!RW)"		400		links.txt			NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Override-Load400-Renderfallback
+"[O-] Case e-- Clear contents"	EMPTY	NOT_EXIST		links.txt			NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Load404-Renderfallback
+"[O-] Case e-- Clr contents (!W)"	EMPTY	404/403		links.txt			NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Load404-Renderfallback
+"[O-] Case e-- Clr contents (!RW)"	EMPTY	400		links.txt			NULL	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Override-Load400-Renderfallback
+"[O-] Case A-- Never Download"	A	NOT_EXIST		links.txt			A	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
+"[O-] Case A-- Nvr Download (!W)"	A	404/403		links.txt			A	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
+"[O-] Case A-- Nvr Download (!RW)"	A	400		links.txt			A	DEFAULT_LINKS	NULL	TRUE	FALSE	NULL	Override-Links-Load400-Renderfallback
+"[O-] Case --A Only Clean"		NOT_EXIST	A	links.txt			NULL	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Load404-Renderfallback
+"[O-] Case --A Only Clean (!W)"		404/403	A	links.txt			NULL	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Load404-Renderfallback
+"[O-] Case --A Only Clean (!RW)"		400	A	links.txt			NULL	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Override-Load400-Renderfallback
+"[O-] Case A-A No Download"	A	NOT_EXIST	A	links.txt			A	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
+"[O-] Case A-A No Download (!W)"	A	404/403	A	links.txt			A	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
+"[O-] Case A-A No Download (!RW)"	A	400	A	links.txt			A	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Override-Links-Load400-Renderfallback
+"[O-] Case B-A Local changed"	B	NOT_EXIST	A	links.txt			B	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
+"[O-] Case B-A Local changd (!W)"	B	404/403	A	links.txt			B	DEFAULT_LINKS	A	FALSE	FALSE	NULL	Override-Links-Load404-Renderfallback
+"[O-] Case B-A Local changd (!RW)"	B	400	A	links.txt			B	DEFAULT_LINKS	A	TRUE	FALSE	NULL	Override-Links-Load400-Renderfallback
+"[O-] Case -AA Download same"		A	A	links.txt			A	A	A	FALSE	FALSE	A	Override-LoadOK-NoLocal-Render
+"[O-] Case -BA Download changed"		B	A	links.txt			B	B	B	FALSE	FALSE	B	Override-LoadOK-NoLocal-Render
+"[O-] Case -A- Download fresh"		A		links.txt			A	A	A	FALSE	FALSE	A	Override-LoadOK-NoLocal-Render
+"[O-] Case eAA Clear"	EMPTY	A	A	links.txt			A	A	A	FALSE	FALSE	A	Override-LoadOK-NoLocal-Render
+"[O-] Case eBA Clear"	EMPTY	B	A	links.txt			B	B	B	FALSE	FALSE	B	Override-LoadOK-NoLocal-Render
+"[O-] Case eA- New Download"	EMPTY	A		links.txt			A	A	A	FALSE	FALSE	A	Override-LoadOK-NoLocal-Render
+"[O-] Case AAA Not Download"	A	A	A	links.txt			A	A	A	FALSE	FALSE	A	Override-Links-LoadOK-Render
+"[O-] Case BBA Not Download"	B	B	A	links.txt			B	B	B	FALSE	FALSE	B	Override-Links-LoadOK-Render
+"[O-] Case AA- Not Download"	A	A		links.txt			A	A	A	FALSE	FALSE	A	Override-Links-LoadOK-Render
+"[O-] Case ABA Not Download"	A	B	A	links.txt			B	B	B	FALSE	FALSE	B	Override-Links-LoadOK-Render
+"[O-] Case BAA Not Download"	B	A	A	links.txt			A	A	A	FALSE	FALSE	A	Override-Links-LoadOK-DiscardLocalchanges-Render
+"[O-] Case BAA Local changed (RO)"	B	200/403	RO_FILE	links.txt			RO_FILE	RO_FILE	RO_FILE	FALSE	FALSE	RO_FILE	Override-Links-LoadOK-DiscardLocalchanges-Render
+"[O-] Case BCA Not Download"	B	C	A	links.txt			C	C	C	FALSE	FALSE	C	Override-Links-LoadOK-DiscardLocalchanges-Render
+"[O-] Case AB- Not Download"	A	B		links.txt			B	B	B	FALSE	FALSE	B	Override-Links-LoadOK-DiscardLocalchanges-Render
 
 
 # vim: set filetype=tsv vartabstop=35,15 nowrap:
