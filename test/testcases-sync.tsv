@@ -21,7 +21,7 @@ name	keepStorage	iniLinks	iniRemoteFile	iniCleanLinks	iniLoadArg	iniSaveArg	expL
 # Client sends Invalid (occurs after 412 situation)
     # - Create 412 Conflict state with test 4.2.2 above. Check that a reload does keeps the Conflict situation.
 "4.3.1(1) ETag invalid"	FALSE	B	+A/C	A	links.txt	links.txt	B	B	INVALID	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
-"4.3.1(2) Invalid (Reload)"	TRUE	NULL	NULL	NULL	links.txt	links.txt	B	B	INVALID	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-Conflict
+"4.3.1(2) Invalid (Reload)"	TRUE				links.txt	links.txt	B	B	INVALID	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-Conflict
     # - Load the Invalid situation and try and rectify it.
 "4.3.2 Invalid (Cancel)"	FALSE	B	+A/C	INVALID	links.txt	links.txt	B	B	INVALID	FALSE	TRUE	C	cancel	D	Saveable-Links-Prerender-LoadOK-Conflict
 "4.3.3 Invalid (Save)"	FALSE	B	+A/C	INVALID	links.txt	links.txt	D	D	D	FALSE	FALSE	D	save	D	Saveable-Links-Prerender-LoadOK-Conflict * Render-SaveOK

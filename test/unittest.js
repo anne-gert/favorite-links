@@ -251,7 +251,7 @@ function CreateRemoteFile(timeout = 100) {
 			LogTest.debug(`Activate next response '${renderValue(entry.content)}'`);
 		}
 		// Return response
-		LogTest.debug('GET RemoteFile for \'' + name + '\': status ' + rsp.status + ' (' + (rsp.text?.length ?? 0) + ' chars)');
+		LogTest.debug(`GET RemoteFile for '${name}': status '${rsp.status} (${renderValue(rsp.text)})`);
 		return rsp;
 	}
 
@@ -334,7 +334,7 @@ function CreateRemoteFile(timeout = 100) {
 			LogTest.debug(`Activate next response '${renderValue(entry.content)}'`);
 		}
 		// Return response
-		LogTest.debug(`POST RemoteFile for '${name}': Status ${rsp.status} (${body?.length ?? 0} chars)`);
+		LogTest.debug(`POST RemoteFile for '${name}': Status ${rsp.status} (${renderValue(body)})`);
 		return rsp;
 	}
 
@@ -722,10 +722,15 @@ async function readTests(url) {
 						).join('\n');
 				}
 				// Check special words (all capitals)
+				// Booleans
 				if (value == 'TRUE') value = true;
-				if (value == 'FALSE') value = false;
-				if (value == 'NULL') value = null;
-				if (value == 'DEFAULT_LINKS') value = DefaultLinks;
+				else if (value == 'FALSE') value = false;
+				// Predefined strings
+				else if (value == 'DEFAULT_LINKS') value = DefaultLinks;
+				else if (value == 'EMPTY') value = '';
+				// NULL->null; empty is as if it was not defined.
+				else if (value == 'NULL') value = null;
+				else if (value == '') value = undefined;
 				// Set field value (and type)
 				entry[name] = value;
 			};
@@ -832,71 +837,103 @@ async function executeTest(data) {
 		LogTest.important('Skip Test ' + data.name);
 		result.skipped++;
 		return result;
-	} else {
-		LogTest.important('Test ' + data.name + ': Prepare');
-		LogTest.debug('Test data', data);
 	}
+
+	LogTest.important('Test ' + data.name + ': Prepare');
+	LogTest.debug('Test data', data);
 	if (CurrTestCtl) CurrTestCtl.textContent = data.name;
 
-	// Initialize
-	if (!data.keepStorage) {
+	// Determine 'todo' flags
+	let doClearStorage = !data.keepStorage;
+	let doSetArgs = true;
+	let doSetRemoteFile = data.iniRemoteFile !== undefined;
+	let doLoad = data.iniLinks !== 'NO_INIT';
+	let doConfigAction = data.cnfAction != null;
+	let doDrop = data.dropSource != null || data.dropWhere != null || data.dropTarget != null;
+
+	let doResetStorage = false, doResetArgs = false;
+
+	// Clear storage
+	if (doClearStorage) {
+		LogTest.log('Test ' + data.name + ': Clear LocalStorage & RemoteFile');
 		HOOK_LocalStorage.clear();
 		remoteFile.clear();
 	}
+
 	// Start with the correct QueryString to get the right ConfigName
-	let qs = [];
-	if (data.iniOverrideArg != null) qs.push('links-override=' + data.iniOverrideArg);
-	if (data.iniLoadArg != null) qs.push('links=' + data.iniLoadArg);
-	if (data.iniSaveArg != null) qs.push('save=' + data.iniSaveArg);
-	if (qs.length > 0) qs = '?' + qs.join('&'); else qs = '';
-	HOOK_QueryString.set(qs);  //triggers re-evaluation of ConfigLoadKey
-	//LogTest.devlog('ConfigLoadKey after clear: \'' + UrlResolver.getConfigLoadKey() + '\'');
-	HOOK_LocalStorage.reset();  //triggers re-evaluation of UsedLoadConfigName
-	//LogTest.devlog('ConfigLoadKey after 2nd reset: \'' + UrlResolver.getConfigLoadKey() + '\'');
-	if (data.iniLinks != null) Data.writeLocalLinks(data.iniLinks);
-	if (data.iniCleanLinks != null) {
-		if (data.iniCleanLinks === '') {
-			Data.writeCleanLinks('', CleanTagEmpty);
-		} else if (data.iniCleanLinks === 'INVALID') {
-			Data.writeCleanLinks('*Invalid', CleanTagInvalid);
-		} else {
-			Data.writeCleanLinks(data.iniCleanLinks, calcETag(data.iniCleanLinks));
-		}
+	if (doSetArgs) {
+		LogTest.log('Test ' + data.name + ': Set QueryString');
+		let qs = [];
+		if (data.iniOverrideArg != null) qs.push('links-override=' + data.iniOverrideArg);
+		if (data.iniLoadArg != null) qs.push('links=' + data.iniLoadArg);
+		if (data.iniSaveArg != null) qs.push('save=' + data.iniSaveArg);
+		if (qs.length > 0) qs = '?' + qs.join('&'); else qs = '';
+		HOOK_QueryString.set(qs);  //triggers re-evaluation of ConfigLoadKey and UsedLoadConfigName
+		//LogTest.devlog('ConfigLoadKey after clear: \'' + UrlResolver.getConfigLoadKey() + '\'');
+		doResetArgs = true;
 	}
-	HOOK_QueryString.reset();  //triggers re-evaluation of preliminary/download/fallback
-	HOOK_LocalStorage.log();
+
+	// Set the initial LocalLinks and CleanLinks
+	if (doLoad) {
+		LogTest.log('Test ' + data.name + ': Set initial Links & CleanLinks');
+		doResetStorage = true;
+		if (data.iniLinks != null) Data.writeLocalLinks(data.iniLinks);
+		if (data.iniCleanLinks != null) {
+			let cleanLinks = data.iniCleanLinks, isInvalid = false;
+			let m = data.iniCleanLinks.match(/^INVALID(?:\s+(.*))?/);
+			if (m) {
+				cleanLinks = m[1] ?? '';
+				isInvalid = true;
+				//LogTest.devlog(`INVALID ${cleanLinks}`);
+			}
+			if (cleanLinks === '') {
+				Data.writeCleanLinks('', CleanTagEmpty);
+			} else {
+				Data.writeCleanLinks(cleanLinks, calcETag(cleanLinks));
+			}
+			if (isInvalid) Data.invalidateCleanTag();
+		}
+		doResetArgs = true;  //triggers re-evaluation of preliminary/download/fallback
+	}
 
 	// Set the Remote File contents
-	remoteFile.set(data.iniRemoteFile);
-
-	// Clear caches to not influence the test and resume status
-	HOOK_QueryString.reset();
-	HOOK_LocalStorage.reset();
-	resumeStatus();
-
-	if (!data.keepStorage) {
-		clearStatus();
-		prevStatus = '';
+	if (doSetRemoteFile) {
+		LogTest.log('Test ' + data.name + ': Set RemoteFile');
+		remoteFile.set(data.iniRemoteFile);
 	}
+
+	// Clear caches to not influence the test
+	if (doResetArgs) HOOK_QueryString.reset();
+	if (doResetStorage) HOOK_LocalStorage.reset();
+	HOOK_LocalStorage.log();
+
+	// Resume status
+	clearStatus();
+	prevStatus = '';
+	resumeStatus();
 
 	// Trigger page initialization
 	LogTest.important('Test ' + data.name + ': Start');
-	try {
-		initLinks();
-		await HOOK_Ready.wait();
-	}
-	catch (error) {
-		LogTest.log('initLinks error: ' + error);
+	if (doLoad) {
+		LogTest.log('Test ' + data.name + ': Call initLinks()');
+		try {
+			initLinks();
+			await HOOK_Ready.wait();
+		}
+		catch (error) {
+			LogTest.log('initLinks error: ' + error);
+		}
 	}
 
 	// If we should set Settings, trigger that and wait for it
-	if (data.cnfAction != null && data.cnfAction != '') {
+	if (doConfigAction) {
+		LogTest.log('Test ' + data.name + ': Change Configuration');
 		addStatus('/');
 		//LogTest.devlog('Prepare ChangeSettings');
 		HOOK_ChangeSettings.setConfig(data.cnfLinks);
 		let options = [];
-		if (data.cnfLoadOpt1 != '') options.push(data.cnfLoadOpt1);
-		if (data.cnfLoadOpt2 != '') options.push(data.cnfLoadOpt2);
+		if (data.cnfLoadOpt1 != null) options.push(data.cnfLoadOpt1);
+		if (data.cnfLoadOpt2 != null) options.push(data.cnfLoadOpt2);
 		if (options.length < 1) options.push('');  //always at least 1 LoadOption
 		options.push(data.cnfSaveOpt);  //may be ''
 		//LogTest.devlog('Options: ', options);
@@ -916,7 +953,8 @@ async function executeTest(data) {
 	//    to click outside of the Item (depends on CSS!)
 	// In practice, going to coordinates does not add much to the test,
 	// except unnecessary instabilty in the tests.
-	if (data.dropSource != null || data.dropWhere != null || data.dropTarget != null) {
+	if (doDrop) {
+		LogTest.log('Test ' + data.name + ': Perform Drag-and-Drop');
 		let dropTarget = null, where = null;
 		if (data.dropTarget != null && data.dropWhere != null) {
 			// Find dropTarget Item in RenderedItems
@@ -938,18 +976,17 @@ async function executeTest(data) {
 		}
 	}
 	if (data.expCleanLinks !== undefined) {
-		if (data.expCleanLinks == 'INVALID') {
-			let cleanTag = Data.readCleanTag();
-			if (cleanTag !== CleanTagInvalid) {
-				LogTest.error('Test ' + data.name + ': CleanLinks (Tag=' + renderValue(cleanTag) + ') has not expected value (' + renderValue(data.expCleanLinks) + ')');
-				++result.errors;
+		let cleanLinks = Data.readCleanLinks();
+		if (Data.getCleanTag() === CleanTagInvalid) {
+			if (cleanLinks == null) {
+				cleanLinks = 'INVALID';
+			} else {
+				cleanLinks = 'INVALID ' + cleanLinks;
 			}
-		} else {
-			let cleanLinks = Data.readCleanLinks();
-			if (!linksEqual(cleanLinks, data.expCleanLinks)) {
-				LogTest.error('Test ' + data.name + ': CleanLinks (=' + renderValue(cleanLinks) + ') has not expected value (=' + renderValue(data.expCleanLinks) + ')');
-				++result.errors;
-			}
+		}
+		if (!linksEqual(cleanLinks, data.expCleanLinks)) {
+			LogTest.error('Test ' + data.name + ': CleanLinks (=' + renderValue(cleanLinks) + ') has not expected value (=' + renderValue(data.expCleanLinks) + ')');
+			++result.errors;
 		}
 	}
 	if (data.expDispLinks !== undefined) {
@@ -1071,10 +1108,17 @@ async function doTests() {
 		if (result.errors > 0) {
 			s += ' (' + result.errors + ' errors)';
 		}
-		if (result.failed.length > 0 && result.failed.length <= 20) {
-			for (let j = 0; j < result.failed.length; ++j) {
+		let len = result.failed.length;
+		if (len > 0) {
+			let add_dots = false;
+			if (len > 20) {
+				len = 15;
+				add_dots = true;
+			}
+			for (let j = 0; j < len; ++j) {
 				s += '\n- ' + result.failed[j];
 			}
+			if (add_dots) s += '\n- ...';
 		}
 		s += '\n';
 	}

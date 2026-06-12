@@ -1,316 +1,316 @@
-name	|-ini|exp+|Links	dropSource	dropWhere	dropTarget	expConflict
+name	|-ini|exp+|Links	dropSource	dropWhere	dropTarget
 
 # Empty field
-"[L0] Drop link on empty"	~//no links|+~http://X+|	http://X	NULL	NULL	FALSE
-"[T0] Drop text on empty"	~//no links|+~"T T!"+|	T T!	NULL	NULL	FALSE
+"[L0] Drop link on empty"	~//no links|+~http://X+|	http://X		
+"[T0] Drop text on empty"	~//no links|+~"T T!"+|	T T!		
 
 # Drop link relative to a link
 # Level 0 link
-"[L↑L0] Drop link above link"	~0a~|+.http://X~+|0b~.1a~..2a~..2b~.1b~0c	http://X	above	0b	FALSE
-"[L↓L0] Drop link below link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	below	0b	FALSE
-"[L←L0] Drop link left of link"	~0a~|+.http://X~+|0b~.1a~..2a~..2b~.1b~0c	http://X	left	0b	FALSE
-"[L→L0] Drop link right of link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	right	0b	FALSE
-"[L°L0] Drop link on link top"	~0a~0b~.1a~..2a~..2b~.1b~|+.http://X~+|0c	http://X	top	0b	FALSE
-"[L◦L0] Drop link on link bottom"	~0a~0b~.1a~..2a~..2b~.1b~|+.http://X~+|0c	http://X	bottom	0b	FALSE
+"[L↑L0] Drop link above link"	~0a~|+.http://X~+|0b~.1a~..2a~..2b~.1b~0c	http://X	above	0b
+"[L↓L0] Drop link below link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	below	0b
+"[L←L0] Drop link left of link"	~0a~|+.http://X~+|0b~.1a~..2a~..2b~.1b~0c	http://X	left	0b
+"[L→L0] Drop link right of link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	right	0b
+"[L°L0] Drop link on link top"	~0a~0b~.1a~..2a~..2b~.1b~|+.http://X~+|0c	http://X	top	0b
+"[L◦L0] Drop link on link bottom"	~0a~0b~.1a~..2a~..2b~.1b~|+.http://X~+|0c	http://X	bottom	0b
 # Special cases for level 0
-"[L↑L0] Drop link above first"	~|+Heading~.http://X~+|0a~0b~.1a~..2a~..2b~.1b~0c	http://X	above	0a	FALSE
-"[L↓L0] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c|+~.http://X+|	http://X	below	0c	FALSE
+"[L↑L0] Drop link above first"	~|+Heading~.http://X~+|0a~0b~.1a~..2a~..2b~.1b~0c	http://X	above	0a
+"[L↓L0] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c|+~.http://X+|	http://X	below	0c
 # Level 1 link
-"[L↑L1] Drop link above link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	above	1a	FALSE
-"[L↓L1] Drop link below link"	~0a~0b~.1a~..2a~..2b~|+.http://X~+|.1b~0c	http://X	below	1a	FALSE
-"[L←L1] Drop link left of link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	left	1a	FALSE
-"[L→L1] Drop link right of link"	~0a~0b~.1a~..2a~..2b~|+.http://X~+|.1b~0c	http://X	right	1a	FALSE
-"[L°L1] Drop link on link top"	~0a~0b~.1a~..2a~..2b~|+..http://X~+|.1b~0c	http://X	top	1a	FALSE
-"[L◦L1] Drop link on link bottom"	~0a~0b~.1a~..2a~..2b~|+..http://X~+|.1b~0c	http://X	bottom	1a	FALSE
+"[L↑L1] Drop link above link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	above	1a
+"[L↓L1] Drop link below link"	~0a~0b~.1a~..2a~..2b~|+.http://X~+|.1b~0c	http://X	below	1a
+"[L←L1] Drop link left of link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	left	1a
+"[L→L1] Drop link right of link"	~0a~0b~.1a~..2a~..2b~|+.http://X~+|.1b~0c	http://X	right	1a
+"[L°L1] Drop link on link top"	~0a~0b~.1a~..2a~..2b~|+..http://X~+|.1b~0c	http://X	top	1a
+"[L◦L1] Drop link on link bottom"	~0a~0b~.1a~..2a~..2b~|+..http://X~+|.1b~0c	http://X	bottom	1a
 # Special cases for level 1
-"[L↓L1] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.http://X+|	http://X	below	1c	FALSE
+"[L↓L1] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.http://X+|	http://X	below	1c
 # Level 2 link
-"[L↑L2] Drop link above link"	~0a~0b~.1a~|+..http://X~+|..2a~..2b~.1b~0c	http://X	above	2a	FALSE
-"[L↓L2] Drop link below link"	~0a~0b~.1a~..2a~|+..http://X~+|..2b~.1b~0c	http://X	below	2a	FALSE
-"[L←L2] Drop link left of link"	~0a~0b~.1a~|+..http://X~+|..2a~..2b~.1b~0c	http://X	left	2a	FALSE
-"[L→L2] Drop link right of link"	~0a~0b~.1a~..2a~|+..http://X~+|..2b~.1b~0c	http://X	right	2a	FALSE
-"[L°L2] Drop link on link top"	~0a~0b~.1a~..2a~|+...http://X~+|..2b~.1b~0c	http://X	top	2a	FALSE
-"[L◦L2] Drop link on link bottom"	~0a~0b~.1a~..2a~|+...http://X~+|..2b~.1b~0c	http://X	bottom	2a	FALSE
+"[L↑L2] Drop link above link"	~0a~0b~.1a~|+..http://X~+|..2a~..2b~.1b~0c	http://X	above	2a
+"[L↓L2] Drop link below link"	~0a~0b~.1a~..2a~|+..http://X~+|..2b~.1b~0c	http://X	below	2a
+"[L←L2] Drop link left of link"	~0a~0b~.1a~|+..http://X~+|..2a~..2b~.1b~0c	http://X	left	2a
+"[L→L2] Drop link right of link"	~0a~0b~.1a~..2a~|+..http://X~+|..2b~.1b~0c	http://X	right	2a
+"[L°L2] Drop link on link top"	~0a~0b~.1a~..2a~|+...http://X~+|..2b~.1b~0c	http://X	top	2a
+"[L◦L2] Drop link on link bottom"	~0a~0b~.1a~..2a~|+...http://X~+|..2b~.1b~0c	http://X	bottom	2a
 # Special cases for level 2
-"[L↓L2] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c+ 1c~..2c|+~..http://X+|	http://X	below	2c	FALSE
+"[L↓L2] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c+ 1c~..2c|+~..http://X+|	http://X	below	2c
 
 # With maxLevel=0
-"[L↑L0+0] Drop link above link"	~0a~|+http://X~+|0b~0c	http://X	above	0b	FALSE
-"[L↓L0+0] Drop link below link"	~0a~0b~|+http://X~+|0c	http://X	below	0b	FALSE
-"[L←L0+0] Drop link left of link"	~0a~|+http://X~+|0b~0c	http://X	left	0b	FALSE
-"[L→L0+0] Drop link right of link"	~0a~0b~|+http://X~+|0c	http://X	right	0b	FALSE
-"[L°L0+0] Drop link on link top"	~0a~0b~|+.http://X~+|0c	http://X	top	0b	FALSE
-"[L◦L0+0] Drop link on link bottom"	~0a~0b~|+.http://X~+|0c	http://X	bottom	0b	FALSE
+"[L↑L0+0] Drop link above link"	~0a~|+http://X~+|0b~0c	http://X	above	0b
+"[L↓L0+0] Drop link below link"	~0a~0b~|+http://X~+|0c	http://X	below	0b
+"[L←L0+0] Drop link left of link"	~0a~|+http://X~+|0b~0c	http://X	left	0b
+"[L→L0+0] Drop link right of link"	~0a~0b~|+http://X~+|0c	http://X	right	0b
+"[L°L0+0] Drop link on link top"	~0a~0b~|+.http://X~+|0c	http://X	top	0b
+"[L◦L0+0] Drop link on link bottom"	~0a~0b~|+.http://X~+|0c	http://X	bottom	0b
 # With maxLevel=1
-"[L↑L0+1] Drop link above link"	~0a~|+http://X~+|0b~0c~.1c	http://X	above	0b	FALSE
-"[L↓L0+1] Drop link below link"	~0a~0b~|+http://X~+|0c~.1c	http://X	below	0b	FALSE
-"[L←L0+1] Drop link left of link"	~0a~|+http://X~+|0b~0c~.1c	http://X	left	0b	FALSE
-"[L→L0+1] Drop link right of link"	~0a~0b~|+http://X~+|0c~.1c	http://X	right	0b	FALSE
-"[L°L0+1] Drop link on link top"	~0a~0b~|+.http://X~+|0c~.1c	http://X	top	0b	FALSE
-"[L◦L0+1] Drop link on link bottom"	~0a~0b~|+.http://X~+|0c~.1c	http://X	bottom	0b	FALSE
+"[L↑L0+1] Drop link above link"	~0a~|+http://X~+|0b~0c~.1c	http://X	above	0b
+"[L↓L0+1] Drop link below link"	~0a~0b~|+http://X~+|0c~.1c	http://X	below	0b
+"[L←L0+1] Drop link left of link"	~0a~|+http://X~+|0b~0c~.1c	http://X	left	0b
+"[L→L0+1] Drop link right of link"	~0a~0b~|+http://X~+|0c~.1c	http://X	right	0b
+"[L°L0+1] Drop link on link top"	~0a~0b~|+.http://X~+|0c~.1c	http://X	top	0b
+"[L◦L0+1] Drop link on link bottom"	~0a~0b~|+.http://X~+|0c~.1c	http://X	bottom	0b
 
 
 # Drop text relative to a link
 # Level 0 link
-"[T↑L0] Drop text above link"	~0a~|+"T T!"~+|0b~.1a~..2a~..2b~.1b~0c	T T!	above	0b	FALSE
-"[T↓L0] Drop text below link"	~0a~0b~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	below	0b	FALSE
-"[T←L0] Drop text left of link"	~0a~|+"T T!"~+|0b~.1a~..2a~..2b~.1b~0c	T T!	left	0b	FALSE
-"[T→L0] Drop text right of link"	~0a~0b~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	right	0b	FALSE
-"[T°L0] Drop text on link top"	~0a~0b~.1a~..2a~..2b~.1b~|+."T T!"~+|0c	T T!	top	0b	FALSE
-"[T◦L0] Drop text on link bottom"	~0a~0b~.1a~..2a~..2b~.1b~|+."T T!"~+|0c	T T!	bottom	0b	FALSE
+"[T↑L0] Drop text above link"	~0a~|+"T T!"~+|0b~.1a~..2a~..2b~.1b~0c	T T!	above	0b
+"[T↓L0] Drop text below link"	~0a~0b~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	below	0b
+"[T←L0] Drop text left of link"	~0a~|+"T T!"~+|0b~.1a~..2a~..2b~.1b~0c	T T!	left	0b
+"[T→L0] Drop text right of link"	~0a~0b~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	right	0b
+"[T°L0] Drop text on link top"	~0a~0b~.1a~..2a~..2b~.1b~|+."T T!"~+|0c	T T!	top	0b
+"[T◦L0] Drop text on link bottom"	~0a~0b~.1a~..2a~..2b~.1b~|+."T T!"~+|0c	T T!	bottom	0b
 # Special cases for level 0
-"[T↑L0] Drop text above first"	~|+"T T!"~+|0a~0b~.1a~..2a~..2b~.1b~0c	T T!	above	0a	FALSE
-"[T↓L0] Drop text below last"	~0a~0b~.1a~..2a~..2b~.1b~0c|+~"T T!"+|	T T!	below	0c	FALSE
-"[TT↑L0] Drop multi-line"	~0a~|+"T T!<br>\nT"~+|0b~.1a~..2a~..2b~.1b~0c	T T!\nT	above	0b	FALSE
+"[T↑L0] Drop text above first"	~|+"T T!"~+|0a~0b~.1a~..2a~..2b~.1b~0c	T T!	above	0a
+"[T↓L0] Drop text below last"	~0a~0b~.1a~..2a~..2b~.1b~0c|+~"T T!"+|	T T!	below	0c
+"[TT↑L0] Drop multi-line"	~0a~|+"T T!<br>\nT"~+|0b~.1a~..2a~..2b~.1b~0c	T T!\nT	above	0b
 # Level 1 link
-"[T↑L1] Drop text above link"	~0a~0b~|+."T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	above	1a	FALSE
-"[T↓L1] Drop text below link"	~0a~0b~.1a~|+."T T!"~+|..2a~..2b~.1b~0c	T T!	below	1a	FALSE
-"[T←L1] Drop text left of link"	~0a~0b~|+."T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	left	1a	FALSE
-"[T→L1] Drop text right of link"	~0a~0b~.1a~|+."T T!"~+|..2a~..2b~.1b~0c	T T!	right	1a	FALSE
-"[T°L1] Drop text on link top"	~0a~0b~.1a~..2a~..2b~|+.."T T!"~+|.1b~0c	T T!	top	1a	FALSE
-"[T◦L1] Drop text on link bottom"	~0a~0b~.1a~..2a~..2b~|+.."T T!"~+|.1b~0c	T T!	bottom	1a	FALSE
+"[T↑L1] Drop text above link"	~0a~0b~|+."T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	above	1a
+"[T↓L1] Drop text below link"	~0a~0b~.1a~|+."T T!"~+|..2a~..2b~.1b~0c	T T!	below	1a
+"[T←L1] Drop text left of link"	~0a~0b~|+."T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	left	1a
+"[T→L1] Drop text right of link"	~0a~0b~.1a~|+."T T!"~+|..2a~..2b~.1b~0c	T T!	right	1a
+"[T°L1] Drop text on link top"	~0a~0b~.1a~..2a~..2b~|+.."T T!"~+|.1b~0c	T T!	top	1a
+"[T◦L1] Drop text on link bottom"	~0a~0b~.1a~..2a~..2b~|+.."T T!"~+|.1b~0c	T T!	bottom	1a
 # Special cases for level 1
-"[T↓L1] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.http://X+|	http://X	below	1c	FALSE
+"[T↓L1] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.http://X+|	http://X	below	1c
 # Level 2 link
-"[T↑L2] Drop text above link"	~0a~0b~.1a~|+.."T T!"~+|..2a~..2b~.1b~0c	T T!	above	2a	FALSE
-"[T↓L2] Drop text below link"	~0a~0b~.1a~..2a~|+.."T T!"~+|..2b~.1b~0c	T T!	below	2a	FALSE
-"[T←L2] Drop text left of link"	~0a~0b~.1a~|+.."T T!"~+|..2a~..2b~.1b~0c	T T!	left	2a	FALSE
-"[T→L2] Drop text right of link"	~0a~0b~.1a~..2a~|+.."T T!"~+|..2b~.1b~0c	T T!	right	2a	FALSE
-"[T°L2] Drop text on link top"	~0a~0b~.1a~..2a~|+..."T T!"~+|..2b~.1b~0c	T T!	top	2a	FALSE
-"[T◦L2] Drop text on link bottom"	~0a~0b~.1a~..2a~|+..."T T!"~+|..2b~.1b~0c	T T!	bottom	2a	FALSE
+"[T↑L2] Drop text above link"	~0a~0b~.1a~|+.."T T!"~+|..2a~..2b~.1b~0c	T T!	above	2a
+"[T↓L2] Drop text below link"	~0a~0b~.1a~..2a~|+.."T T!"~+|..2b~.1b~0c	T T!	below	2a
+"[T←L2] Drop text left of link"	~0a~0b~.1a~|+.."T T!"~+|..2a~..2b~.1b~0c	T T!	left	2a
+"[T→L2] Drop text right of link"	~0a~0b~.1a~..2a~|+.."T T!"~+|..2b~.1b~0c	T T!	right	2a
+"[T°L2] Drop text on link top"	~0a~0b~.1a~..2a~|+..."T T!"~+|..2b~.1b~0c	T T!	top	2a
+"[T◦L2] Drop text on link bottom"	~0a~0b~.1a~..2a~|+..."T T!"~+|..2b~.1b~0c	T T!	bottom	2a
 # Special cases for level 2
-"[T↓L2] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c~..2c|+~..http://X+|	http://X	below	2c	FALSE
+"[T↓L2] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c~..2c|+~..http://X+|	http://X	below	2c
 
 # With maxLevel=0
-"[T↑L0+0] Drop text above link"	~0a~|+"T T!"~+|0b~0c	T T!	above	0b	FALSE
-"[T↓L0+0] Drop text below link"	~0a~0b~|+"T T!"~+|0c	T T!	below	0b	FALSE
-"[T←L0+0] Drop text left of link"	~0a~|+"T T!"~+|0b~0c	T T!	left	0b	FALSE
-"[T→L0+0] Drop text right of link"	~0a~0b~|+"T T!"~+|0c	T T!	right	0b	FALSE
-"[T°L0+0] Drop text on link top"	~0a~0b~|+."T T!"~+|0c	T T!	top	0b	FALSE
-"[T◦L0+0] Drop text on link bottom"	~0a~0b~|+."T T!"~+|0c	T T!	bottom	0b	FALSE
+"[T↑L0+0] Drop text above link"	~0a~|+"T T!"~+|0b~0c	T T!	above	0b
+"[T↓L0+0] Drop text below link"	~0a~0b~|+"T T!"~+|0c	T T!	below	0b
+"[T←L0+0] Drop text left of link"	~0a~|+"T T!"~+|0b~0c	T T!	left	0b
+"[T→L0+0] Drop text right of link"	~0a~0b~|+"T T!"~+|0c	T T!	right	0b
+"[T°L0+0] Drop text on link top"	~0a~0b~|+."T T!"~+|0c	T T!	top	0b
+"[T◦L0+0] Drop text on link bottom"	~0a~0b~|+."T T!"~+|0c	T T!	bottom	0b
 # With maxLevel=1
-"[T↑L0+1] Drop text above link"	~0a~|+"T T!"~+|0b~0c~.1c	T T!	above	0b	FALSE
-"[T↓L0+1] Drop text below link"	~0a~0b~|+"T T!"~+|0c~.1c	T T!	below	0b	FALSE
-"[T←L0+1] Drop text left of link"	~0a~|+"T T!"~+|0b~0c~.1c	T T!	left	0b	FALSE
-"[T→L0+1] Drop text right of link"	~0a~0b~|+"T T!"~+|0c~.1c	T T!	right	0b	FALSE
-"[T°L0+1] Drop text on link top"	~0a~0b~|+."T T!"~+|0c~.1c	T T!	top	0b	FALSE
-"[T◦L0+1] Drop text on link bottom"	~0a~0b~|+."T T!"~+|0c~.1c	T T!	bottom	0b	FALSE
+"[T↑L0+1] Drop text above link"	~0a~|+"T T!"~+|0b~0c~.1c	T T!	above	0b
+"[T↓L0+1] Drop text below link"	~0a~0b~|+"T T!"~+|0c~.1c	T T!	below	0b
+"[T←L0+1] Drop text left of link"	~0a~|+"T T!"~+|0b~0c~.1c	T T!	left	0b
+"[T→L0+1] Drop text right of link"	~0a~0b~|+"T T!"~+|0c~.1c	T T!	right	0b
+"[T°L0+1] Drop text on link top"	~0a~0b~|+."T T!"~+|0c~.1c	T T!	top	0b
+"[T◦L0+1] Drop text on link bottom"	~0a~0b~|+."T T!"~+|0c~.1c	T T!	bottom	0b
 
 
 # Drop link relative to a text block
 # Level 0 text block
-"[L↑T0] Drop link above text"	~0a~|+.http://X~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X	above	0b	FALSE
-"[L↓T0] Drop link below text"	~0a~"0b"~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	below	0b	FALSE
-"[L←T0] Drop link left of text"	~0a~|+.http://X~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X	left	0b	FALSE
-"[L→T0] Drop link right of text"	~0a~"0b"~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	right	0b	FALSE
-"[L°T0] Drop link on text top"	~0a~|+.http://X~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X	top	0b	FALSE
-"[L◦T0] Drop link on text bottom"	~0a~"0b"~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	bottom	0b	FALSE
+"[L↑T0] Drop link above text"	~0a~|+.http://X~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X	above	0b
+"[L↓T0] Drop link below text"	~0a~"0b"~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	below	0b
+"[L←T0] Drop link left of text"	~0a~|+.http://X~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X	left	0b
+"[L→T0] Drop link right of text"	~0a~"0b"~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	right	0b
+"[L°T0] Drop link on text top"	~0a~|+.http://X~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X	top	0b
+"[L◦T0] Drop link on text bottom"	~0a~"0b"~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	bottom	0b
 # Special cases for level 0
-"[L↑T0] Drop link above first"	~|+Heading~.http://X~+|"0a"~0b~.1a~..2a~..2b~.1b~0c	http://X	above	0a	FALSE
-"[L↓T0] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~"0c"|+~.http://X+|	http://X	below	0c	FALSE
+"[L↑T0] Drop link above first"	~|+Heading~.http://X~+|"0a"~0b~.1a~..2a~..2b~.1b~0c	http://X	above	0a
+"[L↓T0] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~"0c"|+~.http://X+|	http://X	below	0c
 # Level 1 text block
-"[L↑T1] Drop link above text"	~0a~0b~.1a~|+.http://X~+|."1b"~..2a~..2b~.1c~0c	http://X	above	1b	FALSE
-"[L↓T1] Drop link below text"	~0a~0b~.1a~."1b"~|+..http://X~+|..2a~..2b~.1c~0c	http://X	below	1b	FALSE
-"[L←T1] Drop link left of text"	~0a~0b~.1a~|+.http://X~+|."1b"~..2a~..2b~.1c~0c	http://X	left	1b	FALSE
-"[L→T1] Drop link right of text"	~0a~0b~.1a~."1b"~|+..http://X~+|..2a~..2b~.1c~0c	http://X	right	1b	FALSE
-"[L°T1] Drop link on text top"	~0a~0b~.1a~|+.http://X~+|."1b"~..2a~..2b~.1c~0c	http://X	top	1b	FALSE
-"[L◦T1] Drop link on text bottom"	~0a~0b~.1a~."1b"~|+..http://X~+|..2a~..2b~.1c~0c	http://X	bottom	1b	FALSE
+"[L↑T1] Drop link above text"	~0a~0b~.1a~|+.http://X~+|."1b"~..2a~..2b~.1c~0c	http://X	above	1b
+"[L↓T1] Drop link below text"	~0a~0b~.1a~."1b"~|+..http://X~+|..2a~..2b~.1c~0c	http://X	below	1b
+"[L←T1] Drop link left of text"	~0a~0b~.1a~|+.http://X~+|."1b"~..2a~..2b~.1c~0c	http://X	left	1b
+"[L→T1] Drop link right of text"	~0a~0b~.1a~."1b"~|+..http://X~+|..2a~..2b~.1c~0c	http://X	right	1b
+"[L°T1] Drop link on text top"	~0a~0b~.1a~|+.http://X~+|."1b"~..2a~..2b~.1c~0c	http://X	top	1b
+"[L◦T1] Drop link on text bottom"	~0a~0b~.1a~."1b"~|+..http://X~+|..2a~..2b~.1c~0c	http://X	bottom	1b
 # Special cases for level 1
-"[L↓T1] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.http://X+|	http://X	below	1c	FALSE
+"[L↓T1] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.http://X+|	http://X	below	1c
 # Level 2 text block
-"[L↑T2] Drop link above text"	~0a~0b~.1a~|+.http://X~+|.."2a"~..2b~.1b~0c	http://X	above	2a	FALSE
-"[L↓T2] Drop link below text"	~0a~0b~.1a~.."2a"~|+..http://X~+|..2b~.1b~0c	http://X	below	2a	FALSE
-"[L←T2] Drop link left of text"	~0a~0b~.1a~|+.http://X~+|.."2a"~..2b~.1b~0c	http://X	left	2a	FALSE
-"[L→T2] Drop link right of text"	~0a~0b~.1a~.."2a"~|+..http://X~+|..2b~.1b~0c	http://X	right	2a	FALSE
-"[L°T2] Drop link on text top"	~0a~0b~.1a~|+.http://X~+|.."2a"~..2b~.1b~0c	http://X	top	2a	FALSE
-"[L◦T2] Drop link on text bottom"	~0a~0b~.1a~.."2a"~|+..http://X~+|..2b~.1b~0c	http://X	bottom	2a	FALSE
+"[L↑T2] Drop link above text"	~0a~0b~.1a~|+.http://X~+|.."2a"~..2b~.1b~0c	http://X	above	2a
+"[L↓T2] Drop link below text"	~0a~0b~.1a~.."2a"~|+..http://X~+|..2b~.1b~0c	http://X	below	2a
+"[L←T2] Drop link left of text"	~0a~0b~.1a~|+.http://X~+|.."2a"~..2b~.1b~0c	http://X	left	2a
+"[L→T2] Drop link right of text"	~0a~0b~.1a~.."2a"~|+..http://X~+|..2b~.1b~0c	http://X	right	2a
+"[L°T2] Drop link on text top"	~0a~0b~.1a~|+.http://X~+|.."2a"~..2b~.1b~0c	http://X	top	2a
+"[L◦T2] Drop link on text bottom"	~0a~0b~.1a~.."2a"~|+..http://X~+|..2b~.1b~0c	http://X	bottom	2a
 # Special cases for level 2
-"[L↓T2] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c~..2c|+~..http://X+|	http://X	below	2c	FALSE
+"[L↓T2] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c~..2c|+~..http://X+|	http://X	below	2c
 
 # With maxLevel=0
-"[L↑T0+0] Drop link above text"	~0a~|+http://X~+|"0b"~0c	http://X	above	0b	FALSE
-"[L↓T0+0] Drop link below text"	~0a~"0b"~|+http://X~+|0c	http://X	below	0b	FALSE
-"[L←T0+0] Drop link left of text"	~0a~|+http://X~+|"0b"~0c	http://X	left	0b	FALSE
-"[L→T0+0] Drop link right of text"	~0a~"0b"~|+http://X~+|0c	http://X	right	0b	FALSE
-"[L°T0+0] Drop link on text top"	~0a~|+http://X~+|"0b"~0c	http://X	top	0b	FALSE
-"[L◦T0+0] Drop link on text bottom"	~0a~"0b"~|+http://X~+|0c	http://X	bottom	0b	FALSE
+"[L↑T0+0] Drop link above text"	~0a~|+http://X~+|"0b"~0c	http://X	above	0b
+"[L↓T0+0] Drop link below text"	~0a~"0b"~|+http://X~+|0c	http://X	below	0b
+"[L←T0+0] Drop link left of text"	~0a~|+http://X~+|"0b"~0c	http://X	left	0b
+"[L→T0+0] Drop link right of text"	~0a~"0b"~|+http://X~+|0c	http://X	right	0b
+"[L°T0+0] Drop link on text top"	~0a~|+http://X~+|"0b"~0c	http://X	top	0b
+"[L◦T0+0] Drop link on text bottom"	~0a~"0b"~|+http://X~+|0c	http://X	bottom	0b
 # With maxLevel=1
-"[L↑T0+1] Drop link above text"	~0a~|+http://X~+|"0b"~0c~.1c	http://X	above	0b	FALSE
-"[L↓T0+1] Drop link below text"	~0a~"0b"~|+http://X~+|0c~.1c	http://X	below	0b	FALSE
-"[L←T0+1] Drop link left of text"	~0a~|+http://X~+|"0b"~0c~.1c	http://X	left	0b	FALSE
-"[L→T0+1] Drop link right of text"	~0a~"0b"~|+http://X~+|0c~.1c	http://X	right	0b	FALSE
-"[L°T0+1] Drop link on text top"	~0a~|+http://X~+|"0b"~0c~.1c	http://X	top	0b	FALSE
-"[L◦T0+1] Drop link on text bottom"	~0a~"0b"~|+http://X~+|0c~.1c	http://X	bottom	0b	FALSE
+"[L↑T0+1] Drop link above text"	~0a~|+http://X~+|"0b"~0c~.1c	http://X	above	0b
+"[L↓T0+1] Drop link below text"	~0a~"0b"~|+http://X~+|0c~.1c	http://X	below	0b
+"[L←T0+1] Drop link left of text"	~0a~|+http://X~+|"0b"~0c~.1c	http://X	left	0b
+"[L→T0+1] Drop link right of text"	~0a~"0b"~|+http://X~+|0c~.1c	http://X	right	0b
+"[L°T0+1] Drop link on text top"	~0a~|+http://X~+|"0b"~0c~.1c	http://X	top	0b
+"[L◦T0+1] Drop link on text bottom"	~0a~"0b"~|+http://X~+|0c~.1c	http://X	bottom	0b
 
 # Drop Link on text-only
 # With maxLevel=0
-"[L↑TT0+0] Drop link above text"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"	http://X	above	0b	FALSE
-"[L↓TT0+0] Drop link below text"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"	http://X	below	0b	FALSE
-"[L←TT0+0] Drop link left of text"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"	http://X	left	0b	FALSE
-"[L→TT0+0] Drop link right of text"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"	http://X	right	0b	FALSE
-"[L°TT0+0] Drop link on text top"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"	http://X	top	0b	FALSE
-"[L◦TT0+0] Drop link on text bottom"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"	http://X	bottom	0b	FALSE
+"[L↑TT0+0] Drop link above text"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"	http://X	above	0b
+"[L↓TT0+0] Drop link below text"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"	http://X	below	0b
+"[L←TT0+0] Drop link left of text"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"	http://X	left	0b
+"[L→TT0+0] Drop link right of text"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"	http://X	right	0b
+"[L°TT0+0] Drop link on text top"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"	http://X	top	0b
+"[L◦TT0+0] Drop link on text bottom"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"	http://X	bottom	0b
 # With maxLevel=1
-"[L↑TT0+1] Drop link above text"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"~."1c"	http://X	above	0b	FALSE
-"[L↓TT0+1] Drop link below text"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"~."1c"	http://X	below	0b	FALSE
-"[L←TT0+1] Drop link left of text"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"~."1c"	http://X	left	0b	FALSE
-"[L→TT0+1] Drop link right of text"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"~."1c"	http://X	right	0b	FALSE
-"[L°TT0+1] Drop link on text top"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"~."1c"	http://X	top	0b	FALSE
-"[L◦TT0+1] Drop link on text bottom"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"~."1c"	http://X	bottom	0b	FALSE
+"[L↑TT0+1] Drop link above text"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"~."1c"	http://X	above	0b
+"[L↓TT0+1] Drop link below text"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"~."1c"	http://X	below	0b
+"[L←TT0+1] Drop link left of text"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"~."1c"	http://X	left	0b
+"[L→TT0+1] Drop link right of text"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"~."1c"	http://X	right	0b
+"[L°TT0+1] Drop link on text top"	~"0a"~|+Heading~.http://X~+|"0b"~"0c"~."1c"	http://X	top	0b
+"[L◦TT0+1] Drop link on text bottom"	~"0a"~"0b"~|+Heading~.http://X~+|"0c"~."1c"	http://X	bottom	0b
 
 
 # Drop text relative to a text block
 # Level 0 text block
-"[T↑T0] Drop text above text"	~0a~|+"T T!"~+|"0b"~.1a~..2a~..2b~.1b~0c	T T!	above	0b	FALSE
-"[T↓T0] Drop text below text"	~0a~"0b"~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	below	0b	FALSE
-"[T←T0] Drop text left of text"	~0a~|+"T T!"~+|"0b"~.1a~..2a~..2b~.1b~0c	T T!	left	0b	FALSE
-"[T→T0] Drop text right of text"	~0a~"0b"~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	right	0b	FALSE
-"[T°T0] Drop text on text top"	~0a~|+"T T!"~+|"0b"~.1a~..2a~..2b~.1b~0c	T T!	top	0b	FALSE
-"[T◦T0] Drop text on text bottom"	~0a~"0b"~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	bottom	0b	FALSE
+"[T↑T0] Drop text above text"	~0a~|+"T T!"~+|"0b"~.1a~..2a~..2b~.1b~0c	T T!	above	0b
+"[T↓T0] Drop text below text"	~0a~"0b"~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	below	0b
+"[T←T0] Drop text left of text"	~0a~|+"T T!"~+|"0b"~.1a~..2a~..2b~.1b~0c	T T!	left	0b
+"[T→T0] Drop text right of text"	~0a~"0b"~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	right	0b
+"[T°T0] Drop text on text top"	~0a~|+"T T!"~+|"0b"~.1a~..2a~..2b~.1b~0c	T T!	top	0b
+"[T◦T0] Drop text on text bottom"	~0a~"0b"~|+"T T!"~+|.1a~..2a~..2b~.1b~0c	T T!	bottom	0b
 # Special cases for level 0
-"[T↑T0] Drop text above first"	~|+"T T!"~+|"0a"~0b~.1a~..2a~..2b~.1b~0c	T T!	above	0a	FALSE
-"[T↓T0] Drop text below last"	~0a~0b~.1a~..2a~..2b~.1b~"0c"|+~"T T!"+|	T T!	below	0c	FALSE
-"[TT↑T0] Drop multi-line"	~0a~|+"T T!<br>\nT"~+|"0b"~.1a~..2a~..2b~.1b~0c	T T!\nT	above	0b	FALSE
+"[T↑T0] Drop text above first"	~|+"T T!"~+|"0a"~0b~.1a~..2a~..2b~.1b~0c	T T!	above	0a
+"[T↓T0] Drop text below last"	~0a~0b~.1a~..2a~..2b~.1b~"0c"|+~"T T!"+|	T T!	below	0c
+"[TT↑T0] Drop multi-line"	~0a~|+"T T!<br>\nT"~+|"0b"~.1a~..2a~..2b~.1b~0c	T T!\nT	above	0b
 # Level 1 text block
-"[T↑T1] Drop text above text"	~0a~0b~.1a~|+."T T!"~+|."1b"~..2a~..2b~.1c~0c	T T!	above	1b	FALSE
-"[T↓T1] Drop text below text"	~0a~0b~.1a~."1b"~|+."T T!"~+|..2a~..2b~.1c~0c	T T!	below	1b	FALSE
-"[T←T1] Drop text left of text"	~0a~0b~.1a~|+."T T!"~+|."1b"~..2a~..2b~.1c~0c	T T!	left	1b	FALSE
-"[T→T1] Drop text right of text"	~0a~0b~.1a~."1b"~|+."T T!"~+|..2a~..2b~.1c~0c	T T!	right	1b	FALSE
-"[T°T1] Drop text on text top"	~0a~0b~.1a~|+."T T!"~+|."1b"~..2a~..2b~.1c~0c	T T!	top	1b	FALSE
-"[T◦T1] Drop text on text bottom"	~0a~0b~.1a~."1b"~|+."T T!"~+|..2a~..2b~.1c~0c	T T!	bottom	1b	FALSE
+"[T↑T1] Drop text above text"	~0a~0b~.1a~|+."T T!"~+|."1b"~..2a~..2b~.1c~0c	T T!	above	1b
+"[T↓T1] Drop text below text"	~0a~0b~.1a~."1b"~|+."T T!"~+|..2a~..2b~.1c~0c	T T!	below	1b
+"[T←T1] Drop text left of text"	~0a~0b~.1a~|+."T T!"~+|."1b"~..2a~..2b~.1c~0c	T T!	left	1b
+"[T→T1] Drop text right of text"	~0a~0b~.1a~."1b"~|+."T T!"~+|..2a~..2b~.1c~0c	T T!	right	1b
+"[T°T1] Drop text on text top"	~0a~0b~.1a~|+."T T!"~+|."1b"~..2a~..2b~.1c~0c	T T!	top	1b
+"[T◦T1] Drop text on text bottom"	~0a~0b~.1a~."1b"~|+."T T!"~+|..2a~..2b~.1c~0c	T T!	bottom	1b
 # Special cases for level 1
-"[T↓T1] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.http://X+|	http://X	below	1c	FALSE
+"[T↓T1] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.http://X+|	http://X	below	1c
 # Level 2 text block
-"[T↑T2] Drop text above text"	~0a~0b~.1a~|+.."T T!"~+|.."2a"~..2b~.1b~0c	T T!	above	2a	FALSE
-"[T↓T2] Drop text below text"	~0a~0b~.1a~.."2a"~|+.."T T!"~+|..2b~.1b~0c	T T!	below	2a	FALSE
-"[T←T2] Drop text left of text"	~0a~0b~.1a~|+.."T T!"~+|.."2a"~..2b~.1b~0c	T T!	left	2a	FALSE
-"[T→T2] Drop text right of text"	~0a~0b~.1a~.."2a"~|+.."T T!"~+|..2b~.1b~0c	T T!	right	2a	FALSE
-"[T°T2] Drop text on text top"	~0a~0b~.1a~|+.."T T!"~+|.."2a"~..2b~.1b~0c	T T!	top	2a	FALSE
-"[T◦T2] Drop text on text bottom"	~0a~0b~.1a~.."2a"~|+.."T T!"~+|..2b~.1b~0c	T T!	bottom	2a	FALSE
+"[T↑T2] Drop text above text"	~0a~0b~.1a~|+.."T T!"~+|.."2a"~..2b~.1b~0c	T T!	above	2a
+"[T↓T2] Drop text below text"	~0a~0b~.1a~.."2a"~|+.."T T!"~+|..2b~.1b~0c	T T!	below	2a
+"[T←T2] Drop text left of text"	~0a~0b~.1a~|+.."T T!"~+|.."2a"~..2b~.1b~0c	T T!	left	2a
+"[T→T2] Drop text right of text"	~0a~0b~.1a~.."2a"~|+.."T T!"~+|..2b~.1b~0c	T T!	right	2a
+"[T°T2] Drop text on text top"	~0a~0b~.1a~|+.."T T!"~+|.."2a"~..2b~.1b~0c	T T!	top	2a
+"[T◦T2] Drop text on text bottom"	~0a~0b~.1a~.."2a"~|+.."T T!"~+|..2b~.1b~0c	T T!	bottom	2a
 # Special cases for level 2
-"[T↓T2] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c~..2c|+~..http://X+|	http://X	below	2c	FALSE
+"[T↓T2] Drop link below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c~..2c|+~..http://X+|	http://X	below	2c
 
 # With maxLevel=0
-"[T↑T0+0] Drop text above text"	~0a~|+"T T!"~+|"0b"~0c	T T!	above	0b	FALSE
-"[T↓T0+0] Drop text below text"	~0a~"0b"~|+"T T!"~+|0c	T T!	below	0b	FALSE
-"[T←T0+0] Drop text left of text"	~0a~|+"T T!"~+|"0b"~0c	T T!	left	0b	FALSE
-"[T→T0+0] Drop text right of text"	~0a~"0b"~|+"T T!"~+|0c	T T!	right	0b	FALSE
-"[T°T0+0] Drop text on text top"	~0a~|+"T T!"~+|"0b"~0c	T T!	top	0b	FALSE
-"[T◦T0+0] Drop text on text bottom"	~0a~"0b"~|+"T T!"~+|0c	T T!	bottom	0b	FALSE
+"[T↑T0+0] Drop text above text"	~0a~|+"T T!"~+|"0b"~0c	T T!	above	0b
+"[T↓T0+0] Drop text below text"	~0a~"0b"~|+"T T!"~+|0c	T T!	below	0b
+"[T←T0+0] Drop text left of text"	~0a~|+"T T!"~+|"0b"~0c	T T!	left	0b
+"[T→T0+0] Drop text right of text"	~0a~"0b"~|+"T T!"~+|0c	T T!	right	0b
+"[T°T0+0] Drop text on text top"	~0a~|+"T T!"~+|"0b"~0c	T T!	top	0b
+"[T◦T0+0] Drop text on text bottom"	~0a~"0b"~|+"T T!"~+|0c	T T!	bottom	0b
 # With maxLevel=1
-"[T↑T0+1] Drop text above text"	~0a~|+"T T!"~+|"0b"~0c~.1c	T T!	above	0b	FALSE
-"[T↓T0+1] Drop text below text"	~0a~"0b"~|+"T T!"~+|0c~.1c	T T!	below	0b	FALSE
-"[T←T0+1] Drop text left of text"	~0a~|+"T T!"~+|"0b"~0c~.1c	T T!	left	0b	FALSE
-"[T→T0+1] Drop text right of text"	~0a~"0b"~|+"T T!"~+|0c~.1c	T T!	right	0b	FALSE
-"[T°T0+1] Drop text on text top"	~0a~|+"T T!"~+|"0b"~0c~.1c	T T!	top	0b	FALSE
-"[T◦T0+1] Drop text on text bottom"	~0a~"0b"~|+"T T!"~+|0c~.1c	T T!	bottom	0b	FALSE
+"[T↑T0+1] Drop text above text"	~0a~|+"T T!"~+|"0b"~0c~.1c	T T!	above	0b
+"[T↓T0+1] Drop text below text"	~0a~"0b"~|+"T T!"~+|0c~.1c	T T!	below	0b
+"[T←T0+1] Drop text left of text"	~0a~|+"T T!"~+|"0b"~0c~.1c	T T!	left	0b
+"[T→T0+1] Drop text right of text"	~0a~"0b"~|+"T T!"~+|0c~.1c	T T!	right	0b
+"[T°T0+1] Drop text on text top"	~0a~|+"T T!"~+|"0b"~0c~.1c	T T!	top	0b
+"[T◦T0+1] Drop text on text bottom"	~0a~"0b"~|+"T T!"~+|0c~.1c	T T!	bottom	0b
 
 # Drop Link on text-only
 # With maxLevel=0
-"[T↑TT0+0] Drop text above text"	~"0a"~|+"T T!"~+|"0b"~"0c"	T T!	above	0b	FALSE
-"[T↓TT0+0] Drop text below text"	~"0a"~"0b"~|+"T T!"~+|"0c"	T T!	below	0b	FALSE
-"[T←TT0+0] Drop text left of text"	~"0a"~|+"T T!"~+|"0b"~"0c"	T T!	left	0b	FALSE
-"[T→TT0+0] Drop text right of text"	~"0a"~"0b"~|+"T T!"~+|"0c"	T T!	right	0b	FALSE
-"[T°TT0+0] Drop text on text top"	~"0a"~|+"T T!"~+|"0b"~"0c"	T T!	top	0b	FALSE
-"[T◦TT0+0] Drop text on text bottom"	~"0a"~"0b"~|+"T T!"~+|"0c"	T T!	bottom	0b	FALSE
+"[T↑TT0+0] Drop text above text"	~"0a"~|+"T T!"~+|"0b"~"0c"	T T!	above	0b
+"[T↓TT0+0] Drop text below text"	~"0a"~"0b"~|+"T T!"~+|"0c"	T T!	below	0b
+"[T←TT0+0] Drop text left of text"	~"0a"~|+"T T!"~+|"0b"~"0c"	T T!	left	0b
+"[T→TT0+0] Drop text right of text"	~"0a"~"0b"~|+"T T!"~+|"0c"	T T!	right	0b
+"[T°TT0+0] Drop text on text top"	~"0a"~|+"T T!"~+|"0b"~"0c"	T T!	top	0b
+"[T◦TT0+0] Drop text on text bottom"	~"0a"~"0b"~|+"T T!"~+|"0c"	T T!	bottom	0b
 # With maxLevel=1
-"[T↑TT0+1] Drop text above text"	~"0a"~|+"T T!"~+|"0b"~"0c"~."1c"	T T!	above	0b	FALSE
-"[T↓TT0+1] Drop text below text"	~"0a"~"0b"~|+"T T!"~+|"0c"~."1c"	T T!	below	0b	FALSE
-"[T←TT0+1] Drop text left of text"	~"0a"~|+"T T!"~+|"0b"~"0c"~."1c"	T T!	left	0b	FALSE
-"[T→TT0+1] Drop text right of text"	~"0a"~"0b"~|+"T T!"~+|"0c"~."1c"	T T!	right	0b	FALSE
-"[T°TT0+1] Drop text on text top"	~"0a"~|+"T T!"~+|"0b"~"0c"~."1c"	T T!	top	0b	FALSE
-"[T◦TT0+1] Drop text on text bottom"	~"0a"~"0b"~|+"T T!"~+|"0c"~."1c"	T T!	bottom	0b	FALSE
+"[T↑TT0+1] Drop text above text"	~"0a"~|+"T T!"~+|"0b"~"0c"~."1c"	T T!	above	0b
+"[T↓TT0+1] Drop text below text"	~"0a"~"0b"~|+"T T!"~+|"0c"~."1c"	T T!	below	0b
+"[T←TT0+1] Drop text left of text"	~"0a"~|+"T T!"~+|"0b"~"0c"~."1c"	T T!	left	0b
+"[T→TT0+1] Drop text right of text"	~"0a"~"0b"~|+"T T!"~+|"0c"~."1c"	T T!	right	0b
+"[T°TT0+1] Drop text on text top"	~"0a"~|+"T T!"~+|"0b"~"0c"~."1c"	T T!	top	0b
+"[T◦TT0+1] Drop text on text bottom"	~"0a"~"0b"~|+"T T!"~+|"0c"~."1c"	T T!	bottom	0b
 
 
 # Drop URL + Title
-"http URL+Title on link"	~0a~0b~|+.Title http://X~+|0c	Title http://X	top	0b	FALSE
-"https URL+Title on link"	~0a~0b~|+.Ttle https://X~+|0c	Ttle https://X	top	0b	FALSE
-"ftp URL+Title on link"	~0a~0b~|+.Title ftp://X~+|0c	Title ftp://X	top	0b	FALSE
-"ftps URL+Title on link"	~0a~0b~|+.Title ftps://X~+|0c	Title ftps://X	top	0b	FALSE
-"mailto URL+Title on link"	~0a~0b~|+.Title mailto:X~+|0c	Title mailto:X	top	0b	FALSE
-"search URL+Title on link"	~0a~0b~|+.Title search:X~+|0c	Title search:X	top	0b	FALSE
+"http URL+Title on link"	~0a~0b~|+.Title http://X~+|0c	Title http://X	top	0b
+"https URL+Title on link"	~0a~0b~|+.Ttle https://X~+|0c	Ttle https://X	top	0b
+"ftp URL+Title on link"	~0a~0b~|+.Title ftp://X~+|0c	Title ftp://X	top	0b
+"ftps URL+Title on link"	~0a~0b~|+.Title ftps://X~+|0c	Title ftps://X	top	0b
+"mailto URL+Title on link"	~0a~0b~|+.Title mailto:X~+|0c	Title mailto:X	top	0b
+"search URL+Title on link"	~0a~0b~|+.Title search:X~+|0c	Title search:X	top	0b
 
 # Drop HTML relative to a link
 # Level 0 link
-"[H↑L0] Drop HTML above link"	~0a~|+"<em>H\nH</em>"~+|0b~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	above	0b	FALSE
-"[H↓L0] Drop HTML below link"	~0a~0b~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	below	0b	FALSE
-"[H←L0] Drop HTML left of link"	~0a~|+"<em>H\nH</em>"~+|0b~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	left	0b	FALSE
-"[H→L0] Drop HTML right of link"	~0a~0b~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	right	0b	FALSE
-"[H°L0] Drop HTML on link top"	~0a~0b~.1a~..2a~..2b~.1b~|+."<em>H\nH</em>"~+|0c	<em>H\nH</em>	top	0b	FALSE
-"[H◦L0] Drop HTML on link bottom"	~0a~0b~.1a~..2a~..2b~.1b~|+."<em>H\nH</em>"~+|0c	<em>H\nH</em>	bottom	0b	FALSE
+"[H↑L0] Drop HTML above link"	~0a~|+"<em>H\nH</em>"~+|0b~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	above	0b
+"[H↓L0] Drop HTML below link"	~0a~0b~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	below	0b
+"[H←L0] Drop HTML left of link"	~0a~|+"<em>H\nH</em>"~+|0b~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	left	0b
+"[H→L0] Drop HTML right of link"	~0a~0b~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	right	0b
+"[H°L0] Drop HTML on link top"	~0a~0b~.1a~..2a~..2b~.1b~|+."<em>H\nH</em>"~+|0c	<em>H\nH</em>	top	0b
+"[H◦L0] Drop HTML on link bottom"	~0a~0b~.1a~..2a~..2b~.1b~|+."<em>H\nH</em>"~+|0c	<em>H\nH</em>	bottom	0b
 # Level 0 text block
-"[H↑T0] Drop HTML above text"	~0a~|+"<em>H\nH</em>"~+|"0b"~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	above	0b	FALSE
-"[H↓T0] Drop HTML below text"	~0a~"0b"~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	below	0b	FALSE
-"[H←T0] Drop HTML left of text"	~0a~|+"<em>H\nH</em>"~+|"0b"~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	left	0b	FALSE
-"[H→T0] Drop HTML right of text"	~0a~"0b"~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	right	0b	FALSE
-"[H°T0] Drop HTML on text top"	~0a~|+"<em>H\nH</em>"~+|"0b"~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	top	0b	FALSE
-"[H◦T0] Drop HTML on text bottom"	~0a~"0b"~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	bottom	0b	FALSE
+"[H↑T0] Drop HTML above text"	~0a~|+"<em>H\nH</em>"~+|"0b"~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	above	0b
+"[H↓T0] Drop HTML below text"	~0a~"0b"~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	below	0b
+"[H←T0] Drop HTML left of text"	~0a~|+"<em>H\nH</em>"~+|"0b"~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	left	0b
+"[H→T0] Drop HTML right of text"	~0a~"0b"~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	right	0b
+"[H°T0] Drop HTML on text top"	~0a~|+"<em>H\nH</em>"~+|"0b"~.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	top	0b
+"[H◦T0] Drop HTML on text bottom"	~0a~"0b"~|+"<em>H\nH</em>"~+|.1a~..2a~..2b~.1b~0c	<em>H\nH</em>	bottom	0b
 # Multiple lines
-"Drop mutiple text lines"	~0a~0b~|+."T<br>\n<br>\nT!"~+|0c	\nT\n\nT!\n	top	0b	FALSE
-"Drop multiple HTML lines"	~0a~0b~|+."<em>H\n\nH</em>"~+|0c	\n<em>H\n\nH</em>\n	top	0b	FALSE
-"Drop multiple Link lines"	~0a~0b~|+.T~.---~.T~+|0c	\nT\n\nT\n	top	0b	FALSE
+"Drop mutiple text lines"	~0a~0b~|+."T<br>\n<br>\nT!"~+|0c	\nT\n\nT!\n	top	0b
+"Drop multiple HTML lines"	~0a~0b~|+."<em>H\n\nH</em>"~+|0c	\n<em>H\n\nH</em>\n	top	0b
+"Drop multiple Link lines"	~0a~0b~|+.T~.---~.T~+|0c	\nT\n\nT\n	top	0b
 
 
 # Drop multiple links relative to a link
 # Level 0 link
-"[M↑L0] Drop links above link"	~0a~|+.Links~..http://X~..Y~+|0b~.1a~..2a~..2b~.1b~0c	http://X\nY	above	0b	FALSE
-"[M↓L0] Drop links below link"	~0a~0b~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	below	0b	FALSE
-"[M←L0] Drop links left of link"	~0a~|+.Links~..http://X~..Y~+|0b~.1a~..2a~..2b~.1b~0c	http://X\nY	left	0b	FALSE
-"[M→L0] Drop links right of link"	~0a~0b~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	right	0b	FALSE
-"[M°L0] Drop links on link top"	~0a~0b~.1a~..2a~..2b~.1b~|+.http://X~.Y~+|0c	http://X\nY	top	0b	FALSE
-"[M◦L0] Drop links on link bottom"	~0a~0b~.1a~..2a~..2b~.1b~|+.http://X~.Y~+|0c	http://X\nY	bottom	0b	FALSE
+"[M↑L0] Drop links above link"	~0a~|+.Links~..http://X~..Y~+|0b~.1a~..2a~..2b~.1b~0c	http://X\nY	above	0b
+"[M↓L0] Drop links below link"	~0a~0b~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	below	0b
+"[M←L0] Drop links left of link"	~0a~|+.Links~..http://X~..Y~+|0b~.1a~..2a~..2b~.1b~0c	http://X\nY	left	0b
+"[M→L0] Drop links right of link"	~0a~0b~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	right	0b
+"[M°L0] Drop links on link top"	~0a~0b~.1a~..2a~..2b~.1b~|+.http://X~.Y~+|0c	http://X\nY	top	0b
+"[M◦L0] Drop links on link bottom"	~0a~0b~.1a~..2a~..2b~.1b~|+.http://X~.Y~+|0c	http://X\nY	bottom	0b
 # Special cases for level 0
-"[M↑L0] Drop links above first"	~|+Heading~.Links~..http://X~..Y~+|0a~0b~.1a~..2a~..2b~.1b~0c	http://X\nY	above	0a	FALSE
-"[M↓L0] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c|+~.Links~..http://X~..Y+|	http://X\nY	below	0c	FALSE
+"[M↑L0] Drop links above first"	~|+Heading~.Links~..http://X~..Y~+|0a~0b~.1a~..2a~..2b~.1b~0c	http://X\nY	above	0a
+"[M↓L0] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c|+~.Links~..http://X~..Y+|	http://X\nY	below	0c
 # Level 1 link
-"[L↑L1] EXTRA Drop link above link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	above	1a	FALSE
-"[M↑L1] Drop links above link"	~0a~0b~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	above	1a	FALSE
-"[M↓L1] Drop links below link"	~0a~0b~.1a~..2a~..2b~|+.Links~..http://X~..Y~+|.1b~0c	http://X\nY	below	1a	FALSE
-"[M←L1] Drop links left of link"	~0a~0b~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	left	1a	FALSE
-"[M→L1] Drop links right of link"	~0a~0b~.1a~..2a~..2b~|+.Links~..http://X~..Y~+|.1b~0c	http://X\nY	right	1a	FALSE
-"[M°L1] Drop links on link top"	~0a~0b~.1a~..2a~..2b~|+..http://X~..Y~+|.1b~0c	http://X\nY	top	1a	FALSE
-"[M◦L1] Drop links on link bottom"	~0a~0b~.1a~..2a~..2b~|+..http://X~..Y~+|.1b~0c	http://X\nY	bottom	1a	FALSE
+"[L↑L1] EXTRA Drop link above link"	~0a~0b~|+.http://X~+|.1a~..2a~..2b~.1b~0c	http://X	above	1a
+"[M↑L1] Drop links above link"	~0a~0b~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	above	1a
+"[M↓L1] Drop links below link"	~0a~0b~.1a~..2a~..2b~|+.Links~..http://X~..Y~+|.1b~0c	http://X\nY	below	1a
+"[M←L1] Drop links left of link"	~0a~0b~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	left	1a
+"[M→L1] Drop links right of link"	~0a~0b~.1a~..2a~..2b~|+.Links~..http://X~..Y~+|.1b~0c	http://X\nY	right	1a
+"[M°L1] Drop links on link top"	~0a~0b~.1a~..2a~..2b~|+..http://X~..Y~+|.1b~0c	http://X\nY	top	1a
+"[M◦L1] Drop links on link bottom"	~0a~0b~.1a~..2a~..2b~|+..http://X~..Y~+|.1b~0c	http://X\nY	bottom	1a
 # Special cases for level 1
-"[M↓L1] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.Links~..http://X~..Y+|	http://X\nY	below	1c	FALSE
+"[M↓L1] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.Links~..http://X~..Y+|	http://X\nY	below	1c
 # Level 2 link
-"[M↑L2] Drop links above link"	~0a~0b~.1a~|+..Links~...http://X~...Y~+|..2a~..2b~.1b~0c	http://X\nY	above	2a	FALSE
-"[M↓L2] Drop links below link"	~0a~0b~.1a~..2a~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	below	2a	FALSE
-"[M←L2] Drop links left of link"	~0a~0b~.1a~|+..Links~...http://X~...Y~+|..2a~..2b~.1b~0c	http://X\nY	left	2a	FALSE
-"[M→L2] Drop links right of link"	~0a~0b~.1a~..2a~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	right	2a	FALSE
-"[M°L2] Drop links on link top"	~0a~0b~.1a~..2a~|+...http://X~...Y~+|..2b~.1b~0c	http://X\nY	top	2a	FALSE
-"[M◦L2] Drop links on link bottom"	~0a~0b~.1a~..2a~|+...http://X~...Y~+|..2b~.1b~0c	http://X\nY	bottom	2a	FALSE
+"[M↑L2] Drop links above link"	~0a~0b~.1a~|+..Links~...http://X~...Y~+|..2a~..2b~.1b~0c	http://X\nY	above	2a
+"[M↓L2] Drop links below link"	~0a~0b~.1a~..2a~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	below	2a
+"[M←L2] Drop links left of link"	~0a~0b~.1a~|+..Links~...http://X~...Y~+|..2a~..2b~.1b~0c	http://X\nY	left	2a
+"[M→L2] Drop links right of link"	~0a~0b~.1a~..2a~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	right	2a
+"[M°L2] Drop links on link top"	~0a~0b~.1a~..2a~|+...http://X~...Y~+|..2b~.1b~0c	http://X\nY	top	2a
+"[M◦L2] Drop links on link bottom"	~0a~0b~.1a~..2a~|+...http://X~...Y~+|..2b~.1b~0c	http://X\nY	bottom	2a
 # Special cases for level 2
-"[M↓L2] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c+ 1c~..2c|+~..Links~...http://X~...Y+|	http://X\nY	below	2c	FALSE
+"[M↓L2] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c+ 1c~..2c|+~..Links~...http://X~...Y+|	http://X\nY	below	2c
 
 # Drop multiple links relative to a text block
 # Level 0 text block
-"[M↑T0] Drop links above text"	~0a~|+.Links~..http://X~..Y~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X\nY	above	0b	FALSE
-"[M↓T0] Drop links below text"	~0a~"0b"~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	below	0b	FALSE
-"[M←T0] Drop links left of text"	~0a~|+.Links~..http://X~..Y~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X\nY	left	0b	FALSE
-"[M→T0] Drop links right of text"	~0a~"0b"~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	right	0b	FALSE
-"[M°T0] Drop links on text top"	~0a~|+.Links~..http://X~..Y~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X\nY	top	0b	FALSE
-"[M◦T0] Drop links on text bottom"	~0a~"0b"~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	bottom	0b	FALSE
+"[M↑T0] Drop links above text"	~0a~|+.Links~..http://X~..Y~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X\nY	above	0b
+"[M↓T0] Drop links below text"	~0a~"0b"~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	below	0b
+"[M←T0] Drop links left of text"	~0a~|+.Links~..http://X~..Y~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X\nY	left	0b
+"[M→T0] Drop links right of text"	~0a~"0b"~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	right	0b
+"[M°T0] Drop links on text top"	~0a~|+.Links~..http://X~..Y~+|"0b"~.1a~..2a~..2b~.1b~0c	http://X\nY	top	0b
+"[M◦T0] Drop links on text bottom"	~0a~"0b"~|+.Links~..http://X~..Y~+|.1a~..2a~..2b~.1b~0c	http://X\nY	bottom	0b
 # Special cases for level 0
-"[M↑T0] Drop links above first"	~|+Heading~.Links~..http://X~..Y~+|"0a"~0b~.1a~..2a~..2b~.1b~0c	http://X\nY	above	0a	FALSE
-"[M↓T0] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~"0c"|+~.Links~..http://X~..Y+|	http://X\nY	below	0c	FALSE
+"[M↑T0] Drop links above first"	~|+Heading~.Links~..http://X~..Y~+|"0a"~0b~.1a~..2a~..2b~.1b~0c	http://X\nY	above	0a
+"[M↓T0] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~"0c"|+~.Links~..http://X~..Y+|	http://X\nY	below	0c
 # Level 1 text block
-"[M↑T1] Drop links above text"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|."1b"~..2a~..2b~.1c~0c	http://X\nY	above	1b	FALSE
-"[M↓T1] Drop links below text"	~0a~0b~.1a~."1b"~|+..Links~...http://X~...Y~+|..2a~..2b~.1c~0c	http://X\nY	below	1b	FALSE
-"[M←T1] Drop links left of text"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|."1b"~..2a~..2b~.1c~0c	http://X\nY	left	1b	FALSE
-"[M→T1] Drop links right of text"	~0a~0b~.1a~."1b"~|+..Links~...http://X~...Y~+|..2a~..2b~.1c~0c	http://X\nY	right	1b	FALSE
-"[M°T1] Drop links on text top"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|."1b"~..2a~..2b~.1c~0c	http://X\nY	top	1b	FALSE
-"[M◦T1] Drop links on text bottom"	~0a~0b~.1a~."1b"~|+..Links~...http://X~...Y~+|..2a~..2b~.1c~0c	http://X\nY	bottom	1b	FALSE
+"[M↑T1] Drop links above text"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|."1b"~..2a~..2b~.1c~0c	http://X\nY	above	1b
+"[M↓T1] Drop links below text"	~0a~0b~.1a~."1b"~|+..Links~...http://X~...Y~+|..2a~..2b~.1c~0c	http://X\nY	below	1b
+"[M←T1] Drop links left of text"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|."1b"~..2a~..2b~.1c~0c	http://X\nY	left	1b
+"[M→T1] Drop links right of text"	~0a~0b~.1a~."1b"~|+..Links~...http://X~...Y~+|..2a~..2b~.1c~0c	http://X\nY	right	1b
+"[M°T1] Drop links on text top"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|."1b"~..2a~..2b~.1c~0c	http://X\nY	top	1b
+"[M◦T1] Drop links on text bottom"	~0a~0b~.1a~."1b"~|+..Links~...http://X~...Y~+|..2a~..2b~.1c~0c	http://X\nY	bottom	1b
 # Special cases for level 1
-"[M↓T1] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.Links~..http://X~..Y+|	http://X\nY	below	1c	FALSE
+"[M↓T1] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c|+~.Links~..http://X~..Y+|	http://X\nY	below	1c
 # Level 2 text block
-"[M↑T2] Drop links above text"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|.."2a"~..2b~.1b~0c	http://X\nY	above	2a	FALSE
-"[M↓T2] Drop links below text"	~0a~0b~.1a~.."2a"~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	below	2a	FALSE
-"[M←T2] Drop links left of text"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|.."2a"~..2b~.1b~0c	http://X\nY	left	2a	FALSE
-"[M→T2] Drop links right of text"	~0a~0b~.1a~.."2a"~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	right	2a	FALSE
-"[M°T2] Drop links on text top"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|.."2a"~..2b~.1b~0c	http://X\nY	top	2a	FALSE
-"[M◦T2] Drop links on text bottom"	~0a~0b~.1a~.."2a"~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	bottom	2a	FALSE
+"[M↑T2] Drop links above text"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|.."2a"~..2b~.1b~0c	http://X\nY	above	2a
+"[M↓T2] Drop links below text"	~0a~0b~.1a~.."2a"~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	below	2a
+"[M←T2] Drop links left of text"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|.."2a"~..2b~.1b~0c	http://X\nY	left	2a
+"[M→T2] Drop links right of text"	~0a~0b~.1a~.."2a"~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	right	2a
+"[M°T2] Drop links on text top"	~0a~0b~.1a~|+.Links~..http://X~..Y~+|.."2a"~..2b~.1b~0c	http://X\nY	top	2a
+"[M◦T2] Drop links on text bottom"	~0a~0b~.1a~.."2a"~|+..Links~...http://X~...Y~+|..2b~.1b~0c	http://X\nY	bottom	2a
 # Special cases for level 2
-"[M↓T2] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c~..2c|+~..Links~...http://X~...Y+|	http://X\nY	below	2c	FALSE
+"[M↓T2] Drop links below last"	~0a~0b~.1a~..2a~..2b~.1b~0c~.1c~..2c|+~..Links~...http://X~...Y+|	http://X\nY	below	2c
 
 
 # vim: set filetype=tsv vartabstop=40,100,25,15,15,15 nowrap:
