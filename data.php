@@ -358,16 +358,17 @@ if ($doWrite)
 	if (!isset($prevETag))
 	{
 		# There is no If-Match, allow all
+		SetDebugHeader("Test If-Match: Not present -> Always allowed");
 	}
 	else if ($prevETag == "*")
 	{
 		# Special value that always matches
-		SetDebugHeader("Test If-Match: Always matches");
+		SetDebugHeader("Test If-Match: '*' -> Always allowed");
 	}
 	else
 	{
 		$prevData = file_get_contents($filepath);
-		$isEmpty = ($prevData !== false && preg_match('/\S/', $prevData));
+		$isEmpty = ($prevData !== false && preg_match('/^\s*$/', $prevData));
 		if ($prevETag == "*Empty")
 		{
 			# Special value that matches if the file does not exist or is empty
@@ -375,8 +376,12 @@ if ($doWrite)
 			{
 				# File exists and is not empty
 				http_response_code(412);  # Precondition Failed
-				SetDebugHeader("Test If-Match: File not empty: '$filename'");
+				SetDebugHeader("Test If-Match: '$prefETag' <=> File not empty: '$filename' -> no match");
 				return;
+			}
+			else
+			{
+				SetDebugHeader("Test If-Match: '$prefETag' <=> File empty: '$filename' -> match");
 			}
 		}
 		else
@@ -386,7 +391,7 @@ if ($doWrite)
 			{
 				# Could not read the file, so could not check if $prevTag was correct
 				http_response_code(412);  # Precondition Failed
-				SetDebugHeader("Test If-Match: Could not read file: '$filename'");
+				SetDebugHeader("Test If-Match: '$prefETag' <=> Could not read file: '$filename' -> not allowed");
 				return;
 			}
 
@@ -394,6 +399,7 @@ if ($doWrite)
 			if ($isEmpty)
 			{
 				# If file is empty, there is no danger of overwriting
+				SetDebugHeader("Test If-Match: '$prefETag' <=> File empty: '$filename' -> allowed");
 			}
 			else
 			{
@@ -402,9 +408,13 @@ if ($doWrite)
 				if ($eTag !== $prevETag)
 				{
 					http_response_code(412);  # Precondition Failed
-					SetDebugHeader("Test If-Match: $prevETag does not match current data ($eTag)");
+					SetDebugHeader("Test If-Match: '$prevETag' <=> current data '$eTag' -> no match");
 					header("ETag: $eTag");
 					return;
+				}
+				else
+				{
+					SetDebugHeader("Test If-Match: '$prevETag' <=> current data '$eTag' -> match");
 				}
 			}
 		}
