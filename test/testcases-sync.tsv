@@ -6,20 +6,20 @@ name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniLoadArg	iniSaveArg	expLink
 # Different combinations of CleanLinks=Empty and empty/non-empty RemoteFile
 "1.1 Empty & Empty (Load+Save)"		A			links.txt	links.txt	A	A	A	FALSE	FALSE	A			Saveable-Links-Prerender-LoadOK-New-SaveOK
 "1.2 Empty & Empty 2"	NO-INIT	A			links.txt	links.txt	C	C	C	FALSE	FALSE	C	save	C	Saveable * New-Render-SaveOK
-"1.3 Empty & !Empty"	NO-INIT	A	B		links.txt	links.txt	C	C	INVALID	FALSE	TRUE	B	save	C	Saveable * New-Render-Save412-Conflict
-"1.4 Empty & !Empty (same file)"	NO-INIT	A	A		links.txt	links.txt	C	C	INVALID	FALSE	TRUE	A	save	C	Saveable * New-Render-Save412-Conflict
+"1.3 Empty & !Empty"	NO-INIT	A	B		links.txt	links.txt	C	C	INVALID	FALSE	RemoteNotEmpty	B	save	C	Saveable * New-Render-Save412-Conflict
+"1.4 Empty & !Empty (same file)"	NO-INIT	A	A		links.txt	links.txt	C	C	INVALID	FALSE	RemoteNotEmpty	A	save	C	Saveable * New-Render-Save412-Conflict
 
 # Client sends ETag in SaveDirty
 "2.1 ETag matches"		B	A	A	links.txt	links.txt	B	B	B	FALSE	FALSE	B			Saveable-Links-Prerender-LoadOK-SaveDirty-SaveOK
-"2.2 ETag invalid"		B	+A/C	A	links.txt	links.txt	B	B	INVALID A	FALSE	TRUE	C			Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
+"2.2 ETag invalid"		B	+A/C	A	links.txt	links.txt	B	B	INVALID A	FALSE	RemoteChanged	C			Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
 "2.3 ETag invalid, file Empty"		B	+A/	A	links.txt	links.txt	B	B	B	FALSE	FALSE	B			Saveable-Links-Prerender-LoadOK-SaveDirty-SaveOK
 
 # Create Invalid (412) situation. Reload should create BCA Confict
-"3.1(1) ETag invalid (Init)"		B	+A/C	A	links.txt	links.txt	B	B	INVALID A	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
-"3.1(2) Invalid (1e Reload)"	KEEP				links.txt	links.txt	B	B	A	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-Conflict
-"3.1(3) Invalid (2e Reload)"	KEEP				links.txt	links.txt	B	B	A	FALSE	TRUE	C		D	Saveable-Links-Prerender-LoadOK-Conflict
+"3.1(1) ETag invalid (Init)"		B	+A/C	A	links.txt	links.txt	B	B	INVALID A	FALSE	RemoteChanged	C		D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
+"3.1(2) Invalid (1e Reload)"	KEEP				links.txt	links.txt	B	B	A	FALSE	CleanDifferent	C		D	Saveable-Links-Prerender-LoadOK-Conflict
+"3.1(3) Invalid (2e Reload)"	KEEP				links.txt	links.txt	B	B	A	FALSE	CleanDifferent	C		D	Saveable-Links-Prerender-LoadOK-Conflict
 # Load the Invalid situation and try and rectify it.
-"3.2 Invalid (Cancel)"		B	+A/C	INVALID A	links.txt	links.txt	B	B	INVALID A	FALSE	TRUE	C	cancel	D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
+"3.2 Invalid (Cancel)"		B	+A/C	INVALID A	links.txt	links.txt	B	B	INVALID A	FALSE	RemoteChanged	C	cancel	D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict
 "3.3 Invalid (Save)"		B	+A/C	INVALID A	links.txt	links.txt	D	D	D	FALSE	FALSE	D	save	D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict * Render-SaveOK
 "3.4 Invalid (Clear)"		B	+A/C	INVALID A	links.txt	links.txt	C	C	C	FALSE	FALSE	C	clear	D	Saveable-Links-Prerender-LoadOK-SaveDirty-Save412-Conflict * LoadOK-Clear-Render
 

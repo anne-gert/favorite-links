@@ -23,7 +23,7 @@ name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	ini
 # Create and Switch remote files
 "2.4(1) Load Config A"						config		A	A	A	FALSE	FALSE	A	save	A	links-A.txt		links-A.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-LoadOK-New-Render-SaveOK
 "2.4(2) Change to empty file"	KEEP					config		B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-New-Render-SaveOK
-"2.4(3) Change to existing file"	KEEP					config		C	C	NULL	FALSE	TRUE	A	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-Conflict-Render
+"2.4(3) Change to existing file"	KEEP					config		C	C	NULL	FALSE	CleanMissing	A	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-Conflict-Render
 "2.4(4) Existing file (clear)"	KEEP	B	A			config		A	A	A	FALSE	FALSE	A	clear	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Conflict + LoadOK-NoLocal-Render
 "2.4(5) Existing file (save)"	KEEP	B	A	old		config		C	C	C	FALSE	FALSE	C	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Conflict + Render-SaveOK
 
@@ -49,12 +49,13 @@ name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	ini
 "3.5.3 [OS] Settings: Cancel"		A	A	A	links.txt		links.txt	A	A	A	FALSE	FALSE	A	cancel	B				Saveable-Override-Links-LoadOK-Render * -
 
 # Fix Conflict state
-"4.1.1 Cancel after AB- Conflict"		A	B			links.txt	links.txt	A	A	NULL	FALSE	TRUE	B	cancel	C				NULL
+"4.1.1 Cancel after AB- Conflict"		A	B			links.txt	links.txt	A	A	NULL	FALSE	CleanMissing	B	cancel	C				NULL
 "4.1.2 Save after AB- Conflict"		A	B			links.txt	links.txt	C	C	C	FALSE	FALSE	C	save	C				NULL
 "4.1.3 Clear after AB- Conflict"		A	B			links.txt	links.txt	B	B	B	FALSE	FALSE	B	clear	C				NULL
-"4.2.1 Cancel after BCA Conflict"		B	C	A		links.txt	links.txt	B	B	A	FALSE	TRUE	C	cancel	D				NULL
+"4.2.1 Cancel after BCA Conflict"		B	C	A		links.txt	links.txt	B	B	A	FALSE	CleanDifferent	C	cancel	D				NULL
 "4.2.2 Save after BCA Conflict"		B	C	A		links.txt	links.txt	D	D	D	FALSE	FALSE	D	save	D				NULL
 "4.2.3 Clear after BCA Conflict"		B	C	A		links.txt	links.txt	C	C	C	FALSE	FALSE	C	clear	D				NULL
+"4.3 Artificial Invalid CleanTag"		B	200/403	INVALID		links.txt	links.txt	B	B	INVALID	FALSE	CleanInvalid	RO_FILE	save	B				NULL
 
 
 # vim: set filetype=tsv vartabstop=35,15 nowrap:

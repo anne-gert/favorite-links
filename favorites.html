@@ -985,6 +985,14 @@ const CheckboxError = 'char:!FF!';
 const CleanTagEmpty = '*Empty';
 const CleanTagInvalid = '*';
 
+const ConflictWarning = {
+	CleanMissing   : 'This and the online configuration are not the same',  //case AB-
+	CleanDifferent : 'Both this and the online configuration have changed',  //case BCA
+	RemoteChanged  : 'Could not save, because the online configuration changed',  //412 response
+	RemoteNotEmpty : 'Could not save, because the online configuration was not empty',  //412 response
+	CleanInvalid   : 'Online configuration has changed',
+};
+
 // Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
 // Unicode Block: General Punctuation
 const UNICODE_ELLIPSIS = '\u{2026}';
@@ -1788,26 +1796,29 @@ function CreateData(getResolver = () => UrlResolver) {
 		cleanTag = eTag;
 	}
 
-	// Return true if LocalLinks is different from CleanLinks or if
-	// CleanTag is invalid.
+	// Return string indicating the cause if LocalLinks are considered
+	// changed (dirty):
+	// - false : Links are not dirty
+	// - 'CleanDifferent' : LocalLinks different from CleanLinks
+	// - 'CleanInvalid' : CleanTag is invalid
 	function linksDirty() {
-		if (getCleanTag() == CleanTagInvalid) return true;
+		if (getCleanTag() == CleanTagInvalid) return 'CleanInvalid';
 
 		let localLinks = readLocalLinks();
 		let cleanLinks = readCleanLinks();
 		if (localLinks != null && cleanLinks != null) {
 			// Both Local and Clean are set
-			return localLinks.trim() != cleanLinks.trim();
+			return (localLinks.trim() != cleanLinks.trim()) ? 'CleanDifferent' : false;
 		} else {
 			return false;
 		}
 	}
 
 	// Get/Set ConflictState. This is not saved in Storage, but exists
-	// only in memory. ConflictState is true if the current Links are in a
-	// state where there is no automatic resolution of the 'current' value
-	// and the user should take action..
-	let conflictState = false;
+	// only in memory. ConflictState is a string with the cause if the
+	// current Links are in a state where there is no automatic resolution
+	// of the 'current' value and the user should take action.
+	let conflictState = false;  //no conflict
 	function getConflictState() {
 		return conflictState;
 	}
@@ -2699,7 +2710,8 @@ function uploadLinks(value) {
 	}
 	let headers = Array.from(UrlResolver.getUploadHeaders());  //make a copy
 	let eTag = Data.getCleanTag();
-	if (eTag == null || eTag == '') eTag = CleanTagEmpty;
+	let wantEmpty = eTag == null || eTag == '';
+	if (wantEmpty) eTag = CleanTagEmpty;
 	headers.push(['If-Match', eTag]);
 
 	// If value is null or whitespace, send an empty string
@@ -2726,7 +2738,8 @@ function uploadLinks(value) {
 			LogUpDownload.error('Failed to upload Links, because remote file has changed');
 			addStatus('Save ' + status);
 			Data.setCleanTag(CleanTagInvalid);
-			updateSettingsConflict();
+			let remoteProblem = wantEmpty ? 'RemoteNotEmpty' : 'RemoteChanged';
+			updateSettingsConflict(remoteProblem);
 			addStatus('Conflict');
 			resolveFunc(false);  //do not see this as a fail
 		} else {
@@ -5417,6 +5430,7 @@ function initSettingsPanel() {
 	let settingsText;
 	let loadOptionEntries = [], saveOptionEntries = [];
 	let recreateOptionEntries;
+	let setDirtyWarning;
 
 	// Create the minimal hooks (expose functions) and defer rest at first showing
 	showSettingsPanel = showSettings;
@@ -5528,31 +5542,6 @@ function initSettingsPanel() {
 		setUnicodeText(iconHelp, '?');
 		setUnicodeText(iconCancel, UNICODE_CANCELLATION, UNICODE_CROSS_MARK + UNICODE_VARIATION_SELECTOR_15, 'X');
 
-		//// Create buttonBar
-		//let buttonBar = document.createElement('div');
-		//buttonBar.className = 'buttonbar';
-		//settingsArea.appendChild(buttonBar);
-		//
-		//// Create btnSave
-		//let btnSave = document.createElement('button');
-		//btnSave.textContent = 'Save';
-		//btnSave.className = 'button';
-		//btnSave.onclick = () => { hideSettings(true); return false }
-		//buttonBar.appendChild(btnSave);
-		//// Create btnClear
-		//let btnClear = document.createElement('button');
-		//btnClear.textContent = 'Clear';
-		//btnClear.className = 'button';
-		//btnClear.onclick = () => { hideSettings('clear'); return false }
-		//buttonBar.appendChild(btnClear);
-		//// Create btnCancel
-		//let btnCancel = document.createElement('button');
-		//btnCancel.textContent = 'Cancel';
-		//btnCancel.className = 'button';
-		//btnCancel.onclick = () => { hideSettings(false); return false }
-		//buttonBar.appendChild(btnCancel);
-
-
 		// Configure settingsPanel
 		settingsPanel.onkeydown = function(e) {
 			if (isKey(e, 'c', 's')) {  //Ctrl-S
@@ -5584,12 +5573,17 @@ function initSettingsPanel() {
 		let htmlSaveIcon = `<span class="bullet-icon">${iconSave.textContent}</span>`;
 		let htmlClearIcon = `<span class="bullet-icon">${iconClear.textContent}</span>`;
 		let htmlCancelIcon = `<span class="bullet-icon">${iconCancel.textContent}</span>`;
-		warningDirty.innerHTML = `
-<span class="label">WARNING</span>: Could not synchronize with online server. Choose one of the following:<br>
+		let wPrefix = '<span class="label">WARNING</span>: ';
+		let wSuffix = `. Choose one of the following:<br>
 &bull; ${htmlSaveIcon} <span class="accent">Save</span>: Keep the <u>local configuration</u> and overwrite the online configuration, discarding changes that have been made online or from other browser windows.<br>
 &bull; ${htmlClearIcon} <span class="accent">Clear</span>: Download and use the <u>online configuration</u>, discarding local changes.<br>
 &bull; ${htmlCancelIcon} <span class="accent">Cancel</span>: Close this edit window and make <u>no changes</u>.
 `;
+		setDirtyWarning = () => {
+			let text = Data.getConflictState();
+			if (text == null) text = 'Could not synchronize with online server';
+			warningDirty.innerHTML = wPrefix + text + wSuffix;
+		};
 		settingsArea.appendChild(warningDirty);
 
 		// Create settingsText
@@ -5851,8 +5845,12 @@ function initSettingsPanel() {
 		}
 	}
 
-	function updateConflict(conflicted) {
-		if (conflicted == null) {
+	// Update the ConflictState with the conflictCause:
+	// - null: Derive and set current ConflictState.
+	// - string: Set ConflictState with the given cause.
+	// - false: Unset ConflictState
+	function updateConflict(conflictCause) {
+		if (conflictCause == null) {
 			// Determine the default value for ConflictState:
 			// - Clean should be set (there was once a remote file)
 			// - Local should be different (Dirty)
@@ -5860,15 +5858,21 @@ function initSettingsPanel() {
 			let saveOpt = UrlResolver.getSaveOptions();
 			let dirty = Data.linksDirty();
 			LogSettings.debug(`updateConflict(): Derive default saveOpt=${saveOpt}, dirty=${dirty}`);
-			conflicted = saveOpt != null && saveOpt != '' && dirty;
+			conflictCause = (saveOpt != null && saveOpt != '' && dirty !== false)
+				? ConflictWarning[dirty]
+				: false;
+		} else if (conflictCause in ConflictWarning) {
+			// Translate to string
+			conflictCause = ConflictWarning[conflictCause];
 		}
-		Data.setConflictState(conflicted);
+		Data.setConflictState(conflictCause);
 		// Change visibility
-		LogSettings.important('Set Links Conflicted=' + conflicted);
-		addClass(iconOpen, 'alert', conflicted);
-		addClass(iconSave, 'alert', conflicted);
-		addClass(iconClear, 'alert', conflicted);
-		addClass(warningDirty, 'hidden', !conflicted);
+		LogSettings.important('Set Links Conflict=' + conflictCause);
+		let cc = !!conflictCause;
+		addClass(iconOpen, 'alert', cc);
+		addClass(iconSave, 'alert', cc);
+		addClass(iconClear, 'alert', cc);
+		addClass(warningDirty, 'hidden', !cc);
 	}
 
 	// Note on onanimationend:
@@ -5953,6 +5957,7 @@ function initSettingsPanel() {
 			// in test conditions.
 			recreateOptionEntries();
 		}
+		setDirtyWarning();
 		// Scroll to the top to where the Settings will be showing
 		window.scrollTo({ top: 0, left: 100, behavior: 'smooth' });
 		// Display items for conflicted Settings
@@ -7522,7 +7527,7 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 					} else {
 						LogLinksUpdate.log('Conflict');
 						addStatus('Conflict');
-						conflict = true;
+						conflict = (cleanLinks == null) ? 'CleanMissing' : 'CleanDifferent';
 					}
 				} else {
 					// Case BAA: local Links different from others
@@ -7571,7 +7576,7 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 		if (preRenderCancel) preRenderCancel.setReturn(true);
 	}
 	if (conflict) {
-		updateSettingsConflict(true);
+		updateSettingsConflict(conflict);
 	}
 	if (updateLocal) {
 		LogLinksUpdate.log('Update LocalLinks');

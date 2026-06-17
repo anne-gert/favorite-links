@@ -1007,9 +1007,18 @@ async function executeTest(data) {
 		}
 	}
 	if (data.expConflict !== undefined) {
-		let conflictState = Data.getConflictState();
-		if (conflictState != data.expConflict) {
-			LogTest.error('Test ' + data.name + ': ConflictState (=' + renderValue(conflictState) + ') has not expected value (=' + renderValue(data.expConflict) + ')');
+		let wrong = false;
+		let conflictState = Data.getConflictState();  //string if conflict, false if not
+		if (data.expConflict === true) {
+			wrong = !conflictState;  //wrong if conflictState not truthy
+		} else if (data.expConflict === false) {
+			wrong = !!conflictState;  //wrong if conflictState not falsy
+		} else {
+			let expected = ConflictWarning[data.expConflict];
+			wrong = conflictState != expected;
+		}
+		if (wrong) {
+			LogTest.error('Test ' + data.name + ': ConflictState (=' + renderValue(conflictState) + ') does not match expected value (=' + renderValue(data.expConflict) + ')');
 			++result.errors;
 		}
 	}
