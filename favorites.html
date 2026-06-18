@@ -998,6 +998,9 @@ const ConflictWarning = {
 	NoLoadRsp      : '[I-]Could not load configuration, possible CORS violation',
 };
 
+const IsHttp = !!location.protocol.match(/^http\b/i);  //assumin https by default
+const DefaultProtocol = IsHttp ? 'http://' : 'https://';
+
 // Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
 // Unicode Block: General Punctuation
 const UNICODE_ELLIPSIS = '\u{2026}';
@@ -4069,6 +4072,7 @@ function render(parsed, container, cancel) {
 			let msg = 'Due to security reasons, this URL cannot be opened automatically.\nCopied URL \'' + url + '\' to clipboard.\n\nManually paste this to the address bar.';
 			msg = msg.replaceAll('\'', '\\\'').replaceAll('\n', '\\n');
 			tooltip = url;  //preserve original URL
+			url = url.replaceAll('\'', '\\\'');
 			url = 'javascript:navigator.clipboard.writeText(\'' + url + '\');alert(\'' + encodeURI(msg) + '\');void(0)';
 			target = null;
 		}
@@ -4804,7 +4808,7 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 	} else if (icon_url == 'empty') {
 		html_icon = '';
 	} else if (m = icon_url.match(/^html:(.+)/i)) {
-		html_icon = m[1].replace(/&(?:sp|spc|space);/ig, ' ');
+		html_icon = m[1].replaceAll(/&(?:sp|spc|space);/ig, ' ');
 	} else if (m = icon_url.match(/^char:(.+)/i)) {
 		let text = m[1];
 		// Replace 'U+XXX...'
@@ -4974,7 +4978,7 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 		let domain = site_url
 			.replace(/^[^\/]*\/\//, '')  //remove scheme
 			.replace(/\/.*/, '');  //remove path
-		return 'http://www.google.com/s2/favicons?domain=' + domain;
+		return DefaultProtocol + 'www.google.com/s2/favicons?domain=' + domain;
 	}
 
 	return {
@@ -4990,11 +4994,11 @@ function renderIcon(parsed, alt_text, icon_url, target_url, skip_alternatives = 
 var FillScaler = new ResizeObserver(function(entries) {
 	for (let entry of entries) {
 		let element = entry.target;
-		LogRender.log('FillScaler: Scaling element \'' + element.innerHTML + '\'');
+		//LogRender.log('FillScaler: Scaling element \'' + element.innerHTML + '\'');
 		//LogRender.devlog(entry);
 		// Get entries current size (how big it wants to be)
 		let w = element.scrollWidth, h = element.scrollHeight;
-		LogRender.debug('FillScaler: Element Scroll size ' + w + ' x ' + h);
+		//LogRender.debug('FillScaler: Element Scroll size ' + w + ' x ' + h);
 		// Get parent's current size
 		let parent = element.parentElement;
 		let pw = parent.offsetWidth;
@@ -5010,12 +5014,12 @@ var FillScaler = new ResizeObserver(function(entries) {
 		//LogRender.devlog('FillScaler: Scale change ' + changeX + ' x ' + changeY);
 		if (isNaN(changeX) || changeX < 0.98 || changeX > 1.02 || isNaN(changeY) || changeY < 0.98 || changeY > 1.02) {
 			// More than 2% change
-			LogRender.log('FillScaler: Set scale ' + scaleX + ' x ' + scaleY);
+			//LogRender.log('FillScaler: Set scale ' + scaleX + ' x ' + scaleY);
 			element._scaleX = scaleX;
 			element._scaleY = scaleY;
 			entry.target.style.scale = scaleX + ' ' + scaleY;
 		} else {
-			LogRender.log('FillScaler: Scale change too small ' + changeX + ' x ' + changeY);
+			//LogRender.log('FillScaler: Scale change too small ' + changeX + ' x ' + changeY);
 		}
 	}
 });
@@ -5288,7 +5292,7 @@ function getRegisteredSearchUrl(identifier, searchText, what = 'text') {
 function getWithSchemaUrl(address) {
 	let url = address;
 	if (!url.match(/^[\w+-]+:/)) {
-		url = 'http://' + url;  //add default scheme
+		url = DefaultProtocol + url;  //add default scheme
 	}
 	return url;
 }
@@ -5305,10 +5309,10 @@ function getNoUrl(intput) {
 // This function is available for use in the configuration.
 function getTemplateUrl(template) {
 	return function(input) {
-		let encoded_input = encodeURIComponent(input).replace(' ', '+');
+		let encoded_input = encodeURIComponent(input).replaceAll('%20', '+');
 		return template
-			.replace('%input', input)
-			.replace('%urlinput', encoded_input);
+			.replaceAll('%input', input)
+			.replaceAll('%urlinput', encoded_input);
 	};
 }
 
@@ -5321,7 +5325,7 @@ function getWaybackDomainUrl(domain) {
 // Returns a URL to perform a search for input with Wayback Machine.
 function getWaybackSearchUrl(input) {
 	let ts = getWaybackTimestamp();
-	let encoded_input = encodeURIComponent(input).replace(' ', '+');
+	let encoded_input = encodeURIComponent(input).replaceAll('%20', '+');
 	return 'https://web.archive.org/web/' + ts + '/' + encoded_input;
 };
 
@@ -7458,7 +7462,7 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	//    B   |     A    |      A     ||    no  |   yes  |     no(*)  | [Save Dirty] |
 	//    B   |     C    |      A     ||    no  |    no  | yes/no(**) | [Conflict]   | Do not render Downloaded
 	//    A   |     B    |      -     ||    no  |    no  | yes/no(**) | [Conflict]   | Do not update Clean(***)
-	// (*) CleanLinks will be updated in handleResult of upload.
+	// (*) CleanLinks will be updated in handleResponse of upload.
 	// (**) Only update CleanLinks in a LinksOverride situation.
 	// (***) It might be logical to save Download links to CleanLinks in
 	// the AB- case. However, this would make it an ABB (=BAA), which would

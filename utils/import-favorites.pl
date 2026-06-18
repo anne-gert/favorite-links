@@ -101,7 +101,7 @@ sub process_file
 			{
 				$url = $1;
 			}
-			elsif (/^\s*IconFile\s*=\s*(\s+)/i)
+			elsif (/^\s*IconFile\s*=\s*(\S+)/i)
 			{
 				$icon = $1;
 			}
