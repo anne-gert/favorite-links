@@ -1014,8 +1014,7 @@ async function executeTest(data) {
 		} else if (data.expConflict === false) {
 			wrong = !!conflictState;  //wrong if conflictState not falsy
 		} else {
-			let expected = ConflictWarning[data.expConflict];
-			wrong = conflictState != expected;
+			wrong = conflictState != data.expConflict;
 		}
 		if (wrong) {
 			LogTest.error('Test ' + data.name + ': ConflictState (=' + renderValue(conflictState) + ') does not match expected value (=' + renderValue(data.expConflict) + ')');
