@@ -986,12 +986,16 @@ const CleanTagEmpty = '*Empty';
 const CleanTagInvalid = '*';
 
 const ConflictWarning = {
-	CleanMissing   : 'This and the online configuration are not the same',  //case AB-
-	CleanDifferent : 'Both this and the online configuration have changed',  //case BCA
-	RemoteChanged  : 'Could not save, because the online configuration changed',  //412 response
-	RemoteNotEmpty : 'Could not save, because the online configuration was not empty',  //412 response
-	CleanInvalid   : 'Online configuration has changed',
-	CannotSave     : 'Last save failed',  //because of a exception
+	CleanMissing   : '[W]This and the online configuration are not the same',  //case AB-
+	CleanDifferent : '[W]Both this and the online configuration have changed',  //case BCA
+	RemoteChanged  : '[W]Could not save, because the online configuration changed',  //412 response
+	RemoteNotEmpty : '[W]Could not save, because the online configuration was not empty',  //412 response
+	CleanInvalid   : '[W]Online configuration has changed',
+	SaveFailed     : '[W]Saving configuration failed with \'<SaveError>\'',
+	SaveFailedInfo : '[I-]This configuration was not yet saved online, because of a \'<SaveError>\' response code. Saving will automatically be retried',
+	LoadFailedInfo : '[I-]Could not refresh configuration with online configuration, because of a \'<LoadError>\' response code',
+	NoSaveRsp      : '[I-]Saving configuration failed',
+	NoLoadRsp      : '[I-]Could not load configuration',
 };
 
 // Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
@@ -1672,7 +1676,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	function reset() {
 		displayedLinks = null;
 		cleanTag = undefined;
-		loadFailed = saveConflict = loadConflict = false;
+		loadConflict = loadError = saveConflict = saveError = false;
 		// Keep the conflictStateListeners
 	}
 
@@ -1800,27 +1804,30 @@ function CreateData(getResolver = () => UrlResolver) {
 	}
 
 	// Set if loading failed.
-	let loadFailed = false;
-	function setLoadState(failed) {
-		loadFailed = failed;
+	// - conflict
+	//   - false: No load Conflict
+	//   - string: Load Conflict
+	// - errorStatus:
+	//   - false: No load error
+	//   - string: Response error
+	let loadConflict = false, loadError = false;
+	function setLoadState(conflict, errorStatus = false) {
+		loadConflict = conflict;
+		loadError = errorStatus;
 		callConflictStateListeners();
 	}
 
-	// Set if a Conflict situation arose during load:
-	// - false: No Load Conflict
-	// - string: Conflict
-	let saveConflict = false;
-	function setSaveState(error) {
-		saveConflict = error;
-		callConflictStateListeners();
-	}
-
-	// Set if a Conflict situation arose during load:
-	// - false: No Load Conflict
-	// - string: Conflict
-	let loadConflict = false;
-	function setLoadConflict(error) {
-		loadConflict = error;
+	// Set if saving failed.
+	// - conflict
+	//   - false: No save Conflict
+	//   - string: Save Conflict
+	// - errorStatus:
+	//   - false: No save error
+	//   - string: Response error
+	let saveConflict = false, saveError = false;
+	function setSaveState(conflict, errorStatus = false) {
+		saveConflict = conflict;
+		saveError = errorStatus;
 		callConflictStateListeners();
 	}
 
@@ -1847,7 +1854,7 @@ function CreateData(getResolver = () => UrlResolver) {
 		}
 
 		// If Load failed, we don't know remote state -> Don't show Conflict
-		if (loadFailed) {
+		if (loadError) {
 			LogSettings.log(`ConflictState: Ignore DirtyLinks (Load failed)`);
 			return null;
 		}
@@ -1874,8 +1881,13 @@ function CreateData(getResolver = () => UrlResolver) {
 		if (localLinks != null && cleanLinks != null) {
 			// Both Local and Clean are set
 			if (localLinks.trim() != cleanLinks.trim()) {
-				LogSettings.log(`ConflictState: LocalLinks are Dirty`);
-				return 'CleanDifferent';
+				if (saveError) {
+					LogSettings.log(`ConflictState: LocalLinks are Dirty and could not save`);
+					return 'SaveFailed';
+				} else {
+					LogSettings.log(`ConflictState: LocalLinks are Dirty`);
+					return 'CleanDifferent';
+				}
 			}
 		}
 
@@ -1884,16 +1896,29 @@ function CreateData(getResolver = () => UrlResolver) {
 		return false;
 	}
 
+	function getConflictMsg() {
+		let msg = getConflictState();
+		if (msg) {
+			if (msg in ConflictWarning) {
+				msg = ConflictWarning[msg];
+			}
+			msg = msg.
+				replaceAll(/<SaveError>/g, saveError ? saveError : 'Unknown').
+				replaceAll(/<LoadError>/g, loadError ? loadError : 'Unknown');
+		}
+		return msg;
+	}
+
 	// Manage listeners for the ConflictState
 	let conflictStateListeners = [];
 	function addConflictStateListener(listener) {
 		conflictStateListeners.push(listener);  //add for future
-		listener(getConflictState());  //update to now
+		listener(getConflictMsg());  //update to current
 	}
 	function callConflictStateListeners() {
-		let text = getConflictState();
+		let msg = getConflictMsg();
 		for (let i = 0; i < conflictStateListeners.length; ++i) {
-			conflictStateListeners[i](text);
+			conflictStateListeners[i](msg);
 		}
 	}
 
@@ -1992,7 +2017,6 @@ function CreateData(getResolver = () => UrlResolver) {
 		getCleanTag : getCleanTag,
 		setCleanTag : setCleanTag,
 		setLoadState : setLoadState,
-		setLoadConflict : setLoadConflict,
 		setSaveState : setSaveState,
 		getConflictState : getConflictState,
 		addConflictStateListener : addConflictStateListener,
@@ -2679,7 +2703,7 @@ function downloadLinks() {
 	let timer = logTimer(LogUpDownload.important, `Downloading URL '${url}'`);
 	if (HOOK_Ready != null) HOOK_Ready.start();
 
-	function handleResponse(status, text, eTag, resolveFunc, rejectFunc) {
+	function handleResponse(status, statusText, text, eTag, resolveFunc, rejectFunc) {
 		//LogUpDownload.devlog(`downloadLinks: Response received (ETag=${eTag})`);
 		timer.end();
 		if (status == 200) {
@@ -2704,7 +2728,7 @@ function downloadLinks() {
 				// reason, disable upload to not accidentally
 				// overwrite the file.
 				UrlResolver.setUploadDisabled('Saving disabled because downloading \'' + url + '\' failed');
-				Data.setLoadState(true);
+				Data.setLoadState('LoadFailedInfo', status + ' ' + statusText);
 				rejectFunc(false);
 			}
 		}
@@ -2715,11 +2739,11 @@ function downloadLinks() {
 		downloadPromise = new PendingPromise();
 		HOOK_Download.response(url, headers, null)
 		.then(response => {
-			handleResponse(response.status, response.text, response.eTag, downloadPromise.resolve, downloadPromise.reject);
+			handleResponse(response.status, 'StatusText', response.text, response.eTag, downloadPromise.resolve, downloadPromise.reject);
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		})
 		.catch(error => {
-			Data.setLoadState(true);
+			Data.setLoadState('NoLoadRsp');
 			downloadPromise.reject(error);
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		});
@@ -2730,20 +2754,21 @@ function downloadLinks() {
 			hdrs.append(headers[i][0], headers[i][1]);
 		}
 		downloadPromise = new PendingPromise();
-		let status, eTag;
+		let status, statusText, eTag;
 		fetch(url, { headers : hdrs })
 		.then(response => {
 			//LogUpDownload.devlog('downloadLinks: Request sent');
 			status = response.status;
+			statusText = response.statusText;
 			eTag = response.headers.get('ETag');
 			return response.text();
 		})
 		.then(text => {
-			handleResponse(status, text, eTag, downloadPromise.resolve, downloadPromise.reject);
+			handleResponse(status, statusText, text, eTag, downloadPromise.resolve, downloadPromise.reject);
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		})
 		.catch(error => {
-			Data.setLoadState(true);
+			Data.setLoadState('NoLoadRsp');
 			downloadPromise.reject(error);
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		});
@@ -2759,7 +2784,7 @@ function downloadLinks() {
 				if (this.readyState == 4) {
 					// Request has been handled
 					let eTag = this.getResponseHeader('ETag');
-					handleResponse(this.status, xhr.responseText, eTag, resolveFunc, rejectFunc);
+					handleResponse(this.status, this.statusText, xhr.responseText, eTag, resolveFunc, rejectFunc);
 					if (HOOK_Ready != null) HOOK_Ready.stop();
 				}
 			};
@@ -2800,7 +2825,7 @@ function uploadLinks(value) {
 	let timer = logTimer(LogUpDownload.important, `Uploading to URL '${url}'`, method + ' ' + value.length + ' characters');
 	if (HOOK_Ready != null) HOOK_Ready.start();
 
-	function handleResponse(status, eTag, resolveFunc, rejectFunc) {
+	function handleResponse(status, statusText, eTag, resolveFunc, rejectFunc) {
 		//LogUpDownload.devlog('downloadLinks: Response received');
 		timer.end();
 		if (status == 200) {
@@ -2817,14 +2842,14 @@ function uploadLinks(value) {
 			addStatus('Save ' + status);
 			Data.setCleanTag(CleanTagInvalid);
 			let remoteProblem = wantEmpty ? 'RemoteNotEmpty' : 'RemoteChanged';
-			Data.setSaveState(remoteProblem);
+			Data.setSaveState(remoteProblem, status + ' ' + statusText);
 			addStatus('Conflict');
 			resolveFunc(false);  //do not see this as a fail
 		} else {
 			// Failed
 			LogUpDownload.error('Failed to upload Links, better luck next time (' + status + ')');
 			addStatus('Save ' + status);
-			Data.setSaveState(false);
+			Data.setSaveState(false, status + ' ' + statusText);
 			resolveFunc(false);  //do not see this as a fail
 		}
 	};
@@ -2834,11 +2859,11 @@ function uploadLinks(value) {
 		uploadPromise = new PendingPromise();
 		HOOK_Upload.response(url, headers, value)
 		.then(response => {
-			handleResponse(response.status, response.eTag, uploadPromise.resolve, uploadPromise.reject);
+			handleResponse(response.status, 'StatusText', response.eTag, uploadPromise.resolve, uploadPromise.reject);
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		})
 		.catch(error => {
-			Data.setSaveState('CannotSave');
+			Data.setSaveState('NoSaveRsp');
 			uploadPromise.reject(error);
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		});
@@ -2853,7 +2878,7 @@ function uploadLinks(value) {
 				if (this.readyState == 4) {
 					// Request has been handled
 					let eTag = this.getResponseHeader('ETag');
-					handleResponse(this.status, eTag, resolveFunc, rejectFunc);
+					handleResponse(this.status, this.statusText, eTag, resolveFunc, rejectFunc);
 					if (HOOK_Ready != null) HOOK_Ready.stop();
 				}
 			};
@@ -5517,8 +5542,9 @@ function initSettingsPanel() {
 	iconOpen.className = 'settings-icon';
 	iconOpen.onclick = () => showSettings();
 	iconBarClosed.appendChild(iconOpen);
-	Data.addConflictStateListener(state => {
-		addClass(iconOpen, 'alert', !!state);
+	Data.addConflictStateListener(msg => {
+		let warn = !!(msg && msg.match(/^\[W/));
+		addClass(iconOpen, 'alert', warn);
 	});
 
 	// Create rest of the Settings panel. This is called at first showing.
@@ -5619,9 +5645,10 @@ function initSettingsPanel() {
 		setUnicodeText(iconClear, UNICODE_EMPTY_DOCUMENT, UNICODE_CLOCKWISE_OPEN_CIRCLE_ARROW, 'C');
 		setUnicodeText(iconHelp, '?');
 		setUnicodeText(iconCancel, UNICODE_CANCELLATION, UNICODE_CROSS_MARK + UNICODE_VARIATION_SELECTOR_15, 'X');
-		Data.addConflictStateListener(state => {
-			addClass(iconSave, 'alert', !!state);
-			addClass(iconClear, 'alert', !!state);
+		Data.addConflictStateListener(msg => {
+			let warn = !!(msg && msg.match(/^\[W/));
+			addClass(iconSave, 'alert', warn);
+			addClass(iconClear, 'alert', warn);
 		});
 
 		// Configure settingsPanel
@@ -5652,23 +5679,34 @@ function initSettingsPanel() {
 		// Create hidden warnings
 		warningDirty = document.createElement('div');
 		warningDirty.className = 'alert-box hidden';
-		let htmlSaveIcon = `<span class="bullet-icon">${iconSave.textContent}</span>`;
-		let htmlClearIcon = `<span class="bullet-icon">${iconClear.textContent}</span>`;
-		let htmlCancelIcon = `<span class="bullet-icon">${iconCancel.textContent}</span>`;
-		let wPrefix = '<span class="label">WARNING</span>: ';
-		let wSuffix = `. Choose one of the following:<br>
-&bull; ${htmlSaveIcon} <span class="accent">Save</span>: Keep the <u>local configuration</u> and overwrite the online configuration, discarding changes that have been made online or from other browser windows.<br>
-&bull; ${htmlClearIcon} <span class="accent">Clear</span>: Download and use the <u>online configuration</u>, discarding local changes.<br>
-&bull; ${htmlCancelIcon} <span class="accent">Cancel</span>: Close this edit window and make <u>no changes</u>.
-`;
-		Data.addConflictStateListener(text => {
-			if (text) {
-				if (text in ConflictWarning) {
-					text = ConflictWarning[text];
+		let htmlFixSave = `&bull; <span class="bullet-icon">${iconSave.textContent}</span> <span class="accent">Save</span>: Keep the <u>local configuration</u> and overwrite the online configuration, discarding changes that have been made online or from other browser windows.<br>`;
+		let htmlFixClear = `&bull; <span class="bullet-icon">${iconClear.textContent}</span> <span class="accent">Clear</span>: Download and use the <u>online configuration</u>, discarding local changes.<br>`;
+		let htmlFixCancel = `&bull; <span class="bullet-icon">${iconCancel.textContent}</span> <span class="accent">Cancel</span>: Close this edit window and make <u>no changes</u>.`;
+		Data.addConflictStateListener(msg => {
+			if (msg) {
+				let m = msg.match(/^\[([WI])(\S*)\]\s*(.*)/);
+				if (m) {
+					let type = m[1];
+					let flags = m[2];
+					msg = m[3];
+					// Prefix with WARNING/INFO
+					if (type == 'W') {
+						msg = '<span class="label">WARNING</span>: ' + msg;
+					} else {
+						msg = 'INFO: ' + msg;
+					}
+					msg += '.';
+					// Suffix with fix explanations
+					if (flags == '') flags = 'scx';
+					let fixes = '';
+					if (flags.match('s')) fixes += htmlFixSave;
+					if (flags.match('c')) fixes += htmlFixClear;
+					if (flags.match('x')) fixes += htmlFixCancel;
+					if (fixes) msg += ' Choose one of the following:<br>\n' + fixes;
 				}
-				warningDirty.innerHTML = wPrefix + text + wSuffix;
+				warningDirty.innerHTML = msg;
 			}
-			addClass(warningDirty, 'hidden', !text);
+			addClass(warningDirty, 'hidden', !msg);
 		});
 		settingsArea.appendChild(warningDirty);
 
@@ -7631,7 +7669,7 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 		// Stop pre-render
 		if (preRenderCancel) preRenderCancel.setReturn(true);
 	}
-	Data.setLoadConflict(conflict);
+	Data.setLoadState(conflict);
 	if (updateLocal) {
 		LogLinksUpdate.log('Update LocalLinks');
 		Data.writeLocalLinks(links);
