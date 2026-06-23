@@ -17,6 +17,14 @@ $TokenFile = "/etc/favlinks/tokens";
 # If this is a relative path, it is appended to the script's directory.
 $DataRoot = "/var/favlinks";
 
+# Specify the allowed request origins for CORS.
+# Valid values are:
+# - "*": Use 'Access-Control-Allow-Origin: *'
+# - "any": Use 'Access-Control-Allow-Origin: <request-origin>'
+# - array: Use 'Access-Control-Allow-Origin: <request-origin>' if
+#     <request-domain> is in the array.
+$AllowedOrigins = "any";
+
 # Maximum size in bytes for the uploaded data files.
 $MaxSize = 512 * 1024;
 
@@ -79,7 +87,19 @@ else
 }
 
 # Set the CORS headers
-header("Access-Control-Allow-Origin: *");
+if ($AllowedOrigins == "*")
+{
+	header("Access-Control-Allow-Origin: *");
+}
+else
+{
+	$reqOrigin = strtolower($_SERVER['HTTP_ORIGIN']);
+	if (($AllowedOrigins == "any" && $reqOrigin != "") ||  # accept any
+		(is_array($AllowedOrigins) && in_array($reqOrigin, $AllowedOrigins)))  # accept if in the list
+	{
+		header("Access-Control-Allow-Origin: $reqOrigin");
+	}
+}
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: x-name, x-token, if-match");
 
@@ -121,7 +141,7 @@ else
 	return;
 }
 
-# Find headers: x-name, x-token
+# Find headers: x-name, x-token, if-match
 $token = null; $filename = null; $prevETag = null;
 foreach (getallheaders() as $n => $v)
 {

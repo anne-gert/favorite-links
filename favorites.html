@@ -995,7 +995,7 @@ const ConflictWarning = {
 	SaveFailedInfo : '[I-]This configuration was not yet saved online, because of a \'<SaveError>\' response code. Saving will automatically be retried',
 	LoadFailedInfo : '[I-]Could not refresh configuration with online configuration, because of a \'<LoadError>\' response code',
 	NoSaveRsp      : '[I-]Saving configuration failed',
-	NoLoadRsp      : '[I-]Could not load configuration',
+	NoLoadRsp      : '[I-]Could not load configuration, possible CORS violation',
 };
 
 // Unicode Plane: Basic Multilingual Plane (U+0000 - U+FFFF)
@@ -2743,6 +2743,7 @@ function downloadLinks() {
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		})
 		.catch(error => {
+			addStatus('Load Error');
 			Data.setLoadState('NoLoadRsp');
 			downloadPromise.reject(error);
 			if (HOOK_Ready != null) HOOK_Ready.stop();
@@ -2768,6 +2769,8 @@ function downloadLinks() {
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		})
 		.catch(error => {
+			// CORS violation ends up here, but there is no way to detect that
+			addStatus('Load Error');
 			Data.setLoadState('NoLoadRsp');
 			downloadPromise.reject(error);
 			if (HOOK_Ready != null) HOOK_Ready.stop();

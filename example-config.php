@@ -7,6 +7,14 @@ $TokenFile = "/etc/favlinks/tokens";
 # If this is a relative path, it is appended to the script's directory.
 $DataRoot = "/var/favlinks";
 
+# Specify the allowed request origins for CORS.
+# Valid values are:
+# - "*": Use 'Access-Control-Allow-Origin: *'
+# - "any": Use 'Access-Control-Allow-Origin: <request-origin>'
+# - array: Use 'Access-Control-Allow-Origin: <request-origin>' if
+#     <request-domain> is in the array.
+$AllowedOrigins = "any";
+
 # Maximum size in bytes for the uploaded data files.
 $MaxSize = 512 * 1024;
 
