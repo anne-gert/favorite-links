@@ -1411,16 +1411,12 @@ function setUnicodeText(control, unicodeCharacter, /* more unicodeCharacters, */
 // General function to add/remove a CSS class for a specified widget.
 // If the widget is not defined, do nothing.
 // Operation:
-// - op==true  : add class
-// - op==false : remove class
-// - op=='*'   : remove all classes that match the regex in className
+// - op==truthy : add class
+// - op==falsy  : remove class
+// - op=='*'    : remove all classes that match the regex in className
 function addClass(widget, className, op) {
 	if (widget != null) {
-		if (op === true) {
-			widget.classList.add(className);
-		} else if (op === false) {
-			widget.classList.remove(className);
-		} else if (op === '*') {
+		if (op === '*') {
 			let rm = [];
 			let lst = widget.classList;
 			for (let i = 0; i < lst.length; ++i) {
@@ -1429,9 +1425,10 @@ function addClass(widget, className, op) {
 					rm.push(c);
 			}
 			if (rm.length > 0) lst.remove(rm);
+		} else if (op) {
+			widget.classList.add(className);
 		} else {
-			LogEvents.error(`Unknown value for operation for addClass '${className}': '${op}'`);
-			LogEvents.trace();
+			widget.classList.remove(className);
 		}
 	}
 }
@@ -5550,7 +5547,7 @@ function initSettingsPanel() {
 	iconOpen.onclick = () => showSettings();
 	iconBarClosed.appendChild(iconOpen);
 	Data.addConflictStateListener(msg => {
-		let warn = !!(msg && msg.match(/^\[W/));
+		let warn = msg && msg.match(/^\[W/);
 		addClass(iconOpen, 'alert', warn);
 	});
 
@@ -5653,7 +5650,7 @@ function initSettingsPanel() {
 		setUnicodeText(iconHelp, '?');
 		setUnicodeText(iconCancel, UNICODE_CANCELLATION, UNICODE_CROSS_MARK + UNICODE_VARIATION_SELECTOR_15, 'X');
 		Data.addConflictStateListener(msg => {
-			let warn = !!(msg && msg.match(/^\[W/));
+			let warn = msg && msg.match(/^\[W/);
 			addClass(iconSave, 'alert', warn);
 			addClass(iconClear, 'alert', warn);
 		});
