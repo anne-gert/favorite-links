@@ -194,6 +194,23 @@ function CreateRemoteFile(timeout = 100) {
 		_entries = {};
 	}
 
+	// Some common HTTP response status codes.
+	let HttpResponseCodes = {
+		S200 : 'Ok',
+		S400 : 'Bad Request',
+		S401 : 'Unauthorized',
+		S403 : 'Forbidden',
+		S404 : 'Not Found',
+		S405 : 'Method Not Allowed',
+		S412 : 'Precondition Failed',
+		S413 : 'Content Too Large',
+		S500 : 'Internal Server Error',
+	};
+	function getStatusText(status) {
+		let key = 'S' + status;
+		return (key in HttpResponseCodes) ? HttpResponseCodes[key] : 'Mock Status Text';
+	}
+
 	// Get the remote file name from the url/headers
 	function getName(url, headers) {
 		//LogTest.devlog('RemoteFile: URL=' + url + ', Headers=', headers);
@@ -241,9 +258,10 @@ function CreateRemoteFile(timeout = 100) {
 		await sleep(timeout);
 		// Assemble response
 		let rsp = {
-			status : entry.getStatus,
-			text   : entry.content,
-			eTag   : calcETag(entry.content),
+			status     : entry.getStatus,
+			statusText : getStatusText(entry.getStatus),
+			text       : entry.content,
+			eTag       : calcETag(entry.content),
 		};
 		// If we have a multi-response, move to the next
 		if (entry.nextResponses.length > 0) {
@@ -317,15 +335,17 @@ function CreateRemoteFile(timeout = 100) {
 			// Assemble response
 			let eTag = calcETag(entry.content);
 			rsp = {
-				status : entry.postStatus,
-				text   : '',
-				eTag   : eTag,
+				status     : entry.postStatus,
+				statusText : getStatusText(entry.postStatus),
+				text       : '',
+				eTag       : eTag,
 			};
 		} else {
 			// Assemble 412 response
 			rsp = {
-				status : 412,
-				text   : '',
+				status     : 412,
+				statusText : getStatusText(412),
+				text       : '',
 			};
 		}
 		// If we have a multi-response, move to the next

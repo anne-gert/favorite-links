@@ -2739,7 +2739,7 @@ function downloadLinks() {
 		downloadPromise = new PendingPromise();
 		HOOK_Download.response(url, headers, null)
 		.then(response => {
-			handleResponse(response.status, 'StatusText', response.text, response.eTag, downloadPromise.resolve, downloadPromise.reject);
+			handleResponse(response.status, response.statusText, response.text, response.eTag, downloadPromise.resolve, downloadPromise.reject);
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		})
 		.catch(error => {
@@ -2862,7 +2862,7 @@ function uploadLinks(value) {
 		uploadPromise = new PendingPromise();
 		HOOK_Upload.response(url, headers, value)
 		.then(response => {
-			handleResponse(response.status, 'StatusText', response.eTag, uploadPromise.resolve, uploadPromise.reject);
+			handleResponse(response.status, response.statusText, response.eTag, uploadPromise.resolve, uploadPromise.reject);
 			if (HOOK_Ready != null) HOOK_Ready.stop();
 		})
 		.catch(error => {
