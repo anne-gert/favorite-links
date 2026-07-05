@@ -2814,8 +2814,8 @@ function uploadLinks(value) {
 	}
 	let headers = Array.from(UrlResolver.getUploadHeaders());  //make a copy
 	let eTag = Data.getCleanTag();
-	let wantEmpty = eTag == null || eTag == '';
-	if (wantEmpty) eTag = CleanTagEmpty;
+	if (eTag == null || eTag == '') eTag = CleanTagEmpty;
+	let wantEmpty = eTag == CleanTagEmpty;
 	headers.push(['If-Match', eTag]);
 
 	// If value is null or whitespace, send an empty string
