@@ -929,6 +929,7 @@ let HOOK_LocalStorage = null;
 //   following fields:
 //   - status: Status code of the response.
 //   - text: Contents of the response.
+//   If this method returns null, download is not possible.
 let HOOK_Download = null;
 
 // Define an object that describes the next response of the uploadLinks() call.
@@ -2739,18 +2740,23 @@ function downloadLinks() {
 
 	let downloadPromise;
 	if (HOOK_Download != null) {
-		downloadPromise = new PendingPromise();
-		HOOK_Download.response(url, headers, null)
-		.then(response => {
-			handleResponse(response.status, response.statusText, response.text, response.eTag, downloadPromise.resolve, downloadPromise.reject);
+		let download = HOOK_Download.response(url, headers, null)
+		if (download) {
+			downloadPromise = new PendingPromise();
+			download.then(response => {
+				handleResponse(response.status, response.statusText, response.text, response.eTag, downloadPromise.resolve, downloadPromise.reject);
+				if (HOOK_Ready != null) HOOK_Ready.stop();
+			})
+			.catch(error => {
+				addStatus('Load Error');
+				Data.setLoadState('NoLoadRsp');
+				downloadPromise.reject(error);
+				if (HOOK_Ready != null) HOOK_Ready.stop();
+			});
+		} else {
+			downloadPromise = null;
 			if (HOOK_Ready != null) HOOK_Ready.stop();
-		})
-		.catch(error => {
-			addStatus('Load Error');
-			Data.setLoadState('NoLoadRsp');
-			downloadPromise.reject(error);
-			if (HOOK_Ready != null) HOOK_Ready.stop();
-		});
+		}
 	} else if (window.fetch) {
 		//LogUpDownload.devlog('Using fetch() to download');
 		let hdrs = new Headers();
@@ -2832,7 +2838,7 @@ function uploadLinks(value) {
 	if (HOOK_Ready != null) HOOK_Ready.start();
 
 	function handleResponse(status, statusText, eTag, resolveFunc, rejectFunc) {
-		//LogUpDownload.devlog('downloadLinks: Response received');
+		//LogUpDownload.devlog('uploadLinks: Response received');
 		timer.end();
 		if (status == 200) {
 			// Success
@@ -2863,17 +2869,23 @@ function uploadLinks(value) {
 
 	let uploadPromise;
 	if (HOOK_Upload != null) {
-		uploadPromise = new PendingPromise();
-		HOOK_Upload.response(url, headers, value)
-		.then(response => {
-			handleResponse(response.status, response.statusText, response.eTag, uploadPromise.resolve, uploadPromise.reject);
+		let upload = HOOK_Upload.response(url, headers, value)
+		if (upload) {
+			uploadPromise = new PendingPromise();
+			upload.then(response => {
+				handleResponse(response.status, response.statusText, response.eTag, uploadPromise.resolve, uploadPromise.reject);
+				if (HOOK_Ready != null) HOOK_Ready.stop();
+			})
+			.catch(error => {
+				addStatus('Save Error');
+				Data.setSaveState('NoSaveRsp');
+				uploadPromise.reject(error);
+				if (HOOK_Ready != null) HOOK_Ready.stop();
+			});
+		} else {
+			uploadPromise = null;
 			if (HOOK_Ready != null) HOOK_Ready.stop();
-		})
-		.catch(error => {
-			Data.setSaveState('NoSaveRsp');
-			uploadPromise.reject(error);
-			if (HOOK_Ready != null) HOOK_Ready.stop();
-		});
+		}
 	} else {
 		uploadPromise = new Promise((resolveFunc, rejectFunc) => {
 			let xhr = new XMLHttpRequest();
@@ -7694,7 +7706,10 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	}
 	if (upload) {
 		if (UrlResolver.getSaveOptions()) {
-			uploadLinks(links);  //will set CleanLinks after successful upload
+			uploadLinks(links)  //will set CleanLinks after successful upload
+			.catch(error => {
+				LogLinksUpdate.error('Upload failed with error:', error);
+			});
 		} else {
 			LogLinksUpdate.log('No SaveOptions, cannot upload');
 		}
@@ -7745,7 +7760,7 @@ function downloadUpdateLinks(editLinks, forceUpload, preRenderCancel, fallbackRe
 			} else {
 				// It is another error, log it for debugging, but
 				// do a resolve, so that no dialog is triggered.
-				LogLinksUpdate.error('Download failed with error', error);
+				LogLinksUpdate.error('Download failed with error: ', error);
 				result.resolve(false);
 			}
 			if (HOOK_Ready != null) HOOK_Ready.stop();
@@ -7760,15 +7775,21 @@ function downloadUpdateLinks(editLinks, forceUpload, preRenderCancel, fallbackRe
 			LogLinksUpdate.log('Clear, but nothing to download, use default');
 			let links = UrlResolver.getFallbackLinks();
 			if (links == null) links = DefaultLinks;
-			processLinks(links);  //throws exception if invalid
-			Data.writeLocalLinks(links);
-			Data.setDisplayedLinks(links);
+			updateLinksSimple(links);  //throws exception if invalid
 		} else {
 			LogLinksUpdate.log('Nothing to download, no fallback');
 		}
 		if (HOOK_Ready != null) HOOK_Ready.stop();
 		return Promise.resolve(false);
 	}
+}
+
+// Processes links. If correct, render and set LocalLinks and CleanLinks.
+// If not correct, throws exception.
+function updateLinksSimple(links) {
+	processLinks(links);  //throws exception if invalid
+	Data.writeLocalLinks(links);
+	Data.setDisplayedLinks(links);
 }
 
 // Create object that can be called as a function. The return value of the

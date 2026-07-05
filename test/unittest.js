@@ -251,11 +251,23 @@ function CreateRemoteFile(timeout = 100) {
 	}
 
 	// Returns Promise that simulates a GET.
-	async function getGetResponse(url, headers, body) {
+	function getGetResponse(url, headers, body) {
 		let name = getName(url, headers);
 		let entry = getEntry(name);
+		if (entry.getStatus == 9000) {
+			LogTest.log('GET not available, return null');
+			return null;
+		}
+		return getGetResponseAsync(name, entry);
+	}
+	async function getGetResponseAsync(name, entry) {
 		// Wait a bit
 		await sleep(timeout);
+		// Check special test cases
+		if (entry.getStatus == 9001) {
+			LogTest.log('GET no respone, throw exception');
+			throw 'GET has no response';
+		}
 		// Assemble response
 		let rsp = {
 			status     : entry.getStatus,
@@ -274,12 +286,24 @@ function CreateRemoteFile(timeout = 100) {
 	}
 
 	// Returns Promise that simulates a POST.
-	async function getPostResponse(url, headers, body) {
+	function getPostResponse(url, headers, body) {
 		//LogTest.devlog('POST headers', headers);
 		let name = getName(url, headers);
 		let entry = getEntry(name);
+		if (entry.getStatus == 9000) {
+			LogTest.log('POST not available, return null');
+			return null;
+		}
+		return getPostResponseAsync(name, entry, headers, body);
+	}
+	async function getPostResponseAsync(name, entry, headers, body) {
 		// Wait a bit
 		await sleep(timeout);
+		// Check special test cases
+		if (entry.postStatus == 9001) {
+			LogTest.log('POST no respone, throw exception');
+			throw 'POST has no response';
+		}
 		// Check ETag (compare code in data.php)
 		let prevETag = null;
 		if (headers) {
@@ -363,6 +387,9 @@ function CreateRemoteFile(timeout = 100) {
 	// - 'NOT_EXIST': Emulate file that does not exist yet, but will after
 	//   upload
 	// - 'DEFAULT_LINKS': Value of DefaultLinks
+	// - 'NO_NETWORK': Special error 9000 that will return null on down/upload.
+	// - 'NO_LOAD_RSP': Special error 9001 to throw exception on download.
+	// - 'NO_SAVE_RSP': Special error 9001 to throw exception on upload.
 	// - nnn: Return this numeric status, sets content to empty
 	// - nnn/nnn: Return separate numeric status for GET/POST.
 	// - +string/string...: Content that changes after every GET or POST.
@@ -379,7 +406,22 @@ function CreateRemoteFile(timeout = 100) {
 		let entry = getEntry(name);
 		let m;
 		let result;
-		if (value == 'NOT_EXIST') {
+		if (value == 'NO_NETWORK') {
+			entry.getStatus = 9000;
+			entry.postStatus = 9000;
+			entry.content = '';
+			result = value;
+		} else if (value == 'NO_LOAD_RSP') {
+			entry.getStatus = 9001;
+			entry.postStatus = 200;
+			entry.content = '';
+			result = value;
+		} else if (value == 'NO_SAVE_RSP') {
+			entry.getStatus = 200;
+			entry.postStatus = 9001;
+			entry.content = '';
+			result = value;
+		} else if (value == 'NOT_EXIST') {
 			entry.getStatus = 404;
 			entry.postStatus = 200;
 			entry.content = '';
@@ -864,20 +906,22 @@ async function executeTest(data) {
 
 	// Determine 'todo' flags
 	// Options of SkipInit:
-	//           | Clear        | Clear       | Set URL   | Page
-	//           | LocalStorage | RemoteFiles | Arguments | Loading
-	// ----------|--------------|-------------|-----------|---------
-	//  <none>   | -            | -           | -         | -
-	//  LOC-STOR | Skip         | -           | -         | -
-	//  R-FILES  | -            | Skip        | -         | -
-	//  KEEP     | Skip         | Skip        | -         | -
-	//  NO-LOAD  | -            | -           | -         | Skip
-	//  CONTINUE | Skip         | Skip        | Skip      | Skip
+	//           | Clear        | Clear       | Set URL   | Page    | Page
+	//           | LocalStorage | RemoteFiles | Arguments | Loading | Update
+	// ----------|--------------|-------------|-----------|---------|--------
+	//  <none>   | -            | -           | -         | -       | -
+	//  LOC-STOR | Skip         | -           | -         | -       | -
+	//  R-FILES  | -            | Skip        | -         | -       | -
+	//  KEEP     | Skip         | Skip        | -         | -       | -
+	//  NO-LOAD  | -            | -           | -         | Skip    | -
+	//  NO-INIT  | -            | -           | -         | Skip    | Skip
+	//  CONTINUE | Skip         | Skip        | Skip      | Skip    | Skip
 	//  -: Perform the default action
 	let doClearStorage = !data.skipInit?.match(/LOC-STOR|KEEP|CONTINUE/);
 	let doClearRemote = !data.skipInit?.match(/R-FILES|KEEP|CONTINUE/);
 	let doSetArgs = !data.skipInit?.match(/CONTINUE/);
-	let doLoad = !data.skipInit?.match(/NO-LOAD|CONTINUE/);
+	let doLoad = !data.skipInit?.match(/NO-LOAD|NO-INIT|CONTINUE/);
+	let doUpdate = !data.skipInit?.match(/NO-INIT|CONTINUE/);
 	let doSetLocalLinks = data.iniLinks !== undefined;
 	let doSetCleanLinks = data.iniCleanLinks !== undefined;
 	let doSetRemoteFile = data.iniRemoteFile !== undefined;
@@ -962,6 +1006,11 @@ async function executeTest(data) {
 		catch (error) {
 			LogTest.log('initLinks error: ' + error);
 		}
+	} else if (doUpdate) {
+		LogTest.log('Test ' + data.name + ': Call updateLinksSimple()');
+		updateLinksSimple(Data.readLocalLinks());
+	} else {
+		LogTest.log('Test ' + data.name + ': Do not load/update page');
 	}
 
 	// If we should set Settings, trigger that and wait for it
