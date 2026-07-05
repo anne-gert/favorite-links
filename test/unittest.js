@@ -2,6 +2,8 @@ let LogTest;
 
 // If this is true, the test will stop when the first error is encountered.
 let StopOnFirstError = false;
+// If this is true, report, but do not count the expStatus test.
+let SkipExpStatus = false;
 // If this is set, only tests which names satisfy this regex will be executed.
 let ExecutedTestsRegexp = null;
 //let ExecutedTestsRegexp = /^3\./;
@@ -493,12 +495,43 @@ function CreateRemoteFile(timeout = 100) {
 function CreateSettingsChanger() {
 	let _config = null;
 	let _options = [];
-	let _action = 'cancel';  //'save', 'clear' or 'cancel'
+	let _action = 'cancel';  //'save', 'clear', 'cancel' or 'open'
+	let _openPanel = null;
 
+	// Update the open SettingsPanel, represented by its controls in the arguments,
+	// with the settings previously stored in this object.
 	async function update(configControl, loadOptionEntries, saveOptionEntries, hideFunction) {
 		// Wait a bit
 		await sleep(300);
 
+		if (_action == 'open') {
+			LogTest.debug('ChangeSettings: Keep Settings open');
+			_openPanel = {
+				configControl : configControl,
+				loadOptionEntries : loadOptionEntries,
+				saveOptionEntries : saveOptionEntries,
+				hideFunction : hideFunction,
+			};
+			HOOK_Ready.stop();  //trigger continuation of test case
+		} else {
+			await finishUpdate(configControl, loadOptionEntries, saveOptionEntries, hideFunction);
+		}
+	}
+
+	// Update a previously opened SettingsPanel, represented by the fields in _openPanel,
+	// with the settings currently stored in this object.
+	async function updateOpenPanel() {
+		// Reserve the Ready semaphore
+		HOOK_Ready.start();
+
+		// Wait a bit
+		await sleep(300);
+
+		// Finish the update with the open panel and the new values
+		await finishUpdate(_openPanel.configControl, _openPanel.loadOptionEntries, _openPanel.saveOptionEntries, _openPanel.hideFunction);
+	}
+
+	async function finishUpdate(configControl, loadOptionEntries, saveOptionEntries, hideFunction) {
 		// Change the controls
 		let msg = 'ChangeSettings: ' + _action + ' settings for:';
 		if (_config != null && configControl != null) {
@@ -536,11 +569,14 @@ function CreateSettingsChanger() {
 
 		// Call the hideSettings
 		if (_action == 'save') {
-			hideFunction(true);
+			await hideFunction(true);
+			_openPanel = null;
 		} else if (_action == 'clear') {
-			hideFunction('clear');
+			await hideFunction('clear');
+			_openPanel = null;
 		} else if (_action == 'cancel') {
-			hideFunction(false);
+			await hideFunction(false);
+			_openPanel = null;
 		} else {
 			LogTest.error('Unknown _action in HOOK_ChangeSettings.update(): ' + _action);
 		}
@@ -563,9 +599,11 @@ function CreateSettingsChanger() {
 
 	let obj = {
 		update : update,
+		updateOpenPanel : updateOpenPanel,
 		setConfig : setConfig,
 		setOptions : setOptions,
 		setAction : setAction,
+		isOpen : () => _openPanel != null,
 	};
 	return obj;
 }
@@ -988,7 +1026,8 @@ async function executeTest(data) {
 
 	// Clear caches to not influence the test
 	if (doResetArgs) HOOK_QueryString.reset();
-	if (doResetStorage) HOOK_LocalStorage.reset();
+	if (doResetStorage) HOOK_LocalStorage.reset();  //uses QueryString (UrlResolver)
+	if (doResetArgs) HOOK_QueryString.reset();  //reset QueryString again
 	HOOK_LocalStorage.log();
 
 	// Resume status
@@ -1028,7 +1067,12 @@ async function executeTest(data) {
 		HOOK_ChangeSettings.setOptions(options);
 		HOOK_ChangeSettings.setAction(data.cnfAction);
 		//LogTest.devlog('Trigger ChangeSettings');
-		showSettingsPanel();
+		if (HOOK_ChangeSettings.isOpen()) {
+			// Assume the SettingsPanel is still open.
+			HOOK_ChangeSettings.updateOpenPanel();
+		} else {
+			showSettingsPanel();
+		}
 		await HOOK_Ready.wait();
 		//LogTest.devlog('Finished ChangeSettings');
 	}
@@ -1132,7 +1176,7 @@ async function executeTest(data) {
 				LogTest.debug('Status line: \'' + status + '\'');
 				LogTest.debug('Actual string: \'' + curStatus +'\'');
 				LogTest.debug('Expected string: \'' + expStatus +'\'');
-				++result.errors;
+				if (!SkipExpStatus) ++result.errors;
 			}
 		}
 	}

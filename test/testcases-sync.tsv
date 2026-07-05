@@ -37,6 +37,17 @@ name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniLoadArg	iniSaveArg	expLink
 "4.5 Load exception"		B	NO_LOAD_RSP	A	links.txt	links.txt	B	B	A	FALSE	NoLoadRsp				Saveable-Links-Prerender-LoadError
 "4.5 Save exception"		B	NO_SAVE_RSP	A	links.txt	links.txt	B	B	A	FALSE	NoSaveRsp				Saveable-Links-Prerender-LoadOK-SaveError
 
+# Change LocalLinks while Settings are open
+"5.1(1) Open Settings"		A	A	A	links.txt	links.txt	A	A	A	FALSE	FALSE	A	open		Saveable-Links-Prerender-LoadOK-Same * -
+"5.1(2) Blocked Save"	CONTINUE	B	D	B			B	NULL	B	FALSE	StoreChanged	D	save	C	Saveable
+"5.1(3) Confirm Save"	CONTINUE						C	C	C	FALSE	FALSE	C	save	C	Render-SaveOK
+"5.2(1) Open Settings"		A	A	A	links.txt	links.txt	A	A	A	FALSE	FALSE	A	open		Saveable-Links-Prerender-LoadOK-Same * -
+"5.2(2) Blocked Save"	CONTINUE	B	D	B			B	NULL	B	FALSE	StoreChanged	D	save	C	Saveable
+"5.2(3) Cancel Save"	CONTINUE						B	B	B	FALSE	FALSE	D	cancel	C	Render
+"5.3(1) Open Settings"		A	A	A	links.txt	links.txt	A	A	A	FALSE	FALSE	A	open		Saveable-Links-Prerender-LoadOK-Same * -
+"5.3(2) Blocked Save"	CONTINUE	B	D	B			B	NULL	B	FALSE	StoreChanged	D	save	C	Saveable
+"5.3(3) Clear"	CONTINUE						D	D	D	FALSE	FALSE	D	clear	C	LoadOK-Clear-Render
+
 
 # vim: set filetype=tsv vartabstop=35,15 nowrap:
 

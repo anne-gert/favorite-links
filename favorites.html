@@ -986,6 +986,14 @@ const CheckboxError = 'char:!FF!';
 const CleanTagEmpty = '*Empty';
 const CleanTagInvalid = '*';
 
+// These messages can have a prefix '[C:fff]' where:
+// - C: Category. 'W'=Warning, 'I'=Info
+// - fff: Flags: This string may include any of the following characters:
+//     's': Include Save button
+//     'c': Include Clear button
+//     'x': Include Cancel button
+//     If 'fff' is empty, there are not flags.
+//     If ':fff' is missing, assume 'scx'.
 const ConflictWarning = {
 	// Load Conflict warnings
 	CleanMissing   : '[W]This and the online configuration are different and may both have changed',  //case AB-
@@ -996,11 +1004,12 @@ const ConflictWarning = {
 	// Synthesized Conflict warnings
 	LocalChanged   : '[W]This configuration has changed, but not saved online',
 	SaveFailed     : '[W]Saving configuration failed with \'<SaveError>\'',
+	StoreChanged   : '[W:sx]While this configuration was open, it was changed in another window',
 	// Load/Save error responses
-	LoadFailedInfo : '[I-]Could not refresh configuration with online configuration, because of a \'<LoadError>\' response code',
+	LoadFailedInfo : '[I:]Could not refresh configuration with online configuration, because of a \'<LoadError>\' response code',
 	// Load/Save exceptions
-	NoSaveRsp      : '[I-]Saving configuration failed',
-	NoLoadRsp      : '[I-]Could not load configuration, possible CORS violation',
+	NoSaveRsp      : '[I:]Saving configuration failed',
+	NoLoadRsp      : '[I:]Could not load configuration, possible CORS violation',
 };
 
 const IsHttp = !!location.protocol.match(/^http\b/i);  //assumin https by default
@@ -1683,7 +1692,7 @@ function CreateData(getResolver = () => UrlResolver) {
 		cleanTag = undefined;
 		loadConflict = loadError = saveConflict = saveError = false;
 		// Keep and reset the conflictStateListeners
-		callConflictStateListeners(false);
+		updateConflictState(true);
 	}
 
 	// Read value from Storage.
@@ -1765,7 +1774,9 @@ function CreateData(getResolver = () => UrlResolver) {
 			// This may have consequences for the order of the sources
 			getResolver().resetSources();
 		}
-		callConflictStateListeners();
+		invalidateConflictCache();
+		// Do not propagate, because LocalLinks will be updated before
+		// CleanLinks, causing flicker.
 	}
 
 	// Read/Write CleanLinks from Storage. CleanLinks are basically the
@@ -1782,7 +1793,7 @@ function CreateData(getResolver = () => UrlResolver) {
 		let key = getCleanLinksLSKey();
 		writeStorage(key, links);
 		writeCleanTag(eTag);
-		callConflictStateListeners();
+		updateConflictState();
 	}
 	// Persistent CleanTag (ETag) that matches CleanLinks.
 	function readCleanTag() {
@@ -1821,7 +1832,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	function setLoadState(conflict, errorStatus = false) {
 		loadConflict = conflict;
 		loadError = errorStatus;
-		callConflictStateListeners();
+		updateConflictState();
 	}
 
 	// Set if saving failed.
@@ -1835,43 +1846,65 @@ function CreateData(getResolver = () => UrlResolver) {
 	function setSaveState(conflict, errorStatus = false) {
 		saveConflict = conflict;
 		saveError = errorStatus;
+		updateConflictState();
+	}
+
+	// Invalidate ConflictState cache to force re-evaluation.
+	function invalidateConflictCache() {
+		conflictState = conflictType = conflictMsg = null;
+	}
+
+	function updateConflictState(clear = false) {
+		if (clear) {
+			conflictState = conflictMsg = null;
+			conflictType = '';
+		} else {
+			invalidateConflictCache();
+		}
 		callConflictStateListeners();
 	}
 
 	// Derive ConflictState. ConflictState is a string with the cause if the
 	// current Links are in a state where there is no automatic resolution
 	// of the 'current' value and the user should take action.
+	let conflictState = null;
 	function getConflictState() {
+		// Check if we have a cached state
+		if (conflictState != null) {
+			LogSettings.log(`ConflictState: cached conflictState=${conflictState}`);
+			return conflictState;
+		}
+
 		// Check Save-Conflict
 		if (saveConflict) {
 			LogSettings.log(`ConflictState: saveConflict=${saveConflict}`);
-			return saveConflict;
+			return conflictState = saveConflict;
 		}
 
 		// Check Load-Conflict
 		if (loadConflict) {
 			LogSettings.log(`ConflictState: loadConflict=${loadConflict}`);
-			return loadConflict;
+			return conflictState = loadConflict;
 		}
 
 		// If Load failed, we don't know remote state -> Don't show Conflict
 		if (loadError) {
 			LogSettings.log(`ConflictState: Ignore DirtyLinks (Load failed)`);
-			return false;
+			return conflictState = false;
 		}
 
 		// If LinksOverride, we don't update LocalLinks -> Don't show Conflict
 		let overrideOpt = getResolver().getLoadOverrideOptions();
 		if (overrideOpt != null && overrideOpt != '') {
 			LogSettings.log(`ConflictState: Ignore DirtyLinks (Override mode)`);
-			return false;
+			return conflictState = false;
 		}
 
 		// If user cannot Save, the user cannot fix Conflict -> Don't show Conflict
 		let saveOpt = getResolver().getSaveOptions();
 		if (saveOpt == null || saveOpt == '') {
 			LogSettings.log(`ConflictState: Ignore DirtyLinks (no SaveOptions)`);
-			return false;
+			return conflictState = false;
 		}
 
 		// Derive ConflictState from dirty Links:
@@ -1884,30 +1917,55 @@ function CreateData(getResolver = () => UrlResolver) {
 			if (localLinks.trim() != cleanLinks.trim()) {
 				if (saveError) {
 					LogSettings.log(`ConflictState: LocalLinks are Dirty and could not save`);
-					return 'SaveFailed';
+					return conflictState = 'SaveFailed';
 				} else {
 					LogSettings.log(`ConflictState: LocalLinks are Dirty`);
-					return 'LocalChanged';
+					return conflictState = 'LocalChanged';
 				}
 			}
 		}
 
 		// No Conflict
 		LogSettings.log(`ConflictState: No Conflict`);
-		return false;
+		return conflictState = false;
 	}
 
-	function getConflictMsg() {
-		let msg = getConflictState();
-		if (msg) {
-			if (msg in ConflictWarning) {
-				msg = ConflictWarning[msg];
+	// Returns true if there is a Conflict situation.
+	// If info==true, this includes infos, otherwise just warnings.
+	let conflictType = null;
+	function isConflict(info = false) {
+		if (conflictType == null) {
+			conflictType = '';
+			let msg = getConflictMsg();
+			if (msg) {
+				let m = msg.match(/^\[([WI])/);
+				if (m) conflictType = m[1];  //W or I
 			}
-			msg = msg.
-				replaceAll(/<SaveError>/g, saveError ? saveError : 'Unknown').
-				replaceAll(/<LoadError>/g, loadError ? loadError : 'Unknown');
 		}
-		return msg;
+		if (info) {
+			return conflictType != '';  //any Conflict
+		} else {
+			return conflictType == 'W';  //only Conflict Warning
+		}
+	}
+
+	// Return the ConflictState as a message string.
+	// Returns false if no message.
+	let conflictMsg = null;
+	function getConflictMsg() {
+		if (conflictMsg == null) {
+			let msg = getConflictState();
+			if (msg) {
+				if (msg in ConflictWarning) {
+					msg = ConflictWarning[msg];
+				}
+				msg = msg.
+					replaceAll(/<SaveError>/g, saveError ? saveError : 'Unknown').
+					replaceAll(/<LoadError>/g, loadError ? loadError : 'Unknown');
+			}
+			conflictMsg = msg;
+		}
+		return conflictMsg;
 	}
 
 	// Manage listeners for the ConflictState
@@ -1916,13 +1974,9 @@ function CreateData(getResolver = () => UrlResolver) {
 		conflictStateListeners.push(listener);  //add for future
 		listener(getConflictMsg());  //update to current
 	}
-	function callConflictStateListeners(msg = null) {
-		let n = conflictStateListeners.length;
-		if (n > 0) {
-			if (msg == null) msg = getConflictMsg();
-			for (let i = 0; i < n; ++i) {
-				conflictStateListeners[i](msg);
-			}
+	function callConflictStateListeners() {
+		for (let i = 0; i < conflictStateListeners.length; ++i) {
+			conflictStateListeners[i]();
 		}
 	}
 
@@ -2022,8 +2076,6 @@ function CreateData(getResolver = () => UrlResolver) {
 		setCleanTag : setCleanTag,
 		setLoadState : setLoadState,
 		setSaveState : setSaveState,
-		getConflictState : getConflictState,
-		addConflictStateListener : addConflictStateListener,
 		getDisplayedLinks : getDisplayedLinks,
 		setDisplayedLinks : setDisplayedLinks,
 
@@ -2038,6 +2090,12 @@ function CreateData(getResolver = () => UrlResolver) {
 		writeLoadOptions : writeLoadOptions,
 		readSaveOptions : readSaveOptions,
 		writeSaveOptions : writeSaveOptions,
+
+		// Functions for Conflicts
+		isConflict : isConflict,
+		getConflictState : getConflictState,
+		getConflictMsg : getConflictMsg,
+		addConflictStateListener : addConflictStateListener,
 
 		// Functions to read/write misc data
 		hasLocalStorage : () => hasStorage,
@@ -5546,12 +5604,14 @@ function initSettingsPanel() {
 	let iconOpen, iconSave, iconClear, iconHelp, iconCancel, warningDirty;
 
 	// Status
-	let visible = false, conflictWarning = false;;
+	let visible = false, origLinks = null;
+	let blockedSave;
 
 	// Other global variables for Settings (will be assigned in createSettings())
 	let settingsText;
 	let loadOptionEntries = [], saveOptionEntries = [];
 	let recreateOptionEntries;
+	let updateConflictState;
 
 	// Create the minimal hooks (expose functions) and defer rest at first showing
 	showSettingsPanel = showSettings;
@@ -5562,9 +5622,9 @@ function initSettingsPanel() {
 	iconOpen.className = 'settings-icon';
 	iconOpen.onclick = () => showSettings();
 	iconBarClosed.appendChild(iconOpen);
-	Data.addConflictStateListener(msg => {
-		conflictWarning = !!(msg && msg.match(/^\[W/));
-		addClass(iconOpen, 'alert', conflictWarning);
+	Data.addConflictStateListener(() => {
+		let warn = Data.isConflict();
+		addClass(iconOpen, 'alert', warn);
 	});
 
 	// Create rest of the Settings panel. This is called at first showing.
@@ -5665,11 +5725,6 @@ function initSettingsPanel() {
 		setUnicodeText(iconClear, UNICODE_EMPTY_DOCUMENT, UNICODE_CLOCKWISE_OPEN_CIRCLE_ARROW, 'C');
 		setUnicodeText(iconHelp, '?');
 		setUnicodeText(iconCancel, UNICODE_CANCELLATION, UNICODE_CROSS_MARK + UNICODE_VARIATION_SELECTOR_15, 'X');
-		Data.addConflictStateListener(msg => {
-			let warn = msg && msg.match(/^\[W/);
-			addClass(iconSave, 'alert', warn);
-			addClass(iconClear, 'alert', warn);
-		});
 
 		// Configure settingsPanel
 		settingsPanel.onkeydown = function(e) {
@@ -5702,7 +5757,8 @@ function initSettingsPanel() {
 		let htmlFixSave = `&bull; <span class="bullet-icon">${iconSave.textContent}</span> <span class="accent">Save</span>: Keep the <u>local configuration</u> and overwrite the online configuration, discarding changes that have been made online or from other browser windows.<br>`;
 		let htmlFixClear = `&bull; <span class="bullet-icon">${iconClear.textContent}</span> <span class="accent">Clear</span>: Download and use the <u>online configuration</u>, discarding local changes.<br>`;
 		let htmlFixCancel = `&bull; <span class="bullet-icon">${iconCancel.textContent}</span> <span class="accent">Cancel</span>: Close this edit window and make <u>no changes</u>.`;
-		Data.addConflictStateListener(msg => {
+		updateConflictState = () => {
+			let msg = Data.getConflictMsg();
 			if (msg) {
 				let m = msg.match(/^\[([WI])(\S*)\]\s*(.*)/);
 				if (m) {
@@ -5727,7 +5783,9 @@ function initSettingsPanel() {
 				warningDirty.innerHTML = msg;
 			}
 			addClass(warningDirty, 'hidden', !msg);
-		});
+			addClass(iconSave, 'alert', msg);
+			addClass(iconClear, 'alert', msg);
+		};
 		settingsArea.appendChild(warningDirty);
 
 		// Create settingsText
@@ -5995,7 +6053,9 @@ function initSettingsPanel() {
 	// handler after fhe first time.
 
 	// Show the Settings panel.
+	// Returns Promise that becomes resolved when animation has finished.
 	function showSettings(gotoLine = null) {
+		let ready = new PendingPromise();
 		if (HOOK_Ready != null) HOOK_Ready.start();
 		let scrollToLine = () => {
 			if (gotoLine != null && settingsText) {
@@ -6053,9 +6113,11 @@ function initSettingsPanel() {
 			}
 		};
 		if (visible) {
+			updateConflictState();
 			scrollToLine();
 			if (HOOK_Ready != null) HOOK_Ready.stop();
-			return;  //do nothing if already visible
+			ready.resolve('SettingsPanel already visible');
+			return ready;  //do nothing if already visible
 		}
 		// Create panel at first showing
 		if (settingsPanel == null) {
@@ -6064,7 +6126,8 @@ function initSettingsPanel() {
 				// Creating panel failed, disable button and return
 				iconBarClosed.classList.add('hidden');
 				if (HOOK_Ready != null) HOOK_Ready.stop();
-				return;
+				ready.resolve('Could not create SettingsPanel');
+				return ready;
 			}
 		} else if (HOOK_ChangeSettings != null) {
 			// Panel already created, but do recreate what is needed
@@ -6072,9 +6135,11 @@ function initSettingsPanel() {
 			recreateOptionEntries();
 		}
 		// Scroll to the top to where the Settings will be showing
+		updateConflictState();
+		blockedSave = false;
 		window.scrollTo({ top: 0, left: 100, behavior: 'smooth' });
 		// Update the contents
-		settingsText.value = Data.readLocalLinks();
+		settingsText.value = origLinks = Data.readLocalLinks();
 		for (let i = 0; i < loadOptionEntries.length; ++i) {
 			loadOptionEntries[i].showData();
 		}
@@ -6094,6 +6159,7 @@ function initSettingsPanel() {
 			settingsPanel.onanimationend = null;
 			settingsPanel.classList.remove('expanding');
 			scrollToLine();
+			ready.resolve('SettingsPanel opened');
 			if (HOOK_ChangeSettings != null) {
 				// Call the hook function to handle the settings
 				HOOK_ChangeSettings.update(settingsText, loadOptionEntries, saveOptionEntries, hideSettings);
@@ -6114,11 +6180,15 @@ function initSettingsPanel() {
 			coming.classList.remove('slide-in');
 		};
 		visible = true;
+
+		return ready;
 	};
 
 	// Hide (Save or Cancel) Settings panel.
+	// Returns Promise that becomes resolved when animation has finished.
 	function hideSettings(save) {
 		//LogSettings.devlog('hideSettings(' + save + ')');
+		let ready = new PendingPromise();
 		if (!visible) return;  //do nothing if already hidden
 		let hide = () => {
 			// slide panel to hidden
@@ -6127,6 +6197,8 @@ function initSettingsPanel() {
 				settingsPanel.onanimationend = null;
 				settingsPanel.classList.remove('show');
 				settingsPanel.classList.remove('collapsing');
+				updateConflictState();
+				ready.resolve(save);
 				if (HOOK_Ready != null) HOOK_Ready.stop();
 			};
 			// Slide iconBarOpen out and iconBarClosed in
@@ -6191,15 +6263,20 @@ function initSettingsPanel() {
 						// It is another error, discard it, because
 						// it has already been logged.
 					}
+					ready.resolve(error);
 				});
-			} else {
+			} else if (origLinks === saveLinks || Data.isConflict(true)) {
+				// LocalLinks in LocalStorage have not changed
+				// or a warning/info is showing and this is an override
 				LogSettings.log('Save settings');
+				blockedSave = false;
 				let saveCleanTag = null;
 				try {
 					let editLinks = settingsText.value;
 					parseLinks(editLinks);  //throws error if invalid
 					// If no exception, editLinks are correct
-					if (conflictWarning && !loadOptionsChanged) {
+					let inWarn = Data.isConflict();
+					if (inWarn && !loadOptionsChanged) {
 						// If save from a Conflict state, we intend to overwrite remote
 						saveCleanTag = Data.getCleanTag();
 						LogSettings.log(`Change CleanTag from '${saveCleanTag}' to '${CleanTagInvalid}' before saving Conflict state`);
@@ -6229,12 +6306,40 @@ function initSettingsPanel() {
 					// Leave the value in settingsText to correct.
 					// Restore old value in Links in case of cancel.
 					Data.writeLocalLinks(saveLinks);
+					ready.resolve(error);
+				}
+			} else {
+				// LocalLinks in LocalStorage have changed
+				LogSettings.log('Save settings, but LocalStorage has changed too');
+				Data.setSaveState('StoreChanged');
+				updateConflictState();
+				// Scroll nested element to their tops to make warning visible
+				for (let el = settingsText; el && el != settingsPanel;) {
+					el = el.parentElement;
+					el.scrollTop = 0;
+				}
+				blockedSave = true;
+				if (HOOK_Ready == null) {
+					window.alert('Settings were changed in another window' +
+						'\n\nPlease confirm save or cancel.');
+				} else {
+					HOOK_Ready.stop();
 				}
 			}
 		} else {
 			// Cancel
 			hide();
+			if (blockedSave) {
+				// Previous Save was blocked. Now cancel it.
+				// Remove error
+				Data.setSaveState(false);
+				// Update current links while hiding Settings.
+				updateLinks(null, null, false, null);
+			}
+			blockedSave = false;
 		}
+
+		return ready;
 	};
 }
 
