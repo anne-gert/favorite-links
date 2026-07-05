@@ -986,13 +986,18 @@ const CleanTagEmpty = '*Empty';
 const CleanTagInvalid = '*';
 
 const ConflictWarning = {
+	// Load Conflict warnings
 	CleanMissing   : '[W]This and the online configuration are different and may both have changed',  //case AB-
 	CleanDifferent : '[W]Both this and the online configuration have changed',  //case BCA
-	RemoteChanged  : '[W]Could not save, because the online configuration changed',  //412 response
-	RemoteNotEmpty : '[W]Could not save, because the online configuration already exists',  //412 response
+	// Save Conflict warnings (412 response)
+	RemoteChanged  : '[W]Could not save, because the online configuration changed',
+	RemoteNotEmpty : '[W]Could not save, because the online configuration already exists',
+	// Synthesized Conflict warnings
+	LocalChanged   : '[W]This configuration has changed, but not saved online',
 	SaveFailed     : '[W]Saving configuration failed with \'<SaveError>\'',
-	SaveFailedInfo : '[I-]This configuration was not yet saved online, because of a \'<SaveError>\' response code. Saving will automatically be retried',
+	// Load/Save error responses
 	LoadFailedInfo : '[I-]Could not refresh configuration with online configuration, because of a \'<LoadError>\' response code',
+	// Load/Save exceptions
 	NoSaveRsp      : '[I-]Saving configuration failed',
 	NoLoadRsp      : '[I-]Could not load configuration, possible CORS violation',
 };
@@ -1881,7 +1886,7 @@ function CreateData(getResolver = () => UrlResolver) {
 					return 'SaveFailed';
 				} else {
 					LogSettings.log(`ConflictState: LocalLinks are Dirty`);
-					return 'CleanDifferent';
+					return 'LocalChanged';
 				}
 			}
 		}
