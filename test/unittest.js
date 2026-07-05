@@ -833,7 +833,6 @@ function getMultiValue(value, tag) {
 
 // Execute tests {{{
 
-let prevStatus = '';
 async function executeTest(data) {
 	let result = {
 		skipped: 0,
@@ -864,10 +863,21 @@ async function executeTest(data) {
 	if (CurrTestCtl) CurrTestCtl.textContent = data.name;
 
 	// Determine 'todo' flags
-	let doClearStorage = !data.skipInit?.match(/Storage|LS|KEEP/);
-	let doClearRemote = !data.skipInit?.match(/RemoteFiles|RF|KEEP/);
-	let doLoad = !data.skipInit?.match(/NO-INIT|NI/);
-	let doSetArgs = true;
+	// Options of SkipInit:
+	//           | Clear        | Clear       | Set URL   | Page
+	//           | LocalStorage | RemoteFiles | Arguments | Loading
+	// ----------|--------------|-------------|-----------|---------
+	//  <none>   | -            | -           | -         | -
+	//  LOC-STOR | Skip         | -           | -         | -
+	//  R-FILES  | -            | Skip        | -         | -
+	//  KEEP     | Skip         | Skip        | -         | -
+	//  NO-LOAD  | -            | -           | -         | Skip
+	//  CONTINUE | Skip         | Skip        | Skip      | Skip
+	//  -: Perform the default action
+	let doClearStorage = !data.skipInit?.match(/LOC-STOR|KEEP|CONTINUE/);
+	let doClearRemote = !data.skipInit?.match(/R-FILES|KEEP|CONTINUE/);
+	let doSetArgs = !data.skipInit?.match(/CONTINUE/);
+	let doLoad = !data.skipInit?.match(/NO-LOAD|CONTINUE/);
 	let doSetLocalLinks = data.iniLinks !== undefined;
 	let doSetCleanLinks = data.iniCleanLinks !== undefined;
 	let doSetRemoteFile = data.iniRemoteFile !== undefined;
@@ -939,7 +949,6 @@ async function executeTest(data) {
 
 	// Resume status
 	clearStatus();
-	prevStatus = '';
 	resumeStatus();
 
 	// Trigger page initialization
@@ -1068,16 +1077,14 @@ async function executeTest(data) {
 		if (data.expStatus != null) {
 			let status = document.getElementById('StatusLine').textContent;
 			let curStatus = status.replace(/[^a-zA-Z0-9]/g, '');
-			let fullStatus = (prevStatus != '') ? prevStatus + ' + ' + data.expStatus : data.expStatus;
-			let expStatus = fullStatus.replace(/[^a-zA-Z0-9]/g, '');
+			let expStatus = data.expStatus.replace(/[^a-zA-Z0-9]/g, '');
 			if (curStatus != expStatus) {
-				LogTest.error('Test ' + data.name + ': Status (=' + renderValue(status) + ') has not expected value (=' + renderValue(fullStatus) + ')');
-				LogTest.debug('Full Status: \'' + status + '\'');
+				LogTest.error('Test ' + data.name + ': Status (=' + renderValue(status) + ') has not expected value (=' + renderValue(expStatus) + ')');
+				LogTest.debug('Status line: \'' + status + '\'');
 				LogTest.debug('Actual string: \'' + curStatus +'\'');
 				LogTest.debug('Expected string: \'' + expStatus +'\'');
 				++result.errors;
 			}
-			prevStatus = fullStatus;  //for next testcase
 		}
 	}
 
