@@ -55,7 +55,7 @@ name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	ini
 "4.2.1 Cancel after BCA Conflict"		B	C	A		links.txt	links.txt	B	B	A	FALSE	CleanDifferent	C	cancel	D				NULL
 "4.2.2 Save after BCA Conflict"		B	C	A		links.txt	links.txt	D	D	D	FALSE	FALSE	D	save	D				NULL
 "4.2.3 Clear after BCA Conflict"		B	C	A		links.txt	links.txt	C	C	C	FALSE	FALSE	C	clear	D				NULL
-"4.3 Artificial Invalid CleanTag"		B	200/403	INVALID		links.txt	links.txt	B	B	INVALID	FALSE	CleanInvalid	RO_FILE	save	B				NULL
+"4.3 Artificial Invalid CleanTag"		B	200/403	INVALID		links.txt	links.txt	B	B	INVALID	FALSE	FALSE	RO_FILE	save	B				NULL
 
 
 # vim: set filetype=tsv vartabstop=35,15 nowrap:

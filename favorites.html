@@ -986,11 +986,10 @@ const CleanTagEmpty = '*Empty';
 const CleanTagInvalid = '*';
 
 const ConflictWarning = {
-	CleanMissing   : '[W]This and the online configuration are not the same',  //case AB-
+	CleanMissing   : '[W]This and the online configuration are different and may both have changed',  //case AB-
 	CleanDifferent : '[W]Both this and the online configuration have changed',  //case BCA
 	RemoteChanged  : '[W]Could not save, because the online configuration changed',  //412 response
-	RemoteNotEmpty : '[W]Could not save, because the online configuration was not empty',  //412 response
-	CleanInvalid   : '[W]Online configuration has changed',
+	RemoteNotEmpty : '[W]Could not save, because the online configuration already exists',  //412 response
 	SaveFailed     : '[W]Saving configuration failed with \'<SaveError>\'',
 	SaveFailedInfo : '[I-]This configuration was not yet saved online, because of a \'<SaveError>\' response code. Saving will automatically be retried',
 	LoadFailedInfo : '[I-]Could not refresh configuration with online configuration, because of a \'<LoadError>\' response code',
@@ -1677,7 +1676,8 @@ function CreateData(getResolver = () => UrlResolver) {
 		displayedLinks = null;
 		cleanTag = undefined;
 		loadConflict = loadError = saveConflict = saveError = false;
-		// Keep the conflictStateListeners
+		// Keep and reset the conflictStateListeners
+		callConflictStateListeners(false);
 	}
 
 	// Read value from Storage.
@@ -1759,6 +1759,7 @@ function CreateData(getResolver = () => UrlResolver) {
 			// This may have consequences for the order of the sources
 			getResolver().resetSources();
 		}
+		callConflictStateListeners();
 	}
 
 	// Read/Write CleanLinks from Storage. CleanLinks are basically the
@@ -1775,6 +1776,7 @@ function CreateData(getResolver = () => UrlResolver) {
 		let key = getCleanLinksLSKey();
 		writeStorage(key, links);
 		writeCleanTag(eTag);
+		callConflictStateListeners();
 	}
 	// Persistent CleanTag (ETag) that matches CleanLinks.
 	function readCleanTag() {
@@ -1786,7 +1788,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	function writeCleanTag(eTag) {
 		let key = getCleanTagLSKey();
 		writeStorage(key, eTag);
-		cleanTag = eTag;  //also update current value for this window
+		setCleanTag(eTag);  //also update current value for this window
 	}
 	// The persistent CleanTag is shared between windows that use the same
 	// ConfigName. However, they may have LocalLinks with changes that are
@@ -1800,7 +1802,6 @@ function CreateData(getResolver = () => UrlResolver) {
 	}
 	function setCleanTag(eTag) {
 		cleanTag = eTag;
-		callConflictStateListeners();
 	}
 
 	// Set if loading failed.
@@ -1847,30 +1848,24 @@ function CreateData(getResolver = () => UrlResolver) {
 			return loadConflict;
 		}
 
-		// Check if a CleanTag has bee invalidated
-		if (getCleanTag() == CleanTagInvalid) {
-			LogSettings.log(`ConflictState: CleanInvalid`);
-			return 'CleanInvalid';
-		}
-
 		// If Load failed, we don't know remote state -> Don't show Conflict
 		if (loadError) {
 			LogSettings.log(`ConflictState: Ignore DirtyLinks (Load failed)`);
-			return null;
+			return false;
 		}
 
 		// If LinksOverride, we don't update LocalLinks -> Don't show Conflict
 		let overrideOpt = getResolver().getLoadOverrideOptions();
 		if (overrideOpt != null && overrideOpt != '') {
 			LogSettings.log(`ConflictState: Ignore DirtyLinks (Override mode)`);
-			return null;
+			return false;
 		}
 
 		// If user cannot Save, the user cannot fix Conflict -> Don't show Conflict
 		let saveOpt = getResolver().getSaveOptions();
 		if (saveOpt == null || saveOpt == '') {
 			LogSettings.log(`ConflictState: Ignore DirtyLinks (no SaveOptions)`);
-			return null;
+			return false;
 		}
 
 		// Derive ConflictState from dirty Links:
@@ -1915,10 +1910,13 @@ function CreateData(getResolver = () => UrlResolver) {
 		conflictStateListeners.push(listener);  //add for future
 		listener(getConflictMsg());  //update to current
 	}
-	function callConflictStateListeners() {
-		let msg = getConflictMsg();
-		for (let i = 0; i < conflictStateListeners.length; ++i) {
-			conflictStateListeners[i](msg);
+	function callConflictStateListeners(msg = null) {
+		let n = conflictStateListeners.length;
+		if (n > 0) {
+			if (msg == null) msg = getConflictMsg();
+			for (let i = 0; i < n; ++i) {
+				conflictStateListeners[i](msg);
+			}
 		}
 	}
 
@@ -2843,9 +2841,10 @@ function uploadLinks(value) {
 			// Failed
 			LogUpDownload.error('Failed to upload Links, because remote file has changed');
 			addStatus('Save ' + status);
-			Data.setCleanTag(CleanTagInvalid);
 			let remoteProblem = wantEmpty ? 'RemoteNotEmpty' : 'RemoteChanged';
 			Data.setSaveState(remoteProblem, status + ' ' + statusText);
+			// This SaveState will be propagated to Settings, so that
+			// a second Save will act as an override.
 			addStatus('Conflict');
 			resolveFunc(false);  //do not see this as a fail
 		} else {
@@ -5530,7 +5529,7 @@ function initSettingsPanel() {
 	let iconOpen, iconSave, iconClear, iconHelp, iconCancel, warningDirty;
 
 	// Status
-	let visible = false;
+	let visible = false, conflictWarning = false;;
 
 	// Other global variables for Settings (will be assigned in createSettings())
 	let settingsText;
@@ -5547,8 +5546,8 @@ function initSettingsPanel() {
 	iconOpen.onclick = () => showSettings();
 	iconBarClosed.appendChild(iconOpen);
 	Data.addConflictStateListener(msg => {
-		let warn = msg && msg.match(/^\[W/);
-		addClass(iconOpen, 'alert', warn);
+		conflictWarning = !!(msg && msg.match(/^\[W/));
+		addClass(iconOpen, 'alert', conflictWarning);
 	});
 
 	// Create rest of the Settings panel. This is called at first showing.
@@ -6183,9 +6182,8 @@ function initSettingsPanel() {
 					let editLinks = settingsText.value;
 					parseLinks(editLinks);  //throws error if invalid
 					// If no exception, editLinks are correct
-					if (Data.getConflictState()) {
-						// If save from a Conflict state, we
-						// intend to overwrite remote
+					if (conflictWarning && !loadOptionsChanged) {
+						// If save from a Conflict state, we intend to overwrite remote
 						saveCleanTag = Data.getCleanTag();
 						LogSettings.log(`Change CleanTag from '${saveCleanTag}' to '${CleanTagInvalid}' before saving Conflict state`);
 						Data.setCleanTag(CleanTagInvalid);
