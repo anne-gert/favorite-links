@@ -4,7 +4,7 @@ name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniLoadArg	iniSaveArg	expLink
 
 # Client has Empty ETag (Clean is Empty)
 # Different combinations of CleanLinks=Empty and empty/non-empty RemoteFile
-"1.1 Is Empty (Load+Save)"		A		EMPTY	links.txt	links.txt	A	A	A	FALSE	FALSE	A			Saveable-Links-Prerender-LoadOK-New-SaveOK
+"1.1 Is Empty (Load+Save)"		A		EMPTY	links.txt	links.txt	A	A	A	FALSE	FALSE	A			Saveable-Links-Prerender-Load404-New-SaveOK
 "1.2 Is Empty 2"	NO-INIT	A		EMPTY	links.txt	links.txt	C	C	C	FALSE	FALSE	C	save	C	Saveable * New-Render-SaveOK
 "1.3(1) Not Empty"	NO-INIT	A	B	EMPTY	links.txt	links.txt	C	C		FALSE	RemoteNotEmpty	B	save	C	Saveable * New-Render-Save412-Conflict
 "1.3(2) Not Empty, 2nd Save"	CONTINUE						C	C		FALSE	FALSE	C	save	C	New-SaveOK

@@ -237,17 +237,39 @@ function CreateRemoteFile(timeout = 100) {
 	}
 
 	// Get the response entry for the specified name.
-	// Creates a new entry if it does not exist yet.
-	function getEntry(name) {
+	// If name does not exist, create a new entry. If storeNew==true, a
+	// new entry is also stored.
+	function getEntry(name, storeNew) {
 		let entry = _entries[name];
 		if (entry == null) {
-			_entries[name] = entry = {
-				getStatus: 200,
-				postStatus: 200,
-				name: name,
-				content: '',
-				nextResponses: [],
-			};
+			let def = _entries['default.txt'];
+			if (def) {
+				// Make a copy of default
+				LogTest.debug(`RemoteFile: Copy 'default.txt' to '${name}'`);
+				entry = {
+					getStatus: def.getStatus,
+					postStatus: def.postStatus,
+					name: name,
+					content: def.content,
+					nextResponses: [],
+				};
+				for (let i = 0; i < def.nextResponses.length; ++i) {
+					entry.nextResponses.push(def.nextResponses[i]);
+				}
+			} else {
+				// Create an empty entry
+				LogTest.debug(`RemoteFile: Create empty entry for '${name}'`);
+				entry = {
+					getStatus: 404,
+					postStatus: 200,
+					name: name,
+					content: '',
+					nextResponses: [],
+				};
+			}
+			if (storeNew) {
+				_entries[name] = entry;
+			}
 		}
 		return entry;
 	}
@@ -255,7 +277,7 @@ function CreateRemoteFile(timeout = 100) {
 	// Returns Promise that simulates a GET.
 	function getGetResponse(url, headers, body) {
 		let name = getName(url, headers);
-		let entry = getEntry(name);
+		let entry = getEntry(name, false);
 		if (entry.getStatus == 9000) {
 			LogTest.log('GET not available, return null');
 			return null;
@@ -291,7 +313,7 @@ function CreateRemoteFile(timeout = 100) {
 	function getPostResponse(url, headers, body) {
 		//LogTest.devlog('POST headers', headers);
 		let name = getName(url, headers);
-		let entry = getEntry(name);
+		let entry = getEntry(name, true);
 		if (entry.getStatus == 9000) {
 			LogTest.log('POST not available, return null');
 			return null;
@@ -397,15 +419,15 @@ function CreateRemoteFile(timeout = 100) {
 	// - +string/string...: Content that changes after every GET or POST.
 	//   This can be used to simulate 412 behavior. Strings may be empty.
 	// - any other string: Contents of the emulated file
-	// If name is set, use that filename, otherwise use UrlResolver.getLoadName() or 'links.txt';.
+	// If name is set, use that filename, otherwise use UrlResolver.getLoadName() or 'default.txt';.
 	function setContent(value, name = null) {
-		if (name == null) name = UrlResolver.getLoadName() ?? 'links.txt';
+		if (name == null) name = UrlResolver.getLoadName() ?? 'default.txt';
 		if (value == null) {
 			// Do not change content
 			LogTest.debug(`No change in RemoteFile for '${name}'`);
 			return;
 		}
-		let entry = getEntry(name);
+		let entry = getEntry(name, true);
 		let m;
 		let result;
 		if (value == 'NO_NETWORK') {
@@ -467,10 +489,10 @@ function CreateRemoteFile(timeout = 100) {
 	}
 
 	// Get the contents of the specified name.
-	// If name is not specified, use UrlResolver.getLoadName().
+	// If name is not specified, use UrlResolver.getLoadName() or 'default.txt'.
 	function getContent(name = null) {
-		if (name == null) name = UrlResolver.getLoadName() ?? 'links.txt';
-		let entry = getEntry(name);
+		if (name == null) name = UrlResolver.getLoadName() ?? 'default.txt';
+		let entry = getEntry(name, false);
 		let result = `${entry.getStatus}/${entry.postStatus} `;
 		result += renderValue((entry.content === DefaultLinks) ? 'DefaultLinks' : entry.contents);
 		LogTest.debug(`Get RemoteFile '${name}': ${result}`);

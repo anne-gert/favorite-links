@@ -10,8 +10,8 @@ name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	ini
 "2.1(2) Save Config in A"	KEEP					links.txt	links.txt	A	A	A	FALSE	FALSE	A	save	A				Saveable-Load404-Default-Render + New-Render-SaveOK
 
 # Create and Edit Configs
-"2.2(1) Create empty Config"			NOT_EXIST			config		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL						Local-NoDownload-Renderfallback
-"2.2(2) Set Options"	KEEP					config		DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	save		links.txt		links.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-Load404-Default
+"2.2(1) Create empty Config"			NOT_EXIST			config		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL						Local-{SearchLoadOptions-Load404(4x)}-Local-NoDownload-Renderfallback
+"2.2(2) Set Options"	KEEP					config		DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL	save		links.txt		links.txt	Local-{SearchLoadOptions-Saveable-Load404-Saveable-Load404-Saveable-Load404-Saveable-Load404}-Local-NoDownload-Renderfallback * OptionsChanged-Saveable-Load404-Default
 "2.2(3) Change Links"	KEEP					config		A	A	A	FALSE	FALSE	A	save	A				Saveable-Links-Prerender-Load404-New-SaveOK * Render-SaveOK
 
 # Create and Switch between Configs
@@ -21,15 +21,21 @@ name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	ini
 "2.3(4) Switch to B"	KEEP					config-B		B	B	B	FALSE	FALSE	B						NULL
 
 # Create and Switch remote files
-"2.4(1) Load Config A"						config		A	A	A	FALSE	FALSE	A	save	A	links-A.txt		links-A.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-LoadOK-New-Render-SaveOK
-"2.4(2) Change to empty file"	KEEP					config		B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-New-Render-SaveOK
+"2.4(1) Load Config A"						config		A	A	A	FALSE	FALSE	A	save	A	links-A.txt		links-A.txt	Local-{SearchLoadOptions-Load404(4x)}-Local-NoDownload-Renderfallback * OptionsChanged-Saveable-Load404-New-Render-SaveOK
+"2.4(2) Change to empty file"	KEEP					config		B	B	B	FALSE	FALSE	B	save	B	links-B.txt		links-B.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-Load404-New-Render-SaveOK
 "2.4(3) Change to existing file"	KEEP					config		C	C	NULL	FALSE	CleanMissing	A	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Same * OptionsChanged-Saveable-Links-LoadOK-Conflict-Render
 "2.4(4) Existing file (clear)"	KEEP	B	A			config		A	A	A	FALSE	FALSE	A	clear	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Conflict + LoadOK-NoLocal-Render
 "2.4(5) Existing file (save)"	KEEP	B	A	old		config		C	C	C	FALSE	FALSE	C	save	C	links-A.txt		links-A.txt	Saveable-Links-Prerender-LoadOK-Conflict + Render-SaveOK
 
 # Create new/default config for existing file
-"2.5(1) Create empty Config"			A			config		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	A						Local-NoDownload-Renderfallback
-"2.5(2) Use remote file"	KEEP		A			config		A	A	A	FALSE	FALSE	A	save		links.txt		links.txt	Local-NoDownload-Renderfallback * OptionsChanged-Saveable-LoadOK-NoLocal-Render
+"2.5.1(1) Create empty config"			NOT_EXIST			config		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL						Local-{SearchLoadOptions-Load404(4x)}-Local-NoDownload-Renderfallback
+"2.5.1(2) Use remote file"	CONTINUE		A			config		A	A	A	FALSE	FALSE	A	save		links.txt		links.txt	* OptionsChanged-Saveable-LoadOK-NoLocal-Render
+"2.5.2(1) Create links-A"		A	NOT_EXIST			links-A.txt	links-A.txt	A	A	A	FALSE	FALSE	A						Saveable-Links-Prerender-Load404-New-SaveOK
+"2.5.2(2) Create links-B"	KEEP	B	NOT_EXIST			links-B.txt	links-B.txt	B	B	B	FALSE	FALSE	B						Saveable-Links-Prerender-Load404-New-SaveOK
+"2.5.2(3) Search links-A (ok)"	KEEP					links-A		A	A	A	FALSE	FALSE	A						Local-{SearchLoadOptions-LoadOK}(2x)-NoLocal-Render
+"2.5.2(4) Search links-B (ok)"	KEEP					links-B		B	B	B	FALSE	FALSE	B						Local-{SearchLoadOptions-LoadOK}(2x)-NoLocal-Render
+"2.5.2(5) Search links-C (nok)"	KEEP					links-C		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL						Local-{SearchLoadOptions-Load404(4x)}-Local-NoDownload-Renderfallback
+"2.5.3 Create Config for empty"			EMPTY			config		NULL	EMPTY	NULL	FALSE	FALSE	EMPTY						Local-{SearchLoadOptions-LoadOK}(2x)-Empty-Render
 
 # Save/Clear/Cancel all combinations of L,O,S (Links, Override, Save)
 "3.1.1 [--] Settings: Save"		A	X					B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender * New-Render

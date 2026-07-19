@@ -29,7 +29,7 @@ storage.
 </p>
 
 
-<a name="usgae"></a>
+<a name="usage"></a>
 <h2>The Standard Setup</h2>
 
 <p>
@@ -115,9 +115,9 @@ w your-save-token-here
     <code>https://your-server.net/favorites/favorites.html?links=my-config</code>.
     Firefox needs an add-on (<a href="https://addons.mozilla.org/en-US/firefox/addon/new-tab-override/">New
     Tab Override</a>) to set the starting page for a new tab.
-<li>Open the page, click the gears (&#x2699;) icon to access the Settings.
-    At the bottom are the options to load and save the items. Set the load
-    options:
+<li>Open the page, click the gears (<em>&#x2699;</em>) icon to access the
+    Settings.  At the bottom are the options to load and save the items. Set
+    the load options:
     <ul>
     <li>Config 'my-config': data.php\links.txt<br>
         This URL can be relative to the location of favorites.html itself.
@@ -214,9 +214,30 @@ See below for some complete <a href="#examples">examples</a>.
 </p>
 
 <p>
-Using a configuration name also allows the possibility to store multiple
-configurations in the browser's local storage, each under its own name. See <a
-href="multi-config.html">Multiple Configurations</a> for more details on this.
+<em>Tip</em>: If a new configuration name (e.g. <code>my-config</code>) is
+loaded and no <i>load-options</i> have yet been set under Settings
+(<em>&#x2699;</em>), the following default options are tested and if any of
+these exists, it is automatically set.
+<ul>
+<li><code>data.php\my-config.txt</code>
+<li><code>data.php\my-config-links.txt</code>
+<li><code>my-config.txt</code>
+<li><code>my-config-links.txt</code>
+</ul>
+This is handy in the <a href="#usage">The Standard Setup</a> where
+<code>data.php</code> is in the same web directory as
+<code>favorites.html</code>. Let's say your configuration is in
+<code>my-config.txt</code> and should be accessed on another computer, just go
+to <code>https://example.com/favorites.html?links=my-config</code>. The links
+will automatically be found. If writing is required, the password has to be
+entered manually.
+</p>
+
+<p>
+<em>Tip</em>: Using a configuration name also allows the possibility to store
+multiple configurations in the browser's local storage, each under its own
+name. See <a href="multi-config.html">Multiple Configurations</a> for more
+details on this.
 </p>
 
 <p>

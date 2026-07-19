@@ -7556,7 +7556,8 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	//  Local | Download | CleanLinks ||  Local | Upload | CleanLinks | StatusLine   | Remarks
 	// -------|----------|------------||--------|--------|------------|--------------|-------------
 	// (download_none)
-	//   -/e  |    -/e   |      -     ||    no  |    no  |     no     | [Default]    | Use DefaultLinks
+	//   -/e  |     -    |      -     ||    no  |    no  |     no     | [Default]    | Use DefaultLinks
+	//   -/e  |     e    |      -     ||    no  |    no  |    yes     | [Empty]      | Empty file
 	//    A   |    -/e   |      -     ||    no  |   yes  |     no(*)  | [New]        | New Local
 	//    -   |    -/e   |      A     ||   yes  |    no  |     no     | [Clean]      | Use Clean
 	//    A   |    -/e   |      A     ||    no  |    no  |     no     |              |
@@ -7584,6 +7585,7 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	// (***) It might be logical to save Download links to CleanLinks in
 	// the AB- case. However, this would make it an ABB (=BAA), which would
 	// do a Save Dirty on the next load, overwriting the remote.
+	// Below, '=' may be used to denote '-' or 'e'.
 	let downloadLinks = null, downloadTag = null;
 	if (download != null) {
 		downloadLinks = download[0];
@@ -7649,31 +7651,40 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 
 	// Determine how to integrate Download into Local and Clean
 	if (download_none) {
-		// Case ---, e--, --A, A-A, B-A, A--: Not downloaded
+		// Case ==-, -=A, A=A, B=A, A=-: Not downloaded (* denotes -/e)
 		if (cleanLinks == null) {
-			// Case ---, e--, A--
+			// Case ==-, A=-
 			if (links == null || links == '') {
-				// Case ---, e--: Use DefaultLinks
-				LogLinksUpdate.important('No download, no clean, no local, use default');
-				links = DefaultLinks;
-				addStatus('Default');
+				// Case ==-
+				if (downloadLinks == null) {
+					// Case =--: Use DefaultLinks
+					LogLinksUpdate.important('No download, no clean, no local, use default');
+					links = DefaultLinks;
+					addStatus('Default');
+				} else {
+					// Case =e-: Use Empty
+					LogLinksUpdate.important('Empty download, no clean, no local, show empty');
+					links = '';
+					addStatus('Empty');
+					updateClean = true;
+				}
 			} else {
-				// Case A--: New links
+				// Case A=-: New links
 				LogLinksUpdate.important('No download, no clean, new local');
 				addStatus('New');
 				upload = true;
 			}
 		} else if (links == null) {
-			// Case --A: Use Clean
+			// Case -=A: Use Clean
 			links = cleanLinks;
 			local_changed = local_new = false;
 			addStatus('Clean');
 			updateLocal = true;
 			upload = true;
 		} else if (!local_changed) {
-			// Case A-A: Nothing to update
+			// Case A=A: Nothing to update
 		} else {
-			// Case B-A: Update Clean
+			// Case B=A: Update Clean
 			LogLinksUpdate.important('No download, but update clean with local');
 			upload = true;
 		}
@@ -7932,6 +7943,47 @@ function initLinks() {
 	//   started, but as soon as the render gets control again, it doesn't
 	//   let go anymore.
 
+	// Check if there is a situation where a ConfigName is set, but no
+	// LoadOptions. In that case, set setLoadOpts() to try some.
+	let setLoadOpts = null, setLoadOptsFinish = null;
+	let isSet = s => s != null && s != '';
+	if (!isSet(Data.readLocalLinks()) && !isSet(Data.readCleanLinks())) {
+		// There are no LocalLinks
+		let isDataPhp = false;
+		if (isSet(UrlResolver.getLoadOverrideConfigName()) && !isSet(UrlResolver.getLoadOverrideOptions())) {
+			// There is a LoadOverrideConfig without options, try that
+			addStatus('Search LoadOverrideOptions');
+			let configName = UrlResolver.getLoadOverrideConfigName();
+			setLoadOpts = opts => {
+				if (opts != null) {
+					opts = opts.replaceAll('<config-name>', configName);
+					isDataPhp = !!opts.match(/data\.php/);
+				}
+				LogInit.log(`Try LoadOverrideOptions='${opts}'`);
+				Data.writeLoadOverrideOptions(opts);
+				// Data resets UrlResolver
+			};
+		} else if (isSet(UrlResolver.getLoadConfigName()) && !isSet(UrlResolver.getLoadOptions())) {
+			// There is a LoadConfig without options, try that
+			addStatus('Search LoadOptions');
+			let configName = UrlResolver.getLoadConfigName();
+			setLoadOpts = opts => {
+				if (opts != null) {
+					opts = opts.replaceAll('<config-name>', configName);
+					isDataPhp = !!opts.match(/data\.php/);
+				}
+				LogInit.log(`Try LoadOptions='${opts}'`);
+				Data.writeLoadOptions(opts);
+				// Data resets UrlResolver
+			};
+			setLoadOptsFinish = () => {
+				if (!UrlResolver.getSaveOptions()) {
+					Data.writeSaveOptions(isDataPhp ? '\\password-for-writing' : 'put');
+				}
+			};
+		}
+	}
+
 	// Start rendering preliminaryLinks (if defined)
 	let preliminaryLinks = UrlResolver.getPreliminaryLinks();
 	let preliminaryLinksCancel = null;
@@ -7988,7 +8040,53 @@ function initLinks() {
 	initDragDrop();
 
 	// Start download (if defined)
-	return downloadUpdateLinks(null, false, preliminaryLinksCancel, handleFallbackLinks);
+	if (setLoadOpts) {
+		let promise = PendingPromise();
+		if (HOOK_Ready) HOOK_Ready.start();
+		// There are no LoadOptions, we need to try out some
+		let opts = [
+			'data.php\\<config-name>.txt',
+			'data.php\\<config-name>-links.txt',
+			'<config-name>.txt',
+			'<config-name>-links.txt',
+		];
+		// Try an option, throw exception if that doesn't work
+		let try_one = o => {
+			setLoadOpts(o);
+			return downloadLinks()
+			.then(rsp => { if (rsp == null) throw 1 })
+		};
+		// Build a chain of try_one() calls: if an option failes, the
+		// catch issues a new one.
+		let try_chain = try_one(opts.shift());
+		while (opts.length > 0) {
+			// Add link to chain
+			let o = opts.shift();
+			try_chain = try_chain.catch(() => try_one(o));
+		}
+		// Add the final step in the chain
+		try_chain
+		.catch(() => {
+			// None in the chain worked, restore to empty
+			LogInit.log('No matching remote file found');
+			setLoadOpts(null);
+		})
+		.then(() => {
+			// We got one that worked, keep that
+			LogInit.log('Remote file found');
+			if (setLoadOptsFinish) setLoadOptsFinish();
+			// Now do the download like normal
+			downloadUpdateLinks(null, false, preliminaryLinksCancel, handleFallbackLinks)
+			.then(result => promise.resolve(result))
+			.catch(result => promise.reject(result));
+			if (HOOK_Ready) HOOK_Ready.stop();
+		});
+		// Return the new promise that waits for all this
+		return promise;
+	} else {
+		// Do a normal download
+		return downloadUpdateLinks(null, false, preliminaryLinksCancel, handleFallbackLinks);
+	}
 }
 
 // Initialize the JavaScript on the page
