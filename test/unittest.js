@@ -1036,7 +1036,7 @@ async function executeTest(data) {
 			} else {
 				Data.writeCleanLinks(cleanLinks, calcETag(cleanLinks));
 			}
-			if (isInvalid) Data.setCleanTag(CleanTagInvalid);
+			if (isInvalid) Data.ignoreCleanTag(true);
 		}
 	}
 
@@ -1131,7 +1131,7 @@ async function executeTest(data) {
 	}
 	if (data.expCleanLinks !== undefined) {
 		let cleanLinks = Data.readCleanLinks();
-		if (Data.getCleanTag() === CleanTagInvalid) {
+		if (Data.ignoreCleanTag()) {
 			if (cleanLinks == null) {
 				cleanLinks = 'INVALID';
 			} else {

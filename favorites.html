@@ -1689,7 +1689,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	// Clear all the cached values
 	function reset() {
 		displayedLinks = null;
-		cleanTag = undefined;
+		_ignoreCleanTag = false;
 		loadConflict = loadError = saveConflict = saveError = false;
 		// Keep and reset the conflictStateListeners
 		updateConflictState(true);
@@ -1792,7 +1792,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	function writeCleanLinks(links, eTag) {
 		let key = getCleanLinksLSKey();
 		writeStorage(key, links);
-		writeCleanTag(eTag);
+		_writeCleanTag(eTag);
 		updateConflictState();
 	}
 	// Persistent CleanTag (ETag) that matches CleanLinks.
@@ -1802,23 +1802,19 @@ function CreateData(getResolver = () => UrlResolver) {
 		if (tag === undefined) tag = null;
 		return tag;
 	}
-	function writeCleanTag(eTag) {
+	function _writeCleanTag(eTag) {
 		let key = getCleanTagLSKey();
 		writeStorage(key, eTag);
-		setCleanTag(eTag);  //also update current value for this window
+		ignoreCleanTag(false);
 	}
-	// The persistent CleanTag is shared between windows that use the same
-	// ConfigName. However, they may have LocalLinks with changes that are
-	// based on older versions of CleanLinks. Therefore, the exposed
-	// functions is based on a local variable to match the lifetime of
-	// LocalLinks.
-	let cleanTag = undefined;
-	function getCleanTag() {
-		if (cleanTag === undefined) cleanTag = readCleanTag();
-		return cleanTag;
-	}
-	function setCleanTag(eTag) {
-		cleanTag = eTag;
+	// Get/set if CleanTag is ignored.
+	// This value is not saved in LocalStorage, because it controls the
+	// behavior inside a single window and should not be shared between
+	// windows that are displaying the same ConfigName.
+	let _ignoreCleanTag = false;
+	function ignoreCleanTag(set = undefined) {
+		if (set !== undefined) _ignoreCleanTag = set;
+		return _ignoreCleanTag;
 	}
 
 	// Set if loading failed.
@@ -2072,8 +2068,8 @@ function CreateData(getResolver = () => UrlResolver) {
 		writeLocalLinks : writeLocalLinks,
 		readCleanLinks : readCleanLinks,
 		writeCleanLinks : writeCleanLinks,
-		getCleanTag : getCleanTag,
-		setCleanTag : setCleanTag,
+		readCleanTag : readCleanTag,
+		ignoreCleanTag : ignoreCleanTag,
 		setLoadState : setLoadState,
 		setSaveState : setSaveState,
 		getDisplayedLinks : getDisplayedLinks,
@@ -2882,9 +2878,14 @@ function uploadLinks(value) {
 		return false;
 	}
 	let headers = Array.from(UrlResolver.getUploadHeaders());  //make a copy
-	let eTag = Data.getCleanTag();
-	if (eTag == null || eTag == '') eTag = CleanTagEmpty;
-	let wantEmpty = eTag == CleanTagEmpty;
+	let eTag, wantEmpty = false;
+	if (Data.ignoreCleanTag()) {
+		eTag = CleanTagInvalid;
+	} else {
+		eTag = Data.readCleanTag();
+		if (eTag == null || eTag == '') eTag = CleanTagEmpty;
+		wantEmpty = eTag == CleanTagEmpty;
+	}
 	headers.push(['If-Match', eTag]);
 
 	// If value is null or whitespace, send an empty string
@@ -6270,7 +6271,6 @@ function initSettingsPanel() {
 				// or a warning/info is showing and this is an override
 				LogSettings.log('Save settings');
 				blockedSave = false;
-				let saveCleanTag = null;
 				try {
 					let editLinks = settingsText.value;
 					parseLinks(editLinks);  //throws error if invalid
@@ -6278,9 +6278,8 @@ function initSettingsPanel() {
 					let inWarn = Data.isConflict();
 					if (inWarn && !loadOptionsChanged) {
 						// If save from a Conflict state, we intend to overwrite remote
-						saveCleanTag = Data.getCleanTag();
-						LogSettings.log(`Change CleanTag from '${saveCleanTag}' to '${CleanTagInvalid}' before saving Conflict state`);
-						Data.setCleanTag(CleanTagInvalid);
+						LogSettings.log('Set CleanTag ignore');
+						Data.ignoreCleanTag(true);
 					}
 					if (loadOptionsChanged) {
 						downloadUpdateLinks(editLinks, forceSave, null, null);  //download and render updated Links
@@ -6290,7 +6289,6 @@ function initSettingsPanel() {
 					// Close the panel
 					hide();
 				} catch (error) {
-					if (saveCleanTag != null) Data.setCleanTag(saveCleanTag);
 					// Always log for debugging
 					LogSettings.error(error);
 					if (error instanceof UserInputError) {
