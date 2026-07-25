@@ -6280,6 +6280,7 @@ function initSettingsPanel() {
 						// If save from a Conflict state, we intend to overwrite remote
 						LogSettings.log('Set CleanTag ignore');
 						Data.ignoreCleanTag(true);
+						forceSave = inWarn;
 					}
 					if (loadOptionsChanged) {
 						downloadUpdateLinks(editLinks, forceSave, null, null);  //download and render updated Links

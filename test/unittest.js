@@ -988,6 +988,7 @@ async function executeTest(data) {
 	let doSetArgs = !data.skipInit?.match(/CONTINUE/);
 	let doLoad = !data.skipInit?.match(/NO-LOAD|NO-INIT|CONTINUE/);
 	let doUpdate = !data.skipInit?.match(/NO-INIT|CONTINUE/);
+
 	let doSetLocalLinks = data.iniLinks !== undefined;
 	let doSetCleanLinks = data.iniCleanLinks !== undefined;
 	let doSetRemoteFile = data.iniRemoteFile !== undefined;

@@ -37,6 +37,11 @@ name	skipInit	iniLinks	iniRemoteFile	iniCleanLinks	iniOverrideArg	iniLoadArg	ini
 "2.5.2(5) Search links-C (nok)"	KEEP					links-C		NULL	DEFAULT_LINKS	NULL	FALSE	FALSE	NULL						Local-{SearchLoadOptions-Load404(4x)}-Local-NoDownload-Renderfallback
 "2.5.3 Create Config for empty"			EMPTY			config		NULL	EMPTY	NULL	FALSE	FALSE	EMPTY						Local-{SearchLoadOptions-LoadOK}(2x)-Empty-Render
 
+# Create new config, then change remote (causing 412) and also set SaveOptions
+"6.1(1) Create new config"			A			config		A	A	A	FALSE	FALSE	A						Local-{SearchLoadOptions-LoadOK}(2x)-NoLocal-Render
+"6.1(2) Change remote & SaveOpts"	CONTINUE		B					A	A	A	FALSE	RemoteChanged	B	save				\password	* OptionsChanged-Save412-Conflict
+"6.1(3) 2nd save overrides"	CONTINUE							A	A	A	FALSE	FALSE	A	save					* SaveOK
+
 # Save/Clear/Cancel all combinations of L,O,S (Links, Override, Save)
 "3.1.1 [--] Settings: Save"		A	X					B	B	NULL	FALSE	FALSE	X	save	B				Local-Links-NoDownload-Prerender * New-Render
 "3.1.2 [--] Settings: Clear"		A	X					DEFAULT_LINKS	DEFAULT_LINKS	NULL	FALSE	FALSE	X	clear	B				Local-Links-NoDownload-Prerender * NoDownload
