@@ -7600,20 +7600,22 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	// Determine how to integrate Edit into Local
 	if (editLinks == null) {
 		// Case -?: Nothing to update
+		LogLinksUpdate.important('No edits [-?]');
 	} else {
 		let e = editLinks.trim();
 		if (e == '') {
 			// Case e?: Clear Local
-			LogLinksUpdate.important('Clear links');
+			LogLinksUpdate.important('Clear links [e?]');
 			updateLocal = true;
 			links = '';
 		} else if (links == null || e != links.trim()) {
 			// Case A-, BA: Update Local
-			LogLinksUpdate.important('Update links with edits');
+			LogLinksUpdate.important('Update links with edits [A-,BA]');
 			updateLocal = true;
 			links = editLinks;
 		} else {
 			// Case AA: Nothing to update
+			LogLinksUpdate.important('No changed edits [AA]');
 		}
 	}
 	let links_empty = links != null && links.trim() == '';
@@ -7626,8 +7628,8 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	let local_changed = false, download_changed = false;  //when Clean!=null
 	let local_new = false, download_new = false;  //when Clean==null
 	let cleanLinks = Data.readCleanLinks();
-	//LogLinksUpdate.devlog('cleanLinks: \'' + cleanLinks + '\'');
-	if (cleanLinks != null) {
+	let has_clean = cleanLinks != null;
+	if (has_clean) {
 		LogLinksUpdate.debug('clean set');
 		let clean_tr = cleanLinks.trim();
 		download_changed = downloadLinks != null && downloadLinks.trim() != clean_tr;
@@ -7652,30 +7654,31 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 	// Determine how to integrate Download into Local and Clean
 	if (download_none) {
 		// Case ==-, -=A, A=A, B=A, A=-: Not downloaded (* denotes -/e)
-		if (cleanLinks == null) {
+		if (!has_clean) {
 			// Case ==-, A=-
 			if (links == null || links == '') {
 				// Case ==-
 				if (downloadLinks == null) {
 					// Case =--: Use DefaultLinks
-					LogLinksUpdate.important('No download, no clean, no local, use default');
+					LogLinksUpdate.important('No download, no clean, no local, use default [=--]');
 					links = DefaultLinks;
 					addStatus('Default');
 				} else {
 					// Case =e-: Use Empty
-					LogLinksUpdate.important('Empty download, no clean, no local, show empty');
+					LogLinksUpdate.important('Empty download, no clean, no local, show empty [=e-]');
 					links = '';
 					addStatus('Empty');
 					updateClean = true;
 				}
 			} else {
 				// Case A=-: New links
-				LogLinksUpdate.important('No download, no clean, new local');
+				LogLinksUpdate.important('No download, no clean, new local [A=-]');
 				addStatus('New');
 				upload = true;
 			}
 		} else if (links == null) {
 			// Case -=A: Use Clean
+			LogLinksUpdate.important('No download, no local, use clean [-=A]');
 			links = cleanLinks;
 			local_changed = local_new = false;
 			addStatus('Clean');
@@ -7683,50 +7686,65 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 			upload = true;
 		} else if (!local_changed) {
 			// Case A=A: Nothing to update
+			LogLinksUpdate.important('No download, local same as clean [A=A]');
 		} else {
 			// Case B=A: Update Clean
-			LogLinksUpdate.important('No download, but update clean with local');
+			LogLinksUpdate.important('No download, but update clean with local [B=A]');
 			upload = true;
 		}
 	} else if (links == null) {
 		// Case -AA, -BA, -A-: There are no local Links
-		LogLinksUpdate.important('Downloaded links, no local Links');
+		let cse;
+		if (download_new) {
+			// Case -BA, -A-: Update CleanLinks
+			cse = has_clean ? '-BA' : '-A-';
+			updateClean = true;
+		} else {
+			cse = '-AA';
+		}
+		LogLinksUpdate.important('Downloaded links, no local Links [' + cse + ']');
 		addStatus('No Local');
 		updateLocal = true;
 		links = downloadLinks;
-		if (download_new) {
-			// Case -BA, -A-: Update CleanLinks
-			updateClean = true;
-		}
 	} else if (links_empty) {
 		// Case eAA, eBA, eA-: Clear local links
-		LogLinksUpdate.important('Downloaded links, clear or ignore Links');
-		if (cleanLinks == null) {
-			addStatus('No Local');
+		let cse;
+		if (download_new) {
+			// Case eBA, eA-: Update CleanLinks
+			cse = has_clean ? 'eBA' : 'eA-';
+			updateClean = true;
 		} else {
+			cse = 'eAA';
+		}
+		LogLinksUpdate.important('Downloaded links, clear or ignore Links [' + cse + ']');
+		if (has_clean) {
+			// Case eAA, eBA
 			addStatus('Clear');
 			Data.writeLocalLinks(null);  //triggers cache update
+		} else {
+			// Case eA-
+			addStatus('No Local');
 		}
 		updateLocal = true;
 		links = downloadLinks;
-		if (download_new) {
-			// Case eBA, eA-: Update CleanLinks
-			updateClean = true;
-		}
 	} else if (local_download_same) {
 		// Case AAA, BBA, AA-: local Links same as download Links
+		let cse;
+		if (download_new) {
+			// Case BBA, AA-: Update CleanLinks
+			cse = has_clean ? 'BBA' : 'AA-';
+			updateClean = true;
+		} else {
+			cse = 'AAA';
+		}
 		// Note that local Links and download Links null or empty have already been handled
 		if (UrlResolver.getLoadOverrideOptions()) {
 			// Downloaded from links-override=
-			LogLinksUpdate.important('Downloaded links same as local, no need to update');
+			LogLinksUpdate.important('Downloaded links same as local, no need to update [' + cse + ']');
 		} else {
 			// Downloaded from links=
-			LogLinksUpdate.important('Downloaded links same as local, keep pre-rendered Links');
+			LogLinksUpdate.important('Downloaded links same as local, keep pre-rendered Links [' + cse + ']');
 			addStatus('Same');
-		}
-		if (download_new) {
-			// Case BBA, AA-: Update CleanLinks
-			updateClean = true;
 		}
 	} else {
 		// Case ABA, BAA, BCA, AB-: local Links different from download Links
@@ -7736,11 +7754,12 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 				// Downloaded from links-override=
 				if (download_new) {
 					// Case BCA, AB-: All three are different
-					LogLinksUpdate.important('Local Links and downloaded override Links have both changed, use override');
+					let cse = has_clean ? 'BCA' : 'AB-';
+					LogLinksUpdate.important('Local Links and downloaded override Links have both changed, use override [' + cse + ']');
 					updateClean = true;
 				} else {
 					// Case BAA: local Links different from others
-					LogLinksUpdate.important('Local Links newer than downloaded override Links, use override')
+					LogLinksUpdate.important('Local Links newer than downloaded override Links, use override [BAA]');
 				}
 				addStatus('Discard Local changes');
 				updateLocal = true;
@@ -7749,25 +7768,26 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 				// Downloaded from links=
 				if (download_new) {
 					// Case BCA, AB-: All three are different
-					LogLinksUpdate.important('Local Links and downloaded Links have both changed, display local');
+					let cse = has_clean ? 'BCA' : 'AB-';
+					LogLinksUpdate.important('Local Links and downloaded Links have both changed, display local [' + cse + ']');
 					if (forceUpload) {
 						LogLinksUpdate.log('Force Update');
 						update = true;
 					} else {
 						LogLinksUpdate.log('Conflict');
 						addStatus('Conflict');
-						conflict = cleanLinks == null ? 'CleanMissing' : 'CleanDifferent';
+						conflict = has_clean ? 'CleanDifferent' : 'CleanMissing';
 					}
 				} else {
 					// Case BAA: local Links different from others
-					LogLinksUpdate.important('Local Links newer than downloaded, use local Links');
+					LogLinksUpdate.important('Local Links newer than downloaded, use local Links [BAA]');
 					addStatus('Save Dirty');
 					upload = true;
 				}
 			}
 		} else {
 			// Case ABA: download Links different from others
-			LogLinksUpdate.important('Downloaded Links newer than local, use downloaded Links');
+			LogLinksUpdate.important('Downloaded Links newer than local, use downloaded Links [ABA]');
 			updateLocal = true;
 			links = downloadLinks;
 			updateClean = true;
