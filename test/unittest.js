@@ -565,8 +565,11 @@ function CreateSettingsChanger() {
 			if (j < _options.length) {
 				let v = _options[j];
 				if (v) {
-					loadOptionEntries[i].entry.value = v;
-					LogTest.debug(`ChangeSettings: Set loadOptionEntries[${i}] to '${v}'`);
+					let ctl = loadOptionEntries[i].entry;
+					ctl.focus();  //in case contents is hidden
+					let old = ctl.value;
+					ctl.value = v;
+					LogTest.debug(`ChangeSettings: Set loadOptionEntries[${i}] to '${old}' -> '${v}'`);
 					++count;
 				}
 			}
@@ -576,8 +579,11 @@ function CreateSettingsChanger() {
 			if (j < _options.length) {
 				let v = _options[j];
 				if (v) {
-					saveOptionEntries[i].entry.value = v;
-					LogTest.debug(`ChangeSettings: Set saveOptionEntries[${i}] to '${v}'`);
+					let ctl = saveOptionEntries[i].entry;
+					ctl.focus();  //in case contents is hidden
+					let old = ctl.value;
+					ctl.value = v;
+					LogTest.debug(`ChangeSettings: Set saveOptionEntries[${i}] to '${old}' -> '${v}'`);
 					++count;
 				}
 			}
