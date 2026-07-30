@@ -19,46 +19,86 @@ let TestSets = [
 
 // Create an object to register and wait for Promisses.
 function CreateReady() {
+	// The first start() creates a _promise, the last stop() resolves it.
 	let _promise = null;
 	let _pending = false;
-	let _count = 0;
+	// wait() waits for the current _promise.
+	// If wait() is called before start(), wait() will create the _pending
+	// _promise and wait for it. In that case, start() will add an element
+	// to _starts.
+	// wait_pending() will only wait if a _promise exists.
+
+	// Start/stop can be nested and _starts has the current nesting depth.
+	// Array with timestamps of start().
+	let _starts = [];
+
+	function renderStarts() {
+		let s = 'Started [';
+		if (_starts.length <= 0) {
+			s += ']';
+		} else {
+			let prev = _starts[0];
+			s += prev.toLocaleTimeString();
+			prev = prev.valueOf();
+			for (let i = 1; i < _starts.length; ++i) {
+				let next = _starts[i].valueOf();
+				s += ' +' + (next - prev);
+				prev = next;
+			}
+			s += ']';
+		}
+		return s;
+	}
+
+	function renderWaited(t1, t2) {
+		return 'Waited ' + (t2 - t1) + ' msec';
+	}
 
 	function start() {
-		if (_count <= 0) {
+		let now = new Date();
+		let msg;
+		if (_starts.length <= 0) {
 			// Create a new Promise
 			if (!_promise) {
-				LogTest.debug('Start new Promise');
+				msg = 'Start new Promise';
 				_promise = new PendingPromise();
 			} else if (!_pending) {
-				LogTest.debug('Start new Promise');
+				msg = 'Start new Promise';
 				_promise = new PendingPromise();
 			} else {
-				LogTest.debug('Start, Promise already created');
+				msg = 'Start, Promise already created';
 			}
 			_pending = true;
-			_count = 1;
+			_starts = [ now ];
 		} else {
 			// Add nested start-stop pair
-			++_count;
-			LogTest.debug('Start count ' + _count);
+			_starts.push(now);
+			msg = 'Start count ' + _starts.length;
 		}
+		msg += ' (' + renderStarts() + ')';
+		LogTest.debug(msg);
 	}
 
 	function stop() {
-		if (_count <= 0) {
+		let now = new Date();
+		let msg;
+		if (_starts.length <= 0) {
 			// No Promise pending
 			LogTest.error('Stop, but nothing started');
 			console.trace();
-		} else if (_count == 1) {
+		} else if (_starts.length == 1) {
 			// This is the last
-			LogTest.debug('Stop last, resolve Promise');
+			msg = 'Stop last, resolve Promise';
 			_promise.resolve(true);
 			_pending = false;
-			_count = 0;
+			let started = _starts.pop();
+			msg += ' (' + renderWaited(started, now) + ')';
 		} else {
-			LogTest.debug('Stop count ' + _count);
-			--_count;
+			msg = 'Stop count ' + _starts.length;
+			let started = _starts.pop();
+			msg += ' (' + renderWaited(started, now) + ')';
 		}
+		if (msg) LogTest.debug(msg);
 	}
 
 	async function wait() {
@@ -95,6 +135,7 @@ function CreateReady() {
 		stop : stop,
 		wait : wait,
 		wait_pending : wait_pending,
+		toString : renderStarts,
 	};
 }
 
@@ -566,7 +607,7 @@ function CreateSettingsChanger() {
 				let v = _options[j];
 				if (v) {
 					let ctl = loadOptionEntries[i].entry;
-					ctl.focus();  //in case contents is hidden
+					ctl?.onfocus();  //in case the contents is hidden
 					let old = ctl.value;
 					ctl.value = v;
 					LogTest.debug(`ChangeSettings: Set loadOptionEntries[${i}] to '${old}' -> '${v}'`);
@@ -580,7 +621,7 @@ function CreateSettingsChanger() {
 				let v = _options[j];
 				if (v) {
 					let ctl = saveOptionEntries[i].entry;
-					ctl.focus();  //in case contents is hidden
+					ctl?.onfocus();  //in case the contents is hidden
 					let old = ctl.value;
 					ctl.value = v;
 					LogTest.debug(`ChangeSettings: Set saveOptionEntries[${i}] to '${old}' -> '${v}'`);
@@ -1100,6 +1141,7 @@ async function executeTest(data) {
 			// Assume the SettingsPanel is still open.
 			HOOK_ChangeSettings.updateOpenPanel();
 		} else {
+			await wait();  //this context-switch ensures the openSettings animation is properly done
 			showSettingsPanel();
 		}
 		await HOOK_Ready.wait();

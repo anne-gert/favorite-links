@@ -1669,7 +1669,7 @@ function CreateData(getResolver = () => UrlResolver) {
 	const LSKey_Prefix = 'favlist_';
 
 	let storage, hasStorage = false;
-	if (HOOK_LocalStorage != null) {
+	if (HOOK_LocalStorage) {
 		storage = HOOK_LocalStorage;
 		HOOK_LocalStorage.onreset(reset);
 		hasStorage = storage != null;
@@ -2131,7 +2131,7 @@ function CreateUrlResolver(getData = () => Data) {
 	// 3) LocalStorage
 
 	let queryString;
-	if (HOOK_QueryString != null) {
+	if (HOOK_QueryString) {
 		queryString = HOOK_QueryString.get();
 		HOOK_QueryString.onreset(reset);
 	} else {
@@ -2759,7 +2759,7 @@ function downloadLinks() {
 	let headers = UrlResolver.getDownloadHeaders();
 
 	let timer = logTimer(LogUpDownload.important, `Downloading URL '${url}'`);
-	if (HOOK_Ready != null) HOOK_Ready.start();
+	if (HOOK_Ready) HOOK_Ready.start();
 
 	function handleResponse(status, statusText, text, eTag, resolveFunc, rejectFunc) {
 		//LogUpDownload.devlog(`downloadLinks: Response received (ETag=${eTag})`);
@@ -2793,23 +2793,23 @@ function downloadLinks() {
 	};
 
 	let downloadPromise;
-	if (HOOK_Download != null) {
+	if (HOOK_Download) {
 		let download = HOOK_Download.response(url, headers, null)
 		if (download) {
 			downloadPromise = new PendingPromise();
 			download.then(response => {
 				handleResponse(response.status, response.statusText, response.text, response.eTag, downloadPromise.resolve, downloadPromise.reject);
-				if (HOOK_Ready != null) HOOK_Ready.stop();
+				if (HOOK_Ready) HOOK_Ready.stop();
 			})
 			.catch(error => {
 				addStatus('Load Error');
 				Data.setLoadState('NoLoadRsp');
 				downloadPromise.reject(error);
-				if (HOOK_Ready != null) HOOK_Ready.stop();
+				if (HOOK_Ready) HOOK_Ready.stop();
 			});
 		} else {
 			downloadPromise = null;
-			if (HOOK_Ready != null) HOOK_Ready.stop();
+			if (HOOK_Ready) HOOK_Ready.stop();
 		}
 	} else if (window.fetch) {
 		//LogUpDownload.devlog('Using fetch() to download');
@@ -2829,14 +2829,14 @@ function downloadLinks() {
 		})
 		.then(text => {
 			handleResponse(status, statusText, text, eTag, downloadPromise.resolve, downloadPromise.reject);
-			if (HOOK_Ready != null) HOOK_Ready.stop();
+			if (HOOK_Ready) HOOK_Ready.stop();
 		})
 		.catch(error => {
 			// CORS violation ends up here, but there is no way to detect that
 			addStatus('Load Error');
 			Data.setLoadState('NoLoadRsp');
 			downloadPromise.reject(error);
-			if (HOOK_Ready != null) HOOK_Ready.stop();
+			if (HOOK_Ready) HOOK_Ready.stop();
 		});
 	} else {
 		//LogUpDownload.devlog('Using XMLHttpRequest to download');
@@ -2851,7 +2851,7 @@ function downloadLinks() {
 					// Request has been handled
 					let eTag = this.getResponseHeader('ETag');
 					handleResponse(this.status, this.statusText, xhr.responseText, eTag, resolveFunc, rejectFunc);
-					if (HOOK_Ready != null) HOOK_Ready.stop();
+					if (HOOK_Ready) HOOK_Ready.stop();
 				}
 			};
 			xhr.send();  //send the request
@@ -2894,7 +2894,7 @@ function uploadLinks(value) {
 	}
 
 	let timer = logTimer(LogUpDownload.important, `Uploading to URL '${url}'`, method + ' ' + value.length + ' characters');
-	if (HOOK_Ready != null) HOOK_Ready.start();
+	if (HOOK_Ready) HOOK_Ready.start();
 
 	function handleResponse(status, statusText, eTag, resolveFunc, rejectFunc) {
 		//LogUpDownload.devlog('uploadLinks: Response received');
@@ -2927,23 +2927,23 @@ function uploadLinks(value) {
 	};
 
 	let uploadPromise;
-	if (HOOK_Upload != null) {
+	if (HOOK_Upload) {
 		let upload = HOOK_Upload.response(url, headers, value)
 		if (upload) {
 			uploadPromise = new PendingPromise();
 			upload.then(response => {
 				handleResponse(response.status, response.statusText, response.eTag, uploadPromise.resolve, uploadPromise.reject);
-				if (HOOK_Ready != null) HOOK_Ready.stop();
+				if (HOOK_Ready) HOOK_Ready.stop();
 			})
 			.catch(error => {
 				addStatus('Save Error');
 				Data.setSaveState('NoSaveRsp');
 				uploadPromise.reject(error);
-				if (HOOK_Ready != null) HOOK_Ready.stop();
+				if (HOOK_Ready) HOOK_Ready.stop();
 			});
 		} else {
 			uploadPromise = null;
-			if (HOOK_Ready != null) HOOK_Ready.stop();
+			if (HOOK_Ready) HOOK_Ready.stop();
 		}
 	} else {
 		uploadPromise = new Promise((resolveFunc, rejectFunc) => {
@@ -2957,7 +2957,7 @@ function uploadLinks(value) {
 					// Request has been handled
 					let eTag = this.getResponseHeader('ETag');
 					handleResponse(this.status, this.statusText, eTag, resolveFunc, rejectFunc);
-					if (HOOK_Ready != null) HOOK_Ready.stop();
+					if (HOOK_Ready) HOOK_Ready.stop();
 				}
 			};
 			xhr.send(value);  //send the request
@@ -2998,14 +2998,14 @@ function CreatePending(name, timeout, onlyLast) {
 		for (let i = 0; i < actions.length; ++i) actions[i]();
 		clearActions();
 		if (has_ready_lock) {
-			HOOK_Ready.stop();
+			if (HOOK_Ready) HOOK_Ready.stop();
 			has_ready_lock = false;
 		}
 	}
 
 	// Add new action
 	function add(callback) {
-		if (HOOK_Ready != null && !has_ready_lock) {
+		if (HOOK_Ready && !has_ready_lock) {
 			HOOK_Ready.start();
 			has_ready_lock = true;
 		}
@@ -3046,7 +3046,7 @@ function CreatePending(name, timeout, onlyLast) {
 			onunload = false;
 		}
 		if (has_ready_lock) {
-			HOOK_Ready.stop();
+			if (HOOK_Ready) HOOK_Ready.stop();
 			has_ready_lock = false;
 		}
 	}
@@ -6057,7 +6057,7 @@ function initSettingsPanel() {
 	// Returns Promise that becomes resolved when animation has finished.
 	function showSettings(gotoLine = null) {
 		let ready = new PendingPromise();
-		if (HOOK_Ready != null) HOOK_Ready.start();
+		if (HOOK_Ready) HOOK_Ready.start();
 		let scrollToLine = () => {
 			if (gotoLine != null && settingsText) {
 				// Find position of nth linebreak (/\r*\n\r*/)
@@ -6116,7 +6116,7 @@ function initSettingsPanel() {
 		if (visible) {
 			updateConflictState();
 			scrollToLine();
-			if (HOOK_Ready != null) HOOK_Ready.stop();
+			if (HOOK_Ready) HOOK_Ready.stop();
 			ready.resolve('SettingsPanel already visible');
 			return ready;  //do nothing if already visible
 		}
@@ -6126,11 +6126,11 @@ function initSettingsPanel() {
 			if (!createSettings()) {
 				// Creating panel failed, disable button and return
 				iconBarClosed.classList.add('hidden');
-				if (HOOK_Ready != null) HOOK_Ready.stop();
+				if (HOOK_Ready) HOOK_Ready.stop();
 				ready.resolve('Could not create SettingsPanel');
 				return ready;
 			}
-		} else if (HOOK_ChangeSettings != null) {
+		} else if (HOOK_ChangeSettings) {
 			// Panel already created, but do recreate what is needed
 			// in test conditions.
 			recreateOptionEntries();
@@ -6161,7 +6161,7 @@ function initSettingsPanel() {
 			settingsPanel.classList.remove('expanding');
 			scrollToLine();
 			ready.resolve('SettingsPanel opened');
-			if (HOOK_ChangeSettings != null) {
+			if (HOOK_ChangeSettings) {
 				// Call the hook function to handle the settings
 				HOOK_ChangeSettings.update(settingsText, loadOptionEntries, saveOptionEntries, hideSettings);
 			}
@@ -6200,7 +6200,7 @@ function initSettingsPanel() {
 				settingsPanel.classList.remove('collapsing');
 				updateConflictState();
 				ready.resolve(save);
-				if (HOOK_Ready != null) HOOK_Ready.stop();
+				if (HOOK_Ready) HOOK_Ready.stop();
 			};
 			// Slide iconBarOpen out and iconBarClosed in
 			let going = iconBarOpen, coming = iconBarClosed;
@@ -6318,7 +6318,7 @@ function initSettingsPanel() {
 					el.scrollTop = 0;
 				}
 				blockedSave = true;
-				if (HOOK_Ready == null) {
+				if (!HOOK_Ready) {
 					window.alert('Settings were changed in another window' +
 						'\n\nPlease confirm save or cancel.');
 				} else {
@@ -7861,7 +7861,7 @@ function updateLinks(editLinks, download, forceUpload, preRenderCancel) {
 // - fallbackRender: Function to call to render the fallback contents.
 // Returns Promise that resolves when ready or false if no download.
 function downloadUpdateLinks(editLinks, forceUpload, preRenderCancel, fallbackRender) {
-	if (HOOK_Ready != null) HOOK_Ready.start();
+	if (HOOK_Ready) HOOK_Ready.start();
 	if (editLinks === '') Data.writeLocalLinks(null);
 	let loadPromise = downloadLinks();
 	if (loadPromise != null) {
@@ -7876,7 +7876,7 @@ function downloadUpdateLinks(editLinks, forceUpload, preRenderCancel, fallbackRe
 				updateLinks(editLinks, download, forceUpload, preRenderCancel);
 			}
 			result.resolve(true);
-			if (HOOK_Ready != null) HOOK_Ready.stop();
+			if (HOOK_Ready) HOOK_Ready.stop();
 		})
 		.catch(error => {
 			if (error === false) {
@@ -7898,7 +7898,7 @@ function downloadUpdateLinks(editLinks, forceUpload, preRenderCancel, fallbackRe
 				LogLinksUpdate.error('Download failed with error: ', error);
 				result.resolve(false);
 			}
-			if (HOOK_Ready != null) HOOK_Ready.stop();
+			if (HOOK_Ready) HOOK_Ready.stop();
 		});
 		return result;
 	} else {
@@ -7914,7 +7914,7 @@ function downloadUpdateLinks(editLinks, forceUpload, preRenderCancel, fallbackRe
 		} else {
 			LogLinksUpdate.log('Nothing to download, no fallback');
 		}
-		if (HOOK_Ready != null) HOOK_Ready.stop();
+		if (HOOK_Ready) HOOK_Ready.stop();
 		return Promise.resolve(false);
 	}
 }
@@ -8008,7 +8008,7 @@ function initLinks() {
 	let preliminaryLinksCancel = null;
 	//LogInit.devlog('preliminaryLinks = ', preliminaryLinks);
 	if (preliminaryLinks != null) {
-		if (HOOK_Ready != null) HOOK_Ready.start();
+		if (HOOK_Ready) HOOK_Ready.start();
 		Data.setDisplayedLinks(preliminaryLinks);
 		preliminaryLinksCancel = CreateCancel();
 		let preliminaryLinksRenderPromise = new Promise((resolveFunc, rejectFunc) => {
@@ -8025,7 +8025,7 @@ function initLinks() {
 				} else {
 					LogInit.important('preliminaryLinks finished successfully');
 				}
-				if (HOOK_Ready != null) HOOK_Ready.stop();
+				if (HOOK_Ready) HOOK_Ready.stop();
 				resolveFunc();
 			}, 50);
 		});
@@ -8110,10 +8110,10 @@ function initLinks() {
 
 // Initialize the JavaScript on the page
 function init() {
-	if (HOOK_Init != null) HOOK_Init();
+	if (HOOK_Init) HOOK_Init();
 	initStatus();
 	initSettingsPanel();
-	if (HOOK_Run != null) {
+	if (HOOK_Run) {
 		HOOK_Run();
 	} else {
 		initLinks()
